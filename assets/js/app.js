@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.9.9';
-const APP_BUILD='20260606_1800';
+const APP_VERSION='v3.11.6';
+const APP_BUILD='20260606_1949';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -603,27 +603,33 @@ function renderCalendar(){
   });
   const filters=`<input class="field" id="calendarWeekStart" type="date" value="${esc(currentDate)}"><select class="select" id="calendarTechFilter"><option value="all">Kõik tehnikud</option>${state.people.map(p=>`<option value="${p.id}" ${techFilter===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select><select class="select" id="calendarViewMode"><option value="day" ${mode==='day'?'selected':''}>Päev</option><option value="week" ${mode==='week'?'selected':''}>Nädal</option><option value="month" ${mode==='month'?'selected':''}>Kuu</option><option value="year" ${mode==='year'?'selected':''}>Aasta</option></select><button class="btn ghost" id="calendarHideWeekend" type="button" data-hidden="${hideWeekend?'true':'false'}">▦ ${hideWeekend?'Näita L/P':'Peida L/P'}</button><select class="select" id="calendarStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Avatud tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${['Uus','Planeeritud','Töös','Ootel','Pausil','Täidetud','Suletud'].map(s=>`<option value="${s}" ${statusFilter===s?'selected':''}>${s}</option>`).join('')}</select>`;
   const actions=`<button class="btn ghost" id="calendarImportWorkBtn" type="button">▧ Impordi töö</button><button class="btn ghost" id="calendarPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="calendarThisWeekBtn" type="button">⌖ Täna</button><button class="btn ghost" id="calendarNextWeekBtn" type="button">Järgmine ›</button><button class="btn primary" id="newCalendarWorkorderBtn" type="button">＋ Lisa töökäsk</button>`;
-  const hours=Array.from({length:13},(_,i)=>7+i);
+  const calendarStartHour=7;
+  const calendarEndHour=21;
+  const calendarHourPx=54;
+  const calendarLaneHeight=(calendarEndHour-calendarStartHour)*calendarHourPx;
+  const hours=Array.from({length:calendarEndHour-calendarStartHour},(_,i)=>calendarStartHour+i);
   const dayNames=['P','E','T','K','N','R','L'];
   const today=dateKeyFromDate(new Date());
   const now=new Date();
   const nowHour=now.getHours()+now.getMinutes()/60;
   const showNowLine=mode==='week'||mode==='day';
-  const nowTop=Math.max(0,Math.min(100,((nowHour-7)/12)*100));
+  const nowTopPx=Math.max(0,Math.min(calendarLaneHeight-2,(nowHour-calendarStartHour)*calendarHourPx));
 
   let body='';
   if(mode==='week'||mode==='day'){
     const columns=visibleDays.map(date=>{
       const d=parseDateKey(date);
       const jobs=filtered.filter(w=>w.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+      const compactClass=jobs.length>=3?' compact':'';
       const cards=jobs.map(w=>{
         const [hh,mm]=(w.time||'09:00').split(':').map(Number);
-        const top=Math.max(0,Math.min(96,(((hh||9)+(mm||0)/60-7)/12)*100));
-        const height=Math.max(46,Math.min(130,workorderHours(w)*48));
-        return `<button class="calendar-event" style="top:${top}%;min-height:${height}px" data-calendar-edit="${w.id}" type="button"><span><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small></button>`;
+        const start=((Number.isFinite(hh)?hh:9)+(Number.isFinite(mm)?mm:0)/60);
+        const top=Math.max(0,Math.min(calendarLaneHeight-42,(start-calendarStartHour)*calendarHourPx));
+        const height=Math.max(jobs.length>=3?38:46,Math.min(120,workorderHours(w)*44));
+        return `<button class="calendar-event${compactClass}" style="top:${top}px;min-height:${height}px" data-calendar-edit="${w.id}" type="button"><span><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small></button>`;
       }).join('');
       const slots=hours.map(h=>`<button class="calendar-slot" data-add-date="${date}" data-add-time="${String(h).padStart(2,'0')}:00" title="Lisa töö ${date} ${String(h).padStart(2,'0')}:00" type="button"></button>`).join('');
-      return `<div class="calendar-planner-day ${date===today?'today':''}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(date)}</span></div><div class="calendar-planner-lane">${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTop}%"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || '<div class="calendar-empty-note">Töid ei ole</div>'}</div></div>`;
+      return `<div class="calendar-planner-day ${date===today?'today':''}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(date)}</span></div><div class="calendar-planner-lane" style="--calendar-lane-height:${calendarLaneHeight}px">${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTopPx}px"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || '<div class="calendar-empty-note">Töid ei ole</div>'}</div></div>`;
     }).join('');
     body=`<div class="calendar-planner"><div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}</div></div>`;
   }else if(mode==='month'){

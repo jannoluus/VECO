@@ -583,3 +583,72 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 .preview-frame-wrap{width:var(--preview-w);max-width:100%;height:var(--preview-h);max-height:78vh;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#000;margin:0 auto;box-shadow:0 18px 40px rgba(0,0,0,.25);}
 .preview-frame-wrap iframe{width:100%;height:100%;border:0;background:var(--bg);}
 @media(max-width:760px){.preview-grid{grid-template-columns:1fr}.preview-frame-wrap{max-height:70vh}}
+
+/* V3.11.6: calendar day internal scroll + compact dense days */
+.page-calendar .calendar-planner-wrap{
+  min-height:0!important;
+  height:calc(100vh - 250px)!important;
+  max-height:760px!important;
+  padding:0 16px 16px!important;
+}
+.page-calendar .calendar-planner{
+  min-height:0!important;
+  height:100%!important;
+  grid-template-columns:54px minmax(0,1fr)!important;
+}
+.page-calendar .calendar-hours{
+  grid-template-rows:40px repeat(14,54px)!important;
+  overflow:hidden!important;
+  min-height:0!important;
+}
+.page-calendar .calendar-hour-label{
+  min-height:54px!important;
+  height:54px!important;
+}
+.page-calendar .calendar-planner-grid{
+  height:100%!important;
+  min-height:0!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  align-items:stretch!important;
+}
+.page-calendar .calendar-planner-day{
+  min-height:0!important;
+  height:100%!important;
+  grid-template-rows:40px minmax(0,1fr)!important;
+}
+.page-calendar .calendar-planner-lane{
+  min-height:var(--calendar-lane-height,756px)!important;
+  height:var(--calendar-lane-height,756px)!important;
+  max-height:100%!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+  scrollbar-width:thin!important;
+  background-size:auto 54px!important;
+}
+.page-calendar .calendar-event{
+  min-height:42px!important;
+  padding:7px!important;
+  gap:3px!important;
+}
+.page-calendar .calendar-event.compact{
+  padding:5px 6px!important;
+  gap:2px!important;
+}
+.page-calendar .calendar-event.compact strong,
+.page-calendar .calendar-event.compact small{
+  font-size:11px!important;
+  line-height:1.18!important;
+}
+.page-calendar .calendar-event.compact .status{
+  font-size:9px!important;
+  padding:2px 5px!important;
+}
+.page-calendar .calendar-slot{
+  height:54px!important;
+}
+@media(max-width:1120px){
+  .page-calendar .calendar-planner-wrap{height:calc(100vh - 230px)!important;max-height:none!important;}
+  .page-calendar .calendar-planner-grid{overflow-x:auto!important;}
+  .page-calendar .calendar-planner-day{min-width:260px!important;}
+}
