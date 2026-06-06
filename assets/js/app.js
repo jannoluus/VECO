@@ -40,7 +40,7 @@ const projectWorkorders=(id)=>state.workorders.filter(w=>w.projectId===id);
 const projectActs=(id)=>state.acts.filter(a=>projectWorkorders(id).some(w=>w.id===a.workorderId));
 const openWorkorders=()=>state.workorders.filter(w=>!['Täidetud','Suletud','Arhiveeritud'].includes(w.status));
 const statusClass=(s)=>/töös|aktiivne|planeeritud|täidetud|valmis|saadetud/i.test(s||'')?'ok':/ootel|attention|mustand|pausil/i.test(s||'')?'warn':/deaktiveeritud|seisab|arhiveeritud|suletud/i.test(s||'')?'red':'';
-function save(){window.VECO_STORAGE.save(state)}
+function save(){ state=window.VECO_API?.save ? window.VECO_API.save(state) : window.VECO_STORAGE.save(state); }
 function uid(prefix){return `${prefix}-${String(Date.now()).slice(-6)}`}
 function icon(i){return `<span class="icon">${i}</span>`}
 function nav(){
@@ -50,7 +50,7 @@ function nav(){
     ['Arendus',[['mobile','▤'],['mobilePreview','▧']]]
   ];
   const navGroups=groups.map(([title,items])=>`<div class="nav-section"><div class="nav-section-title">${title}</div>${items.map(([key,ic])=>key==='mobile'?`<a class="${page===key?'active':''}" href="${pageFiles[key]}" target="_blank" rel="noopener" title="Ava tehniku vaade uues aknas">${icon('↗')}Tehniku vaade</a>`:`<a class="${page===key?'active':''}" href="${pageFiles[key]}">${icon(ic)}${pageTitles[key]}</a>`).join('')}</div>`).join('');
-  return `<aside class="sidebar"><div class="sidebar-actions"><button class="btn ghost sidebar-toggle" id="sidebarToggleBtn" type="button" title="Näita/peida menüü" aria-label="Näita/peida menüü">${icon('☰')}</button><input id="importDataFile" type="file" accept="application/json" class="hidden"></div><nav class="nav nav-grouped" aria-label="Põhivaated">${navGroups}<div class="nav-section"><div class="nav-section-title">Süsteem</div><button type="button" id="databaseBtn">${icon('↔')}Andmebaas: lokaalne</button><button type="button" id="exportDataBtn">${icon('⇩')}Varukoopia</button><label class="nav-file-action" for="importDataFile">${icon('⇧')}Taasta</label></div></nav></aside>`
+  return `<aside class="sidebar"><div class="sidebar-actions"><button class="btn ghost sidebar-toggle" id="sidebarToggleBtn" type="button" title="Näita/peida menüü" aria-label="Näita/peida menüü">${icon('☰')}</button><input id="importDataFile" type="file" accept="application/json" class="hidden"></div><nav class="nav nav-grouped" aria-label="Põhivaated">${navGroups}<div class="nav-section"><div class="nav-section-title">Süsteem</div><button type="button" id="databaseBtn">${icon('↔')}Andmebaas: ${window.VECO_API?.modeLabel?.()||'lokaalne'}</button><button type="button" id="exportDataBtn">${icon('⇩')}Varukoopia</button><label class="nav-file-action" for="importDataFile">${icon('⇧')}Taasta</label></div></nav></aside>`
 }
 function themeLogo(){
   return `<button class="brand-badge brand-theme-toggle" type="button" data-theme-toggle title="Vaheta hele/tume režiim" aria-label="Vaheta hele/tume režiim"><span class="brand-wordmark">VECO</span></button>`;
@@ -99,7 +99,7 @@ function globalTicker(){
     `VECO CRM · ${APP_VERSION}`,
     `Build ${APP_BUILD}`,
     `Vaade: ${pageTitles[page]||page}`,
-    `Andmed: LocalStorage`,
+    `Andmed: ${window.VECO_API?.modeLabel?.()||'lokaalne'}`,
     ...(pageBits[page]||[]),
     oncallToday.length&&page!=='oncall'?`Valve: ${oncallToday.join(', ')}`:'',
     draftActs&&page!=='acts'?`${draftActs} akti ootel`:''
@@ -129,7 +129,7 @@ function bindGlobal(){
     app.classList.toggle('sidebar-collapsed',collapsed);
     localStorage.setItem('veco_sidebar_collapsed',collapsed?'true':'false');
   });
-  $('#databaseBtn')?.addEventListener('click',()=>alert('Andmebaas: lokaalne / LocalStorage'));
+  $('#databaseBtn')?.addEventListener('click',()=>{ if(window.VECO_API?.configure?.()){ location.reload(); } });
   $('#exportDataBtn')?.addEventListener('click',()=>{
     const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
     const a=document.createElement('a');
@@ -679,4 +679,21 @@ function calendarDetailHtml(){ return ''; }
 function renderCurrentPage(){
   ({calendar:renderCalendar,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,team:renderTeam,acts:renderActs,oncall:renderOncall,vacations:renderVacations,mobile:renderMobile,mobilePreview:renderMobilePreview}[page]||renderObjects)();
 }
-renderCurrentPage();
+async function bootstrapApp(){
+  renderCurrentPage();
+  if(window.VECO_API?.mode?.()==='supabase'){
+    try{
+      state=await window.VECO_API.load();
+      selectedObjectId=state.objects?.[0]?.id||selectedObjectId||'';
+      selectedClientId=state.clients?.[0]?.id||selectedClientId||'';
+      selectedProjectId=state.projects?.[0]?.id||selectedProjectId||'';
+      selectedWorkorderId=state.workorders?.[0]?.id||selectedWorkorderId||'';
+      selectedActId=state.acts?.[0]?.id||selectedActId||'';
+      renderCurrentPage();
+      window.VECO_API.startWorkorderPolling?.((merged)=>{ state=merged; renderCurrentPage(); });
+    }catch(err){
+      console.warn('VECO bootstrap Supabase load failed',err);
+    }
+  }
+}
+bootstrapApp();
