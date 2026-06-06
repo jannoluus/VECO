@@ -9,8 +9,10 @@
     return String(value||'').trim().replace(/\/rest\/v1\/?$/,'').replace(/\/+$/,'');
   }
   function getClient(){
-    const url=cleanUrl(localStorage.getItem(URL_KEY));
-    const key=String(localStorage.getItem(KEY_KEY)||'').trim();
+    const configuredUrl=window.VECO_SUPABASE_URL || localStorage.getItem(URL_KEY);
+    const configuredKey=window.VECO_SUPABASE_KEY || localStorage.getItem(KEY_KEY);
+    const url=cleanUrl(configuredUrl);
+    const key=String(configuredKey||'').trim();
     if(!url||!key||!window.supabase) return null;
     if(!window.__VECO_SUPABASE_CLIENT__||window.__VECO_SUPABASE_URL__!==url||window.__VECO_SUPABASE_KEY__!==key){
       window.__VECO_SUPABASE_URL__=url;
@@ -91,10 +93,10 @@
     mode(){return getClient()?'supabase':'local'},
     modeLabel(){return this.mode()==='supabase'?'Supabase':'lokaalne'},
     configure(){
-      const currentUrl=cleanUrl(localStorage.getItem(URL_KEY));
+      const currentUrl=cleanUrl(window.VECO_SUPABASE_URL || localStorage.getItem(URL_KEY));
       const url=prompt('Supabase Project URL', currentUrl || 'https://bjiuqghslbdwhcdinocv.supabase.co');
       if(url===null) return false;
-      const currentKey=localStorage.getItem(KEY_KEY)||'';
+      const currentKey=window.VECO_SUPABASE_KEY || localStorage.getItem(KEY_KEY)||'';
       const key=prompt('Supabase publishable / anon key', currentKey);
       if(key===null) return false;
       localStorage.setItem(URL_KEY,cleanUrl(url));
