@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.11.7.3';
-const APP_BUILD='20260606_2201';
+const APP_BUILD='20260606_2218';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -162,6 +162,19 @@ function table(headers,rows){const body=Array.isArray(rows)?rows.join(''):(rows|
 function summaryBox(label,value){return `<div class="summary-box"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`}
 function openModal(html){$('#modal').innerHTML=`<div class="dialog">${html}</div>`;$('#modal').classList.add('open')}
 function closeModal(){$('#modal').classList.remove('open');$('#modal').innerHTML=''}
+function showSyncNotice(text='Andmed uuendatud'){
+  let el=document.getElementById('syncNotice');
+  if(!el){
+    el=document.createElement('div');
+    el.id='syncNotice';
+    el.className='sync-notice';
+    document.body.appendChild(el);
+  }
+  el.textContent=text;
+  el.classList.add('show');
+  clearTimeout(window.__VECO_SYNC_NOTICE_TIMER__);
+  window.__VECO_SYNC_NOTICE_TIMER__=setTimeout(()=>el.classList.remove('show'),1800);
+}
 function bindClose(){ $('#modalCloseBtn')?.addEventListener('click',closeModal); $('#cancelModalBtn')?.addEventListener('click',closeModal); }
 
 function renderObjects(){
@@ -765,7 +778,11 @@ async function bootstrapApp(){
       selectedWorkorderId=state.workorders?.[0]?.id||selectedWorkorderId||'';
       selectedActId=state.acts?.[0]?.id||selectedActId||'';
       renderCurrentPage();
-      window.VECO_API.startWorkorderPolling?.((merged)=>{ state=merged; renderCurrentPage(); });
+      const onRemoteWorkorders=(merged,meta={})=>{ state=merged; renderCurrentPage(); showSyncNotice(meta.source==='polling'?'Andmed uuendatud':'Realtime uuendus'); };
+      const realtimeStarted=window.VECO_API.startWorkorderRealtime?.(onRemoteWorkorders,(status)=>{
+        if(status==='SUBSCRIBED') showSyncNotice('Realtime ühendus aktiivne');
+      });
+      if(!realtimeStarted) window.VECO_API.startWorkorderPolling?.(onRemoteWorkorders);
     }catch(err){
       console.warn('VECO bootstrap Supabase load failed',err);
     }

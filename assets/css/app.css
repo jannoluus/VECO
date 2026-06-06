@@ -980,3 +980,7 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
   }
   .app:not(.app-mobile) .global-ticker{margin:0 12px 8px!important;}
 }
+
+/* V3.11.8: Realtime sync notice */
+.sync-notice{position:fixed;right:18px;bottom:54px;z-index:120;min-height:34px;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);box-shadow:var(--shadow);font-size:12px;font-weight:900;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .18s ease,transform .18s ease;}
+.sync-notice.show{opacity:1;transform:translateY(0);}

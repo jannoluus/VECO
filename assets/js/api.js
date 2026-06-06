@@ -3,6 +3,8 @@
   const KEY_KEY='veco_supabase_key';
   const TABLE='workorders';
   let pollingTimer=null;
+  let realtimeChannel=null;
+  let realtimeDebounce=null;
   let syncing=false;
 
   function cleanUrl(value){
@@ -89,6 +91,20 @@
     }
   }
 
+  function signature(data){
+    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description]));
+  }
+  async function pullAndNotify(onChange){
+    try{
+      const before=signature(window.VECO_STORAGE.load());
+      const merged=await window.VECO_API.refreshWorkorders(window.VECO_STORAGE.load());
+      const after=signature(merged);
+      if(before!==after && typeof onChange==='function') onChange(merged,{source:'realtime'});
+    }catch(err){
+      console.warn('VECO Supabase realtime refresh failed',err);
+    }
+  }
+
   window.VECO_API={
     mode(){return getClient()?'supabase':'local'},
     modeLabel(){return this.mode()==='supabase'?'Supabase':'lokaalne'},
@@ -132,12 +148,34 @@
       if(this.mode()!=='supabase'||pollingTimer) return;
       pollingTimer=setInterval(async()=>{
         try{
-          const before=JSON.stringify((window.VECO_STORAGE.load().workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId]));
+          const before=signature(window.VECO_STORAGE.load());
           const merged=await this.refreshWorkorders(window.VECO_STORAGE.load());
-          const after=JSON.stringify((merged.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId]));
-          if(before!==after && typeof onChange==='function') onChange(merged);
+          const after=signature(merged);
+          if(before!==after && typeof onChange==='function') onChange(merged,{source:'polling'});
         }catch(err){console.warn('VECO Supabase polling failed',err);}
       },15000);
+    },
+    startWorkorderRealtime(onChange,onStatus){
+      const client=getClient();
+      if(this.mode()!=='supabase'||!client) return false;
+      if(realtimeChannel) return true;
+      realtimeChannel=client
+        .channel('veco-workorders-realtime')
+        .on('postgres_changes',{event:'*',schema:'public',table:TABLE},()=>{
+          clearTimeout(realtimeDebounce);
+          realtimeDebounce=setTimeout(()=>pullAndNotify(onChange),250);
+        })
+        .subscribe((status)=>{
+          if(typeof onStatus==='function') onStatus(status);
+          if(status==='SUBSCRIBED'){
+            if(pollingTimer){ clearInterval(pollingTimer); pollingTimer=null; }
+          }
+          if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+            console.warn('VECO Supabase realtime status',status);
+            this.startWorkorderPolling(onChange);
+          }
+        });
+      return true;
     }
   };
 })();
