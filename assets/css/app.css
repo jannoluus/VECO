@@ -828,3 +828,155 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 @media(max-width:1120px){
   .app:not(.app-mobile) .view-head{min-height:0!important;}
 }
+
+
+/* V3.11.7.3: workspace layout stabilization across calendar/team/admin pages */
+.app:not(.app-mobile){
+  height:100vh!important;
+  min-height:100vh!important;
+  overflow:hidden!important;
+}
+.app:not(.app-mobile) > main{
+  height:100vh!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+.app:not(.app-mobile) > main > .content{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  width:100%!important;
+  max-width:none!important;
+  padding:14px 22px 8px!important;
+  margin:0!important;
+  box-sizing:border-box!important;
+}
+.app:not(.app-mobile) .panel-head.view-head{
+  height:108px!important;
+  min-height:108px!important;
+  max-height:108px!important;
+  padding:14px 16px!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  grid-template-rows:40px 40px!important;
+  gap:8px 22px!important;
+  align-items:start!important;
+  box-sizing:border-box!important;
+}
+.app:not(.app-mobile) .view-head-left,
+.app:not(.app-mobile) .view-head-right{
+  min-height:0!important;
+  display:contents!important;
+}
+.app:not(.app-mobile) .brand-row{
+  grid-column:1!important;
+  grid-row:1!important;
+  height:40px!important;
+  min-height:40px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  flex-wrap:nowrap!important;
+}
+.app:not(.app-mobile) .filter-row{
+  grid-column:1!important;
+  grid-row:2!important;
+  height:40px!important;
+  min-height:40px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  flex-wrap:wrap!important;
+  overflow:hidden!important;
+}
+.app:not(.app-mobile) .action-row{
+  grid-column:2!important;
+  grid-row:1!important;
+  height:40px!important;
+  min-height:40px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:8px!important;
+  flex-wrap:nowrap!important;
+  white-space:nowrap!important;
+}
+.app:not(.app-mobile) .brand-badge,
+.app:not(.app-mobile) .view-context-pill{
+  height:40px!important;
+  min-height:40px!important;
+  max-height:40px!important;
+}
+.app:not(.app-mobile) .view-context-pill{
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.app:not(.app-mobile) .filter-row .field,
+.app:not(.app-mobile) .filter-row .select,
+.app:not(.app-mobile) .filter-row .btn,
+.app:not(.app-mobile) .action-row .btn{
+  height:38px!important;
+  min-height:38px!important;
+}
+.app:not(.app-mobile) .global-ticker{
+  height:34px!important;
+  min-height:34px!important;
+  max-height:34px!important;
+  flex:0 0 34px!important;
+  margin:0 22px 8px!important;
+  box-sizing:border-box!important;
+}
+.app:not(.app-mobile) .global-ticker-viewport,
+.app:not(.app-mobile) .global-ticker-track{
+  height:100%!important;
+}
+.app.page-calendar .panel{
+  height:100%!important;
+  min-height:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+.app.page-calendar .calendar-planner-wrap{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+.app.page-team .panel,
+.app.page-objects .panel,
+.app.page-projects .panel,
+.app.page-workorders .panel,
+.app.page-acts .panel,
+.app.page-clients .panel,
+.app.page-people .panel,
+.app.page-vacations .panel,
+.app.page-oncall .panel{
+  min-height:0!important;
+}
+@media(max-width:1120px){
+  .app:not(.app-mobile){height:auto!important;overflow:auto!important;}
+  .app:not(.app-mobile) > main{height:auto!important;overflow:visible!important;}
+  .app:not(.app-mobile) > main > .content{padding:12px!important;}
+  .app:not(.app-mobile) .panel-head.view-head{
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    grid-template-columns:1fr!important;
+    grid-template-rows:auto!important;
+  }
+  .app:not(.app-mobile) .view-head-left,
+  .app:not(.app-mobile) .view-head-right{display:grid!important;}
+  .app:not(.app-mobile) .brand-row,
+  .app:not(.app-mobile) .filter-row,
+  .app:not(.app-mobile) .action-row{
+    grid-column:auto!important;
+    grid-row:auto!important;
+    height:auto!important;
+    min-height:40px!important;
+    width:100%!important;
+  }
+  .app:not(.app-mobile) .global-ticker{margin:0 12px 8px!important;}
+}
