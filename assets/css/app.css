@@ -679,3 +679,103 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 @media(max-width:1120px){
   .page-calendar .calendar-planner-wrap{height:calc(100vh - 170px)!important;}
 }
+
+
+/* V3.11.6.2: auto-fit calendar height, ticker stays visible */
+.page-calendar.app,
+.page-calendar .app{
+  height:100vh!important;
+  overflow:hidden!important;
+}
+.page-calendar.app > main,
+.page-calendar .app > main,
+.app.page-calendar > main{
+  height:100vh!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+.app.page-calendar > main > .content{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  height:auto!important;
+  padding-top:14px!important;
+  padding-bottom:8px!important;
+}
+.app.page-calendar .global-ticker{
+  flex:0 0 auto!important;
+  margin:0 22px 8px!important;
+}
+.app.page-calendar .panel{
+  height:100%!important;
+  min-height:0!important;
+}
+.app.page-calendar .view-head{
+  flex:0 0 auto!important;
+  min-height:84px!important;
+}
+.app.page-calendar .calendar-planner-wrap{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  height:auto!important;
+  max-height:none!important;
+  padding:0 16px 10px!important;
+  overflow:hidden!important;
+}
+.app.page-calendar .calendar-planner{
+  height:100%!important;
+  min-height:0!important;
+  grid-template-rows:1fr!important;
+}
+.app.page-calendar .calendar-hours{
+  height:100%!important;
+  min-height:0!important;
+  display:grid!important;
+  grid-template-rows:40px repeat(var(--calendar-hours-count), minmax(0,1fr))!important;
+}
+.app.page-calendar .calendar-hour-label{
+  min-height:0!important;
+  height:auto!important;
+  padding-top:0!important;
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:flex-end!important;
+}
+.app.page-calendar .calendar-planner-grid{
+  height:100%!important;
+  min-height:0!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+}
+.app.page-calendar .calendar-planner-day{
+  height:100%!important;
+  min-height:0!important;
+  grid-template-rows:40px minmax(0,1fr)!important;
+}
+.app.page-calendar .calendar-planner-lane{
+  height:100%!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow-y:hidden!important;
+  background-size:auto calc(100% / var(--calendar-hours-count))!important;
+}
+.app.page-calendar .calendar-slot{
+  height:calc(100% / var(--calendar-hours-count))!important;
+  min-height:0!important;
+}
+.app.page-calendar .calendar-event{
+  padding:6px!important;
+  gap:2px!important;
+}
+.app.page-calendar .calendar-event strong,
+.app.page-calendar .calendar-event small{
+  line-height:1.14!important;
+}
+@media(max-width:1120px){
+  .app.page-calendar > main > .content{padding:10px!important;}
+  .app.page-calendar .global-ticker{margin:0 12px 8px!important;}
+  .app.page-calendar .calendar-planner-wrap{padding:0 12px 8px!important;}
+  .app.page-calendar .calendar-planner-grid{overflow-x:auto!important;}
+  .app.page-calendar .calendar-planner-day{min-width:260px!important;}
+}

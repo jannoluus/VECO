@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.6.1';
-const APP_BUILD='20260606_1956';
+const APP_VERSION='v3.11.6.2';
+const APP_BUILD='20260606_2009';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -605,15 +605,14 @@ function renderCalendar(){
   const actions=`<button class="btn ghost" id="calendarImportWorkBtn" type="button">▧ Impordi töö</button><button class="btn ghost" id="calendarPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="calendarThisWeekBtn" type="button">⌖ Täna</button><button class="btn ghost" id="calendarNextWeekBtn" type="button">Järgmine ›</button><button class="btn primary" id="newCalendarWorkorderBtn" type="button">＋ Lisa töökäsk</button>`;
   const calendarStartHour=6;
   const calendarEndHour=22;
-  const calendarHourPx=54;
-  const calendarLaneHeight=(calendarEndHour-calendarStartHour)*calendarHourPx;
-  const hours=Array.from({length:calendarEndHour-calendarStartHour},(_,i)=>calendarStartHour+i);
+  const calendarHoursTotal=calendarEndHour-calendarStartHour;
+  const hours=Array.from({length:calendarHoursTotal},(_,i)=>calendarStartHour+i);
   const dayNames=['P','E','T','K','N','R','L'];
   const today=dateKeyFromDate(new Date());
   const now=new Date();
   const nowHour=now.getHours()+now.getMinutes()/60;
   const showNowLine=mode==='week'||mode==='day';
-  const nowTopPx=Math.max(0,Math.min(calendarLaneHeight-2,(nowHour-calendarStartHour)*calendarHourPx));
+  const nowTopPct=Math.max(0,Math.min(100,((nowHour-calendarStartHour)/calendarHoursTotal)*100));
 
   let body='';
   if(mode==='week'||mode==='day'){
@@ -624,14 +623,14 @@ function renderCalendar(){
       const cards=jobs.map(w=>{
         const [hh,mm]=(w.time||'09:00').split(':').map(Number);
         const start=((Number.isFinite(hh)?hh:9)+(Number.isFinite(mm)?mm:0)/60);
-        const top=Math.max(0,Math.min(calendarLaneHeight-42,(start-calendarStartHour)*calendarHourPx));
-        const height=Math.max(jobs.length>=3?38:46,Math.min(120,workorderHours(w)*44));
-        return `<button class="calendar-event${compactClass}" style="top:${top}px;min-height:${height}px" data-calendar-edit="${w.id}" type="button"><span><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small></button>`;
+        const topPct=Math.max(0,Math.min(96,((start-calendarStartHour)/calendarHoursTotal)*100));
+        const height=Math.max(jobs.length>=3?34:40,Math.min(105,workorderHours(w)*34));
+        return `<button class="calendar-event${compactClass}" style="top:${topPct}%;min-height:${height}px" data-calendar-edit="${w.id}" type="button"><span><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small></button>`;
       }).join('');
       const slots=hours.map(h=>`<button class="calendar-slot" data-add-date="${date}" data-add-time="${String(h).padStart(2,'0')}:00" title="Lisa töö ${date} ${String(h).padStart(2,'0')}:00" type="button"></button>`).join('');
-      return `<div class="calendar-planner-day ${date===today?'today':''}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(date)}</span></div><div class="calendar-planner-lane" style="--calendar-lane-height:${calendarLaneHeight}px">${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTopPx}px"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || '<div class="calendar-empty-note">Töid ei ole</div>'}</div></div>`;
+      return `<div class="calendar-planner-day ${date===today?'today':''}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(date)}</span></div><div class="calendar-planner-lane">${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTopPct}%"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || '<div class="calendar-empty-note">Töid ei ole</div>'}</div></div>`;
     }).join('');
-    body=`<div class="calendar-planner"><div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}</div></div>`;
+    body=`<div class="calendar-planner" style="--calendar-hours-count:${hours.length}"><div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}</div></div>`;
   }else if(mode==='month'){
     body=`<div class="calendar-month-grid">${visibleDays.map(date=>{const jobs=filtered.filter(w=>w.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const d=parseDateKey(date);return `<div class="calendar-month-day ${date===today?'today':''}" data-add-date="${date}"><div class="calendar-month-head"><strong>${d.getDate()}</strong><span>${dayNames[d.getDay()]}</span></div>${jobs.slice(0,4).map(w=>`<button class="calendar-mini-event" data-calendar-edit="${w.id}" type="button">${esc(w.time||'')} · ${esc(objectName(w.objectId))}</button>`).join('')}${jobs.length>4?`<span class="muted">+${jobs.length-4} veel</span>`:''}</div>`}).join('')}</div>`;
   }else{
