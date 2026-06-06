@@ -779,3 +779,52 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
   .app.page-calendar .calendar-planner-grid{overflow-x:auto!important;}
   .app.page-calendar .calendar-planner-day{min-width:260px!important;}
 }
+
+/* V3.11.7.1: calendar drag & drop planning */
+.calendar-event[draggable="true"]{cursor:grab;}
+.calendar-event.dragging{opacity:.55;cursor:grabbing;box-shadow:0 0 0 3px rgba(23,105,170,.28)!important;}
+.calendar-planner-lane.drop-target{outline:2px solid rgba(23,105,170,.8);outline-offset:-2px;background:rgba(23,105,170,.08)!important;}
+.calendar-drag-active .calendar-slot{cursor:copy;}
+
+
+/* V3.11.7.2: unified workspace header and footer stability */
+.app:not(.app-mobile) .view-head{
+  min-height:92px!important;
+  grid-template-columns:minmax(360px,1fr) auto!important;
+}
+.app.page-calendar .view-head,
+.app.page-team .view-head,
+.app.page-objects .view-head,
+.app.page-projects .view-head,
+.app.page-workorders .view-head,
+.app.page-acts .view-head,
+.app.page-clients .view-head{
+  min-height:92px!important;
+}
+.app:not(.app-mobile) .brand-badge,
+.app:not(.app-mobile) .view-context-pill{
+  height:40px!important;
+  min-height:40px!important;
+}
+.app:not(.app-mobile) .filter-row,
+.app:not(.app-mobile) .action-row{
+  min-height:40px!important;
+  align-items:center!important;
+}
+.app:not(.app-mobile) .global-ticker{
+  height:34px!important;
+  min-height:34px!important;
+  max-height:34px!important;
+  flex:0 0 34px!important;
+}
+.app:not(.app-mobile) .global-ticker-viewport,
+.app:not(.app-mobile) .global-ticker-track{
+  height:100%!important;
+}
+.app.page-calendar .panel{
+  display:flex!important;
+  flex-direction:column!important;
+}
+@media(max-width:1120px){
+  .app:not(.app-mobile) .view-head{min-height:0!important;}
+}

@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.6.3';
-const APP_BUILD='20260606_2138';
+const APP_VERSION='v3.11.7.2';
+const APP_BUILD='20260606_2148';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -599,7 +599,7 @@ function formatViewPeriod(viewName,mode,days,startKey,opts={}){
   return `${monthLabel} · NÄDAL ${weekNo} · ${fmtShortDate(list[0])}–${fmtShortDate(list[list.length-1])}`;
 }
 function calendarRangeLabel(mode,days,startKey){
-  return formatViewPeriod('Kalender',mode,days,startKey,{noName:true}).replace(/^KALENDER · /,'');
+  return formatViewPeriod('Kalender',mode,days,startKey,{noName:true});
 }
 function renderCalendar(){
   const storedDate=localStorage.getItem('veco_calendar_week')||weekStartKeyFrom('');
@@ -648,10 +648,10 @@ function renderCalendar(){
         const start=((Number.isFinite(hh)?hh:9)+(Number.isFinite(mm)?mm:0)/60);
         const topPct=Math.max(0,Math.min(96,((start-calendarStartHour)/calendarHoursTotal)*100));
         const height=Math.max(jobs.length>=3?34:40,Math.min(105,workorderHours(w)*34));
-        return `<button class="calendar-event${compactClass}" style="top:${topPct}%;min-height:${height}px" data-calendar-edit="${w.id}" type="button"><span><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small></button>`;
+        return `<button class="calendar-event${compactClass}" style="top:${topPct}%;min-height:${height}px" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" draggable="true" type="button" title="Lohista töö teisele ajale või päevale"><span><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small></button>`;
       }).join('');
       const slots=hours.map(h=>`<button class="calendar-slot" data-add-date="${date}" data-add-time="${String(h).padStart(2,'0')}:00" title="Lisa töö ${date} ${String(h).padStart(2,'0')}:00" type="button"></button>`).join('');
-      return `<div class="calendar-planner-day ${date===today?'today':''}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(date)}</span></div><div class="calendar-planner-lane">${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTopPct}%"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || '<div class="calendar-empty-note">Töid ei ole</div>'}</div></div>`;
+      return `<div class="calendar-planner-day ${date===today?'today':''}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(date)}</span></div><div class="calendar-planner-lane" data-calendar-lane="${date}">${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTopPct}%"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || '<div class="calendar-empty-note">Töid ei ole</div>'}</div></div>`;
     }).join('');
     body=`<div class="calendar-planner" style="--calendar-hours-count:${hours.length}"><div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}</div></div>`;
   }else if(mode==='month'){
@@ -669,7 +669,54 @@ function renderCalendar(){
   $('#newCalendarWorkorderBtn')?.addEventListener('click',()=>openCalendarWorkorderModal(currentDate,'09:00'));
   $('#calendarImportWorkBtn')?.addEventListener('click',()=>openCalendarImportModal(currentDate));
   $$('[data-add-date]').forEach(el=>el.addEventListener('click',e=>{ if(e.target.closest('[data-calendar-edit]')) return; const date=el.dataset.addDate; const time=el.dataset.addTime||'09:00'; openCalendarWorkorderModal(date,time); }));
-  $$('[data-calendar-edit]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation(); openWorkorderModal(el.dataset.calendarEdit);}));
+  bindCalendarDragDrop(calendarStartHour,calendarEndHour);
+  $$('[data-calendar-edit]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation(); if(window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__){window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false; return;} openWorkorderModal(el.dataset.calendarEdit);}));
+}
+
+function bindCalendarDragDrop(startHour=6,endHour=22){
+  let draggedId='';
+  const clampHour=(value)=>Math.max(startHour,Math.min(endHour-1,value));
+  const timeFromDrop=(lane,event)=>{
+    const rect=lane.getBoundingClientRect();
+    const y=Math.max(0,Math.min(rect.height,event.clientY-rect.top));
+    const ratio=rect.height ? y/rect.height : 0;
+    const hour=clampHour(startHour+Math.floor(ratio*(endHour-startHour)));
+    return `${String(hour).padStart(2,'0')}:00`;
+  };
+  $$('[data-calendar-drag]').forEach(card=>{
+    card.addEventListener('dragstart',e=>{
+      draggedId=card.dataset.calendarDrag;
+      card.classList.add('dragging');
+      document.body.classList.add('calendar-drag-active');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain',draggedId);
+    });
+    card.addEventListener('dragend',()=>{
+      card.classList.remove('dragging');
+      document.body.classList.remove('calendar-drag-active');
+      $$('.calendar-planner-lane.drop-target').forEach(x=>x.classList.remove('drop-target'));
+      window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=true;
+      setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;},250);
+    });
+  });
+  $$('[data-calendar-lane]').forEach(lane=>{
+    lane.addEventListener('dragenter',e=>{ if(draggedId){ e.preventDefault(); lane.classList.add('drop-target'); } });
+    lane.addEventListener('dragover',e=>{ if(draggedId){ e.preventDefault(); e.dataTransfer.dropEffect='move'; lane.classList.add('drop-target'); } });
+    lane.addEventListener('dragleave',e=>{ if(!lane.contains(e.relatedTarget)) lane.classList.remove('drop-target'); });
+    lane.addEventListener('drop',e=>{
+      const id=e.dataTransfer.getData('text/plain')||draggedId;
+      if(!id) return;
+      e.preventDefault();
+      e.stopPropagation();
+      lane.classList.remove('drop-target');
+      const w=byId(state.workorders,id);
+      if(!w) return;
+      w.date=lane.dataset.calendarLane;
+      w.time=timeFromDrop(lane,e);
+      save();
+      renderCalendar();
+    });
+  });
 }
 
 function openCalendarImportModal(defaultDate){
