@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.6.2';
-const APP_BUILD='20260606_2009';
+const APP_VERSION='v3.11.6.3';
+const APP_BUILD='20260606_2138';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -378,7 +378,7 @@ function renderTeam(){
   const weekDayOptions=weekDays.map((d,i)=>`<option value="${d}" ${selectedDay===d?'selected':''}>${dayNames[i]} ${d}</option>`).join('');
   const viewSwitch=`<select class="select" id="teamViewMode"><option value="cards" ${view==='cards'?'selected':''}>Kaardid</option><option value="matrix" ${view==='matrix'?'selected':''}>Nädalatabel</option><option value="day" ${view==='day'?'selected':''}>Päev</option></select><select class="select" id="teamWeekScope"><option value="workdays" ${scope==='workdays'?'selected':''}>E–R</option><option value="full" ${scope==='full'?'selected':''}>E–P</option></select>${view==='day'?`<select class="select" id="teamDaySelect">${weekDayOptions}</select>`:''}`;
   const filters=`<input class="field" id="teamSearch" placeholder="Otsi tööd, objekti või tehnikut..." value="${esc(q)}"><input class="field" id="teamWeekStart" type="date" value="${esc(currentWeek)}"><select class="select" id="teamStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Avatud tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${['Uus','Planeeritud','Töös','Ootel','Pausil','Täidetud','Suletud'].map(s=>`<option value="${s}" ${statusFilter===s?'selected':''}>${s}</option>`).join('')}</select>${viewSwitch}`;
-  const actions=`<button class="btn ghost" id="teamPrevWeekBtn">‹ Eelmine nädal</button><button class="btn primary" id="teamThisWeekBtn">⌖ See nädal</button><button class="btn ghost" id="teamNextWeekBtn">Järgmine nädal ›</button>`;
+  const actions=`<button class="btn ghost" id="teamPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="teamThisWeekBtn" type="button">↕ Täna</button><button class="btn ghost" id="teamNextWeekBtn" type="button">Järgmine ›</button>`;
 
   const techCards=state.people.map(p=>{
     const jobs=personJobs(p);
@@ -438,9 +438,32 @@ function renderTeam(){
   const detail=selectedTeamPersonId?teamDetailHtml(visibleDays,view==='day'?dayWorkorders:visibleWorkorders):'';
   shell(main,detail);
   $('#teamSearch')?.addEventListener('input',renderTeam); $('#teamWeekStart')?.addEventListener('change',renderTeam); $('#teamStatusFilter')?.addEventListener('change',renderTeam); $('#teamViewMode')?.addEventListener('change',renderTeam); $('#teamWeekScope')?.addEventListener('change',renderTeam); $('#teamDaySelect')?.addEventListener('change',renderTeam);
-  $('#teamPrevWeekBtn')?.addEventListener('click',()=>{localStorage.setItem('veco_team_week',dateKeyFromDate(addDateDays(parseDateKey(currentWeek),-7)));renderTeam();});
-  $('#teamNextWeekBtn')?.addEventListener('click',()=>{localStorage.setItem('veco_team_week',dateKeyFromDate(addDateDays(parseDateKey(currentWeek),7)));renderTeam();});
-  $('#teamThisWeekBtn')?.addEventListener('click',()=>{localStorage.setItem('veco_team_week',weekStartKeyFrom(''));localStorage.setItem('veco_team_day',dateKeyFromDate(new Date()));renderTeam();});
+  $('#teamPrevWeekBtn')?.addEventListener('click',()=>{
+    if(view==='day'){
+      const nextDay=dateKeyFromDate(addDateDays(parseDateKey(selectedDay),-1));
+      localStorage.setItem('veco_team_day',nextDay);
+      localStorage.setItem('veco_team_week',weekStartKeyFrom(nextDay));
+    }else{
+      localStorage.setItem('veco_team_week',dateKeyFromDate(addDateDays(parseDateKey(currentWeek),-7)));
+    }
+    renderTeam();
+  });
+  $('#teamNextWeekBtn')?.addEventListener('click',()=>{
+    if(view==='day'){
+      const nextDay=dateKeyFromDate(addDateDays(parseDateKey(selectedDay),1));
+      localStorage.setItem('veco_team_day',nextDay);
+      localStorage.setItem('veco_team_week',weekStartKeyFrom(nextDay));
+    }else{
+      localStorage.setItem('veco_team_week',dateKeyFromDate(addDateDays(parseDateKey(currentWeek),7)));
+    }
+    renderTeam();
+  });
+  $('#teamThisWeekBtn')?.addEventListener('click',()=>{
+    const todayKey=dateKeyFromDate(new Date());
+    localStorage.setItem('veco_team_week',weekStartKeyFrom(todayKey));
+    localStorage.setItem('veco_team_day',todayKey);
+    renderTeam();
+  });
   $$('[data-team-person]').forEach(el=>el.addEventListener('click',()=>{
     selectedTeamPersonId = selectedTeamPersonId===el.dataset.teamPerson ? '' : el.dataset.teamPerson;
     renderTeam();
