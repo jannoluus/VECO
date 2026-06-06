@@ -652,3 +652,30 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
   .page-calendar .calendar-planner-grid{overflow-x:auto!important;}
   .page-calendar .calendar-planner-day{min-width:260px!important;}
 }
+
+
+/* V3.11.6.1: calendar uses available vertical viewport */
+.page-calendar .content.wide{
+  min-height:calc(100vh - 58px)!important;
+}
+.page-calendar .panel{
+  display:flex!important;
+  flex-direction:column!important;
+}
+.page-calendar .calendar-planner-wrap{
+  height:calc(100vh - 180px)!important;
+  max-height:none!important;
+  flex:1 1 auto!important;
+}
+.page-calendar .calendar-planner{
+  height:100%!important;
+}
+.page-calendar .calendar-planner-grid{
+  height:100%!important;
+}
+.page-calendar .calendar-planner-day{
+  height:100%!important;
+}
+@media(max-width:1120px){
+  .page-calendar .calendar-planner-wrap{height:calc(100vh - 170px)!important;}
+}
