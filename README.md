@@ -23,3 +23,9 @@ add column if not exists completed_by text;
 ## V3.11.9.5 / 20260607_1915
 - Supabase sync järjekord: kiire järjestikune salvestamine ei jää enam syncing-luku taha.
 - Realtime kõrvale lisatud 5 s turvapolling, et telefoni/admini vaated uueneksid ka juhul, kui brauser realtime sündmuse maha magab.
+
+
+## V3.11.12.2 / 20260607_1940
+- Tehniku vaates peidetakse lõpetatud töö kohe aktiivsest/tänasest vaatest.
+- Lõpetamise käsitlemine ühtlustatud ka 'Täida' modalist.
+- completed status tuvastus normaliseerib staatuse teksti.

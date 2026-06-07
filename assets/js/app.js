@@ -40,7 +40,7 @@ const clientActs=(id)=>state.acts.filter(a=>clientObjects(id).some(o=>o.id===a.o
 const projectWorkorders=(id)=>state.workorders.filter(w=>w.projectId===id);
 const projectActs=(id)=>state.acts.filter(a=>projectWorkorders(id).some(w=>w.id===a.workorderId));
 const completedStatuses=['Lõpetatud','Täidetud','Suletud','Arhiveeritud'];
-const isCompletedStatus=(s)=>completedStatuses.includes(s||'');
+const isCompletedStatus=(s)=>completedStatuses.includes(String(s||'').trim());
 const openWorkorders=()=>state.workorders.filter(w=>!isCompletedStatus(w.status));
 const workorderStatusOptions=['Planeeritud','Töös','Lõpetatud'];
 const completedByLabel=(w)=>techName(w?.technicianId)||'VECO';
@@ -736,7 +736,14 @@ function renderMobile(){
   const show=$('#mobileScope')?.value||localStorage.getItem('veco_mobile_scope')||'today';
   localStorage.setItem('veco_mobile_scope',show);
   const openStatuses=['Uus','Planeeritud','Töös','Ootel','Pausil'];
-  const jobs=state.workorders.filter(w=>w.technicianId===current.id && !isCompletedStatus(w.status) && (show==='all'||(show==='today'?w.date===today:openStatuses.includes(w.status)))).sort((a,b)=>`${a.date} ${a.time||''}`.localeCompare(`${b.date} ${b.time||''}`));
+  const jobs=state.workorders.filter(w=>{
+    const completed=isCompletedStatus(w.status);
+    const techOk=w.technicianId===current.id;
+    if(!techOk) return false;
+    if(show==='all') return true;
+    if(completed) return false;
+    return show==='today'?w.date===today:openStatuses.includes(w.status);
+  }).sort((a,b)=>`${a.date} ${a.time||''}`.localeCompare(`${b.date} ${b.time||''}`));
   const filters=`<select class="select" id="mobileScope"><option value="today" ${show==='today'?'selected':''}>Täna</option><option value="open" ${show==='open'?'selected':''}>Avatud tööd</option><option value="all" ${show==='all'?'selected':''}>Kõik minu tööd</option></select>`;
   const actions=`<button class="btn primary" id="mobileAddWorkBtn" type="button">＋ Lisa töö</button><button class="btn ghost" id="mobileSwitchUserBtn" type="button">⇄ Vaheta</button>`;
   const rows=jobs.map(w=>`<div class="card mobile-work-card"><div class="card-top"><h3>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</h3><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div><div class="kv"><span>Klient</span><strong>${esc(clientName(objectClientId(w.objectId)))}</strong></div><div class="kv"><span>Töö</span><strong>${esc(w.title)}</strong></div><div class="kv"><span>Kuupäev</span><strong>${esc(w.date)}</strong></div><div class="muted">${esc(w.description||'')}</div><div class="actions mobile-actions"><button class="btn primary" data-mobile-status="${w.id}" data-status="Töös" type="button">Alusta</button><button class="btn" data-mobile-edit="${w.id}" type="button">Täida</button><button class="btn" data-mobile-status="${w.id}" data-status="Lõpetatud" type="button">Lõpeta</button></div></div>`).join('')||'<div class="card"><strong>Töid ei ole</strong><span class="muted">Valitud vahemikus sellele kasutajale töid ei ole.</span></div>';
@@ -744,7 +751,7 @@ function renderMobile(){
   $('#mobileScope')?.addEventListener('change',renderMobile);
   $('#mobileSwitchUserBtn')?.addEventListener('click',()=>{localStorage.removeItem(USER_KEY);renderMobile();});
   $('#mobileAddWorkBtn')?.addEventListener('click',()=>openMobileAddWorkModal(current.id));
-  $$('[data-mobile-status]').forEach(btn=>btn.addEventListener('click',async()=>{const w=byId(state.workorders,btn.dataset.mobileStatus);if(!w)return;const nextStatus=btn.dataset.status;if(nextStatus==='Lõpetatud'&&!isCompletedStatus(w.status)){const ok=await openVecoConfirm({title:'Lõpeta töö',message:'Kas soovid töö lõpetada?',details:`<strong>${esc(w.id)}</strong><br>${esc(objectName(w.objectId))}<br>${esc(w.title)}`,confirmText:'Lõpeta töö',cancelText:'Loobu'});if(!ok)return;w.completedAt=new Date().toISOString();w.completedBy=completedByLabel(w);}else if(nextStatus!=='Lõpetatud'){w.completedAt='';w.completedBy='';}w.status=nextStatus;save();renderMobile();}));
+  $$('[data-mobile-status]').forEach(btn=>btn.addEventListener('click',async()=>{const w=byId(state.workorders,btn.dataset.mobileStatus);if(!w)return;const nextStatus=btn.dataset.status;if(nextStatus==='Lõpetatud'&&!isCompletedStatus(w.status)){const ok=await openVecoConfirm({title:'Lõpeta töö',message:'Kas soovid töö lõpetada?',details:`<strong>${esc(w.id)}</strong><br>${esc(objectName(w.objectId))}<br>${esc(w.title)}`,confirmText:'Lõpeta töö',cancelText:'Loobu'});if(!ok)return;w.completedAt=new Date().toISOString();w.completedBy=completedByLabel(w);}else if(nextStatus!=='Lõpetatud'){w.completedAt='';w.completedBy='';}w.status=nextStatus;save();setTimeout(renderMobile,0);}));
   $$('[data-mobile-edit]').forEach(btn=>btn.addEventListener('click',()=>openMobileWorkModal(btn.dataset.mobileEdit)));
 }
 function openMobileAddWorkModal(personId){
@@ -760,7 +767,7 @@ function openMobileWorkModal(id){
   const w=byId(state.workorders,id); if(!w) return;
   openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(w.date)} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Tehtud töö / märkus<textarea name="done">${esc(w.done||w.workDone||'')}</textarea></label><label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Foto lisamine tuleb järgmises etapis"></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
-  $('#mobileWorkForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;w.done=f.done.value;w.workDone=f.done.value;w.status=f.status.value;w.photoNote=f.photoNote.value;save();closeModal();renderMobile();});
+  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;if(nextStatus==='Lõpetatud'&&!isCompletedStatus(w.status)){const ok=await openVecoConfirm({title:'Lõpeta töö',message:'Kas soovid töö lõpetada?',details:`<strong>${esc(w.id)}</strong><br>${esc(objectName(w.objectId))}<br>${esc(w.title)}`,confirmText:'Lõpeta töö',cancelText:'Loobu'});if(!ok)return;w.completedAt=new Date().toISOString();w.completedBy=completedByLabel(w);}else if(nextStatus!=='Lõpetatud'){w.completedAt='';w.completedBy='';}w.done=f.done.value;w.workDone=f.done.value;w.status=nextStatus;w.photoNote=f.photoNote.value;save();closeModal();setTimeout(renderMobile,0);});
 }
 function renderMobilePreview(){
   const devices=[['iPhone SE','320px','568px'],['Android 360','360px','740px'],['iPhone 14','390px','844px'],['Large phone','414px','896px'],['Tahvel','768px','1024px']];
