@@ -984,3 +984,47 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 /* V3.11.8: Realtime sync notice */
 .sync-notice{position:fixed;right:18px;bottom:54px;z-index:120;min-height:34px;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);box-shadow:var(--shadow);font-size:12px;font-weight:900;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .18s ease,transform .18s ease;}
 .sync-notice.show{opacity:1;transform:translateY(0);}
+
+/* V3.11.9.1: valve pill + drag time feedback */
+.oncall-pill{
+  min-height:40px!important;
+  height:40px!important;
+  border-color:rgba(23,105,170,.55)!important;
+  background:rgba(23,105,170,.10)!important;
+  color:var(--ink)!important;
+  cursor:default!important;
+}
+.calendar-event.dragging{position:relative!important;opacity:.72!important;}
+.calendar-event.dragging::after{
+  content:attr(data-drag-label);
+  position:absolute;
+  left:6px;
+  right:6px;
+  bottom:6px;
+  z-index:6;
+  border-radius:6px;
+  padding:5px 7px;
+  background:rgba(23,105,170,.95);
+  color:#fff;
+  font-size:11px;
+  font-weight:900;
+  text-align:center;
+  box-shadow:0 8px 18px rgba(0,0,0,.28);
+  pointer-events:none;
+}
+.calendar-drag-tooltip{
+  position:fixed;
+  z-index:9999;
+  pointer-events:none;
+  border:1px solid rgba(23,105,170,.85);
+  border-radius:8px;
+  padding:7px 9px;
+  background:rgba(15,21,26,.96);
+  color:#fff;
+  font-size:12px;
+  font-weight:900;
+  box-shadow:0 12px 26px rgba(0,0,0,.35);
+  white-space:nowrap;
+}
+.theme-light .calendar-drag-tooltip{background:rgba(255,255,255,.98);color:#172026;}
+@media(max-width:760px){.oncall-pill{width:100%;justify-content:center;}}

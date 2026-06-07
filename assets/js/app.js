@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.7.3';
-const APP_BUILD='20260606_2218';
+const APP_VERSION='v3.11.9.1';
+const APP_BUILD='20260607_1434';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -55,13 +55,24 @@ function nav(){
 function themeLogo(){
   return `<button class="brand-badge brand-theme-toggle" type="button" data-theme-toggle title="Vaheta hele/tume režiim" aria-label="Vaheta hele/tume režiim"><span class="brand-wordmark">VECO</span></button>`;
 }
+function currentOncallLabel(){
+  const today=dateKeyFromDate(new Date());
+  const names=state.oncall
+    .filter(o=>o.start<=today&&o.end>=today)
+    .map(o=>techName(o.personId))
+    .filter(name=>name&&name!=='-');
+  return names.length ? names.join(', ') : 'PUUDUB';
+}
+function oncallPill(){
+  return `<button class="context-pill view-context-pill oncall-pill" type="button" title="Tänane valve" aria-label="Tänane valve">VALVE · ${esc(currentOncallLabel()).toUpperCase()}</button>`;
+}
 function viewContextText(value){
   return String(value||'').toUpperCase();
 }
 function header(title,filters='',actions='',context=''){
   const label=viewContextText(context||title);
   if(page==='mobile') return `<div class="panel-head mobile-head"><div><h2>${esc(label)}</h2><span class="muted">Lihtne tehniku töövaade</span></div></div>`;
-  return `<div class="panel-head view-head"><div class="view-head-left"><div class="brand-row">${themeLogo()}<h2 class="context-pill view-context-pill">${esc(label)}</h2></div>${filters?`<div class="filter-row">${filters}</div>`:''}</div><div class="view-head-right">${actions?`<div class="action-row">${actions}</div>`:''}</div></div>`
+  return `<div class="panel-head view-head"><div class="view-head-left"><div class="brand-row">${themeLogo()}<h2 class="context-pill view-context-pill">${esc(label)}</h2>${oncallPill()}</div>${filters?`<div class="filter-row">${filters}</div>`:''}</div><div class="view-head-right">${actions?`<div class="action-row">${actions}</div>`:''}</div></div>`
 }
 
 function detailHeader(title,actions=''){
@@ -688,6 +699,7 @@ function renderCalendar(){
 
 function bindCalendarDragDrop(startHour=6,endHour=22){
   let draggedId='';
+  let dragTooltip=null;
   const clampHour=(value)=>Math.max(startHour,Math.min(endHour-1,value));
   const timeFromDrop=(lane,event)=>{
     const rect=lane.getBoundingClientRect();
@@ -696,10 +708,39 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
     const hour=clampHour(startHour+Math.floor(ratio*(endHour-startHour)));
     return `${String(hour).padStart(2,'0')}:00`;
   };
+  const dragLabel=(lane,event)=>{
+    const date=lane?.dataset?.calendarLane||'';
+    const time=timeFromDrop(lane,event);
+    const day=date ? parseDateKey(date).toLocaleDateString('et-EE',{weekday:'short',day:'2-digit',month:'2-digit'}).replace('.', '') : '';
+    return `${day} · ${time}`;
+  };
+  const ensureTooltip=()=>{
+    if(!dragTooltip){
+      dragTooltip=document.createElement('div');
+      dragTooltip.className='calendar-drag-tooltip';
+      document.body.appendChild(dragTooltip);
+    }
+    return dragTooltip;
+  };
+  const updateDragInfo=(lane,event)=>{
+    if(!draggedId||!lane) return;
+    const label=dragLabel(lane,event);
+    const card=document.querySelector(`[data-calendar-drag="${draggedId}"]`);
+    if(card) card.dataset.dragLabel=label;
+    const tip=ensureTooltip();
+    tip.textContent=`Uus aeg: ${label}`;
+    tip.style.left=`${event.clientX+14}px`;
+    tip.style.top=`${event.clientY+14}px`;
+  };
+  const clearDragInfo=()=>{
+    document.querySelectorAll('[data-calendar-drag][data-drag-label]').forEach(card=>delete card.dataset.dragLabel);
+    if(dragTooltip){dragTooltip.remove();dragTooltip=null;}
+  };
   $$('[data-calendar-drag]').forEach(card=>{
     card.addEventListener('dragstart',e=>{
       draggedId=card.dataset.calendarDrag;
       card.classList.add('dragging');
+      card.dataset.dragLabel=card.querySelector('strong')?.textContent||'';
       document.body.classList.add('calendar-drag-active');
       e.dataTransfer.effectAllowed='move';
       e.dataTransfer.setData('text/plain',draggedId);
@@ -708,13 +749,14 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
       card.classList.remove('dragging');
       document.body.classList.remove('calendar-drag-active');
       $$('.calendar-planner-lane.drop-target').forEach(x=>x.classList.remove('drop-target'));
+      clearDragInfo();
       window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=true;
       setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;},250);
     });
   });
   $$('[data-calendar-lane]').forEach(lane=>{
-    lane.addEventListener('dragenter',e=>{ if(draggedId){ e.preventDefault(); lane.classList.add('drop-target'); } });
-    lane.addEventListener('dragover',e=>{ if(draggedId){ e.preventDefault(); e.dataTransfer.dropEffect='move'; lane.classList.add('drop-target'); } });
+    lane.addEventListener('dragenter',e=>{ if(draggedId){ e.preventDefault(); lane.classList.add('drop-target'); updateDragInfo(lane,e); } });
+    lane.addEventListener('dragover',e=>{ if(draggedId){ e.preventDefault(); e.dataTransfer.dropEffect='move'; lane.classList.add('drop-target'); updateDragInfo(lane,e); } });
     lane.addEventListener('dragleave',e=>{ if(!lane.contains(e.relatedTarget)) lane.classList.remove('drop-target'); });
     lane.addEventListener('drop',e=>{
       const id=e.dataTransfer.getData('text/plain')||draggedId;
@@ -726,6 +768,7 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
       if(!w) return;
       w.date=lane.dataset.calendarLane;
       w.time=timeFromDrop(lane,e);
+      clearDragInfo();
       save();
       renderCalendar();
     });
