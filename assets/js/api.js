@@ -7,6 +7,7 @@
   let realtimeDebounce=null;
   let syncing=false;
   let supabaseSupportsPlannedHours=true;
+  let supabaseSupportsCompletedFields=true;
 
   function cleanUrl(value){
     return String(value||'').trim().replace(/\/rest\/v1\/?$/,'').replace(/\/+$/,'');
@@ -41,6 +42,10 @@
     if(supabaseSupportsPlannedHours){
       row.planned_hours=Number(w.plannedHours||w.durationHours||w.hours||2)||2;
     }
+    if(supabaseSupportsCompletedFields){
+      row.completed_at=w.completedAt||w.completed_at||null;
+      row.completed_by=w.completedBy||w.completed_by||null;
+    }
     return row;
   }
   function fromDb(row){
@@ -56,7 +61,9 @@
       time:row.time ? String(row.time).slice(0,5) : '',
       plannedHours:Number(row.planned_hours||2)||2,
       durationHours:Number(row.planned_hours||2)||2,
-      hours:Number(row.planned_hours||2)||2
+      hours:Number(row.planned_hours||2)||2,
+      completedAt:row.completed_at||'',
+      completedBy:row.completed_by||''
     };
   }
   function mergeWorkorders(localData, remoteRows){
@@ -74,6 +81,20 @@
     if(error) throw error;
     return data||[];
   }
+  function stripUnsupportedColumns(row,error){
+    const fallback={...row};
+    const msg=String(error?.message||'');
+    if(msg.includes('planned_hours')){
+      supabaseSupportsPlannedHours=false;
+      delete fallback.planned_hours;
+    }
+    if(msg.includes('completed_at')||msg.includes('completed_by')){
+      supabaseSupportsCompletedFields=false;
+      delete fallback.completed_at;
+      delete fallback.completed_by;
+    }
+    return fallback;
+  }
   async function syncWorkorders(workorders){
     const client=getClient();
     if(!client||syncing) return;
@@ -86,19 +107,15 @@
         if(found.error && found.error.code!=='PGRST116') throw found.error;
         if(found.data?.id){
           let {error}=await client.from(TABLE).update(row).eq('id',found.data.id);
-          if(error && String(error.message||'').includes('planned_hours')){
-            supabaseSupportsPlannedHours=false;
-            const fallback={...row};
-            delete fallback.planned_hours;
+          if(error && /planned_hours|completed_at|completed_by/.test(String(error.message||''))){
+            const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).update(fallback).eq('id',found.data.id));
           }
           if(error) throw error;
         }else{
           let {error}=await client.from(TABLE).insert(row);
-          if(error && String(error.message||'').includes('planned_hours')){
-            supabaseSupportsPlannedHours=false;
-            const fallback={...row};
-            delete fallback.planned_hours;
+          if(error && /planned_hours|completed_at|completed_by/.test(String(error.message||''))){
+            const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).insert(fallback));
           }
           if(error) throw error;
@@ -112,7 +129,7 @@
   }
 
   function signature(data){
-    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours]));
+    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.completedAt||'',w.completedBy||'']));
   }
   async function pullAndNotify(onChange){
     try{
