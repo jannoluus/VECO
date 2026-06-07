@@ -51,3 +51,10 @@ Muudatused:
 ## V3.11.10 / 20260607_1630
 - Kalender kuvab tööpäeva ala 08:00–17:00 õrna taustatooniga.
 - 08:00 ja 17:00 orientiirijooned lisatud, ilma tugeva kontrastita.
+
+## V3.12.2 / 20260607_1708
+- Töökäsu muutmise aken korrastatud kalendri jaoks.
+- Uue töökäsu loomisel klienti, objekti, projekti ega tehnikut automaatselt ei valita.
+- Klient, objekt ja projekt on otsitavad sisestusväljad registri valikutega.
+- Muutmisel olemasoleva töökäsu andmed avanevad täidetuna.
+- Töökäsu kustutamine lisatud kinnitusküsimusega.

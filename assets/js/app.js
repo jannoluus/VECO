@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.12.1';
-const APP_BUILD='20260607_1630';
+const APP_VERSION='v3.12.2';
+const APP_BUILD='20260607_1708';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -320,12 +320,103 @@ function workorderDetailHtml(){
 }
 function bindWorkorderDetail(){ $('#editWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal(selectedWorkorderId)); $('#createActBtn')?.addEventListener('click',()=>openActModal('',{workorderId:selectedWorkorderId})); $('#workorderDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.workorders=false;renderWorkorders();}); }
 function openWorkorderModal(id='',defaults={}){
-  const w=id?byId(state.workorders,id):{projectId:defaults.projectId||state.projects[0]?.id||'',objectId:defaults.objectId||projectObjectId(defaults.projectId)||state.objects[0]?.id||'',title:defaults.title||'',date:defaults.date||'',time:defaults.time||'09:00',technicianId:defaults.technicianId||state.people[0]?.id||'',status:defaults.status||'Planeeritud',description:defaults.description||''};
-  openModal(`<form id="workorderForm"><div class="dialog-head"><h2>${id?'Muuda töökäsku':'Lisa töökäsk'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label class="full">Töö nimetus<input class="field" name="title" required value="${esc(w.title)}"></label><label>Objekt<select class="select" name="objectId">${state.objects.map(o=>`<option value="${o.id}" ${w.objectId===o.id?'selected':''}>${esc(o.name)}</option>`).join('')}</select></label><label>Projekt<select class="select" name="projectId"><option value="">Projektita</option>${state.projects.map(p=>`<option value="${p.id}" ${w.projectId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><label>Kuupäev<input class="field" name="date" type="date" value="${esc(w.date)}"></label><label>Kell<input class="field" name="time" type="time" value="${esc(w.time)}"></label><label>Tehnik<select class="select" name="technicianId">${state.people.map(p=>`<option value="${p.id}" ${w.technicianId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><label>Staatus<select class="select" name="status">${['Uus','Planeeritud','Töös','Ootel','Pausil','Täidetud','Suletud'].map(s=>`<option ${w.status===s?'selected':''}>${s}</option>`).join('')}</select></label><label class="full">Kirjeldus<textarea name="description">${esc(w.description)}</textarea></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
-  bindClose(); $('#workorderForm').elements.projectId?.addEventListener('change',e=>{const oid=projectObjectId(e.target.value); if(oid) $('#workorderForm').elements.objectId.value=oid;});
-  $('#workorderForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('WO'),projectId:f.projectId.value,objectId:f.objectId.value,title:f.title.value,date:f.date.value,time:f.time.value,technicianId:f.technicianId.value,status:f.status.value,description:f.description.value}; if(id){Object.assign(w,next)}else{state.workorders.push(next);selectedWorkorderId=next.id;detailOpen.workorders=true} save();closeModal(); if(page==='calendar') renderCalendar(); else if(page==='projects') renderProjects(); else if(page==='objects') renderObjects(); else renderWorkorders();});
+  const isEdit=!!id;
+  const existing=isEdit?byId(state.workorders,id):null;
+  const w=existing||{
+    projectId:'',objectId:'',title:'',
+    date:defaults.date||'',time:defaults.time||'09:00',
+    technicianId:'',status:defaults.status||'Planeeritud',description:'',
+    plannedHours:defaults.plannedHours||2,durationHours:defaults.durationHours||2,hours:defaults.hours||2
+  };
+  const currentObject=byId(state.objects,w.objectId)||null;
+  const currentClient=byId(state.clients,currentObject?.clientId)||null;
+  const currentProject=byId(state.projects,w.projectId)||null;
+  const currentHours=workorderHours(w);
+  const objectOptions=state.objects.map(o=>`<option value="${esc(o.name)}" label="${esc(clientName(o.clientId))} · ${esc(o.address||'')}"></option>`).join('');
+  const clientOptions=state.clients.map(c=>`<option value="${esc(c.name)}" label="${esc(c.contact||'')}"></option>`).join('');
+  const projectOptions=state.projects.map(p=>`<option value="${esc(p.name)}" label="${esc(objectName(p.objectId))}"></option>`).join('');
+  const title=isEdit?`Töökäsk ${esc(w.id)}`:'Lisa töökäsk';
+  openModal(`<form id="workorderForm"><div class="dialog-head"><h2>${title}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid">
+    <label class="full">Töö nimetus<input class="field" name="title" required placeholder="Kirjuta töö nimetus..." value="${esc(w.title)}"></label>
+    <label>Klient<input class="field" name="clientName" list="clientOptions" placeholder="Vali või otsi klient..." value="${isEdit?esc(currentClient?.name||''):''}"><datalist id="clientOptions">${clientOptions}</datalist></label>
+    <label>Objekt<input class="field" name="objectName" list="objectOptions" placeholder="Vali või otsi objekt..." value="${isEdit?esc(currentObject?.name||''):''}" required><datalist id="objectOptions">${objectOptions}</datalist></label>
+    <label>Projekt<input class="field" name="projectName" list="projectOptions" placeholder="Vali projekt või jäta tühjaks..." value="${isEdit?esc(currentProject?.name||''):''}"><datalist id="projectOptions">${projectOptions}</datalist></label>
+    <label>Tehnik<select class="select" name="technicianId"><option value="">Vali tehnik...</option>${state.people.map(p=>`<option value="${p.id}" ${w.technicianId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+    <label>Staatus<select class="select" name="status">${['Uus','Planeeritud','Töös','Ootel','Pausil','Täidetud','Suletud'].map(s=>`<option ${w.status===s?'selected':''}>${s}</option>`).join('')}</select></label>
+    <label>Kuupäev<input class="field" name="date" type="date" value="${esc(w.date)}"></label>
+    <label>Algusaeg<input class="field" name="time" type="time" value="${esc(w.time)}"></label>
+    <label>Kestus<input class="field" name="plannedHours" type="number" min="1" max="16" step="1" value="${esc(currentHours)}"></label>
+    <label class="full">Kirjeldus<textarea name="description" placeholder="Lisa töö kirjeldus või juhised...">${esc(w.description)}</textarea></label>
+    ${!isEdit?'<div class="full muted">Uue töökäsu loomisel klienti, objekti, projekti ega tehnikut automaatselt ei valita. Kuupäev ja kell võivad tulla kalendris klikitud ajast.</div>':''}
+  </div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Sulge</button>${isEdit?'<button type="button" class="btn danger" id="deleteWorkorderBtn">Kustuta</button>':''}<button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  bindClose();
+  const form=$('#workorderForm');
+  const resolveObject=()=>{
+    const objectText=form.elements.objectName.value.trim().toLowerCase();
+    const clientText=form.elements.clientName.value.trim().toLowerCase();
+    let obj=state.objects.find(o=>o.name.toLowerCase()===objectText);
+    if(!obj && objectText){
+      obj=state.objects.find(o=>o.name.toLowerCase().includes(objectText));
+    }
+    if(clientText && obj){
+      const client=byId(state.clients,obj.clientId);
+      if(client && !client.name.toLowerCase().includes(clientText)){
+        const sameClientObjects=state.objects.filter(o=>byId(state.clients,o.clientId)?.name.toLowerCase().includes(clientText));
+        obj=sameClientObjects.find(o=>o.name.toLowerCase()===objectText)||sameClientObjects.find(o=>o.name.toLowerCase().includes(objectText))||obj;
+      }
+    }
+    return obj||null;
+  };
+  const resolveProject=(obj)=>{
+    const text=form.elements.projectName.value.trim().toLowerCase();
+    if(!text) return null;
+    return state.projects.find(p=>p.name.toLowerCase()===text)||state.projects.find(p=>p.name.toLowerCase().includes(text)&&(!obj||p.objectId===obj.id))||null;
+  };
+  form.elements.clientName?.addEventListener('input',()=>{
+    const clientText=form.elements.clientName.value.trim().toLowerCase();
+    const client=state.clients.find(c=>c.name.toLowerCase()===clientText);
+    if(client){
+      const opts=state.objects.filter(o=>o.clientId===client.id).map(o=>`<option value="${esc(o.name)}" label="${esc(o.address||'')}"></option>`).join('');
+      const dl=document.getElementById('objectOptions');
+      if(dl) dl.innerHTML=opts||objectOptions;
+    }
+  });
+  $('#deleteWorkorderBtn')?.addEventListener('click',async()=>{
+    if(!existing) return;
+    const ok=confirm(`Kas soovid töökäsu kustutada?\n\n${existing.id}\n${objectName(existing.objectId)}\n${existing.title}`);
+    if(!ok) return;
+    state.workorders=state.workorders.filter(x=>x.id!==existing.id);
+    window.VECO_STORAGE.save(state);
+    if(window.VECO_API?.deleteWorkorder) await window.VECO_API.deleteWorkorder(existing.id);
+    closeModal();
+    if(page==='calendar') renderCalendar(); else if(page==='projects') renderProjects(); else if(page==='objects') renderObjects(); else renderWorkorders();
+  });
+  form.addEventListener('submit',e=>{
+    e.preventDefault();
+    const f=e.currentTarget.elements;
+    const obj=resolveObject();
+    if(!obj){ alert('Vali objekt registrist või otsingust.'); return; }
+    const project=resolveProject(obj);
+    const hours=Number(f.plannedHours.value)||2;
+    const next={
+      id:id||uid('WO'),
+      projectId:project?.id||'',
+      objectId:obj.id,
+      title:f.title.value,
+      date:f.date.value,
+      time:f.time.value,
+      technicianId:f.technicianId.value,
+      status:f.status.value,
+      description:f.description.value,
+      plannedHours:hours,
+      durationHours:hours,
+      hours:hours
+    };
+    if(isEdit){Object.assign(existing,next)}else{state.workorders.push(next);selectedWorkorderId=next.id;detailOpen.workorders=true}
+    save();closeModal();
+    if(page==='calendar') renderCalendar(); else if(page==='projects') renderProjects(); else if(page==='objects') renderObjects(); else renderWorkorders();
+  });
 }
-
 function renderActs(){
   const status=$('#actStatusFilter')?.value||'all'; const q=($('#actSearch')?.value||'').toLowerCase(); const statuses=[...new Set(state.acts.map(a=>a.status))];
   const list=state.acts.filter(a=>(status==='all'||a.status===status)&&`${a.title} ${objectName(a.objectId)} ${a.workorderId}`.toLowerCase().includes(q));

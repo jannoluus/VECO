@@ -157,6 +157,19 @@
       if(this.mode()==='supabase') syncWorkorders(saved.workorders);
       return saved;
     },
+    async deleteWorkorder(workorderNo){
+      const client=getClient();
+      if(!workorderNo) return false;
+      if(this.mode()!=='supabase'||!client) return false;
+      try{
+        const {error}=await client.from(TABLE).delete().eq('workorder_no',workorderNo);
+        if(error) throw error;
+        return true;
+      }catch(err){
+        console.warn('VECO Supabase delete failed',err);
+        return false;
+      }
+    },
     async refreshWorkorders(currentState){
       if(this.mode()!=='supabase') return currentState;
       const rows=await loadWorkorders();
