@@ -207,14 +207,16 @@
     },
     startWorkorderPolling(onChange){
       if(this.mode()!=='supabase'||pollingTimer) return;
-      pollingTimer=setInterval(async()=>{
+      const tick=async()=>{
         try{
           const before=signature(window.VECO_STORAGE.load());
           const merged=await this.refreshWorkorders(window.VECO_STORAGE.load());
           const after=signature(merged);
           if(before!==after && typeof onChange==='function') onChange(merged,{source:'polling'});
         }catch(err){console.warn('VECO Supabase polling failed',err);}
-      },5000);
+      };
+      pollingTimer=setInterval(tick,2000);
+      setTimeout(tick,500);
     },
     startWorkorderRealtime(onChange,onStatus){
       const client=getClient();

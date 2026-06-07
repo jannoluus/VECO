@@ -1216,3 +1216,15 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 .theme-light .status.progress{background:#fff2dc;color:#8b540c;}
 .status.done{background:#17382a;color:#b7f0d4;}
 .theme-light .status.done{background:#e3f4ec;color:#176144;}
+
+/* V3.11.15: technician completed work cards */
+.app-mobile .mobile-completed-card{
+  opacity:.82;
+  border-style:dashed;
+}
+.app-mobile .mobile-completed-card:hover{
+  opacity:1;
+}
+.app-mobile .mobile-completed-grid{
+  margin-bottom:8px;
+}

@@ -29,3 +29,15 @@ add column if not exists completed_by text;
 - Tehniku vaates peidetakse lõpetatud töö kohe aktiivsest/tänasest vaatest.
 - Lõpetamise käsitlemine ühtlustatud ka 'Täida' modalist.
 - completed status tuvastus normaliseerib staatuse teksti.
+
+
+## V3.11.14 / 20260607_1949
+- Parandatud vaadete vaheline kohene sünkroon sama brauseri eri kaartide vahel BroadcastChannel/localStorage pulse abil.
+- Supabase turvapolling 2 s intervalliga ja kohene esimene kontroll.
+- Tehniku vaade eemaldab lõpetatud töö enda nimekirjast kohe pärast salvestust.
+
+## V3.11.15 / 20260607_1955
+- Tehniku vaates lisatud eraldi "Lõpetatud tööd" kaardisektsioon.
+- Lõpetatud töö ei kao tehniku jaoks lõplikult ära.
+- Tehnik saab lõpetatud töö avada/muuta või "Ava uuesti" kaudu tagasi töösse panna.
+- Build sisaldab varasema 1949 sync-paranduse muudatusi.
