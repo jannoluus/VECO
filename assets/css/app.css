@@ -781,7 +781,7 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 }
 
 /* V3.11.7.1: calendar drag & drop planning */
-.calendar-event[draggable="true"]{cursor:grab;}
+.calendar-event[data-calendar-drag]{cursor:grab;touch-action:none;user-select:none;}
 .calendar-event.dragging{opacity:.55;cursor:grabbing;box-shadow:0 0 0 3px rgba(23,105,170,.28)!important;}
 .calendar-planner-lane.drop-target{outline:2px solid rgba(23,105,170,.8);outline-offset:-2px;background:rgba(23,105,170,.08)!important;}
 .calendar-drag-active .calendar-slot{cursor:copy;}
@@ -1028,3 +1028,10 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 }
 .theme-light .calendar-drag-tooltip{background:rgba(255,255,255,.98);color:#172026;}
 @media(max-width:760px){.oncall-pill{width:100%;justify-content:center;}}
+
+
+/* V3.11.9.3: robust pointer based calendar drag restore */
+.calendar-event[data-calendar-drag]{cursor:grab!important;touch-action:none!important;user-select:none!important;}
+.calendar-event.dragging{position:absolute!important;z-index:30!important;cursor:grabbing!important;opacity:.78!important;box-shadow:0 0 0 3px rgba(23,105,170,.32),0 16px 32px rgba(0,0,0,.28)!important;}
+.calendar-drag-active{cursor:grabbing!important;}
+.calendar-planner-lane.drop-target{outline:2px solid rgba(23,105,170,.85)!important;outline-offset:-2px!important;background:rgba(23,105,170,.10)!important;}

@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.9.2';
-const APP_BUILD='20260607_1507';
+const APP_VERSION='v3.11.9.4';
+const APP_BUILD='20260607_1544';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -691,7 +691,7 @@ function renderCalendar(){
         const start=((Number.isFinite(hh)?hh:9)+(Number.isFinite(mm)?mm:0)/60);
         const topPct=Math.max(0,Math.min(96,((start-calendarStartHour)/calendarHoursTotal)*100));
         const height=Math.max(jobs.length>=3?34:40,Math.min(105,workorderHours(w)*34));
-        return `<button class="calendar-event${compactClass}" style="top:${topPct}%;min-height:${height}px" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" draggable="true" type="button" title="Lohista töö teisele ajale või päevale"><span><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small></button>`;
+        return `<button class="calendar-event${compactClass}" style="top:${topPct}%;min-height:${height}px" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" type="button" title="Lohista töö teisele ajale või päevale"><span><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small></button>`;
       }).join('');
       const slots=hours.map(h=>`<button class="calendar-slot" data-add-date="${date}" data-add-time="${String(h).padStart(2,'0')}:00" title="Lisa töö ${date} ${String(h).padStart(2,'0')}:00" type="button"></button>`).join('');
       return `<div class="calendar-planner-day ${date===today?'today':''}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(date)}</span></div><div class="calendar-planner-lane" data-calendar-lane="${date}">${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTopPct}%"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || '<div class="calendar-empty-note">Töid ei ole</div>'}</div></div>`;
@@ -717,47 +717,94 @@ function renderCalendar(){
 }
 
 function bindCalendarDragDrop(startHour=6,endHour=22){
-  let draggedId='';
   const clampHour=(value)=>Math.max(startHour,Math.min(endHour-1,value));
-  const timeFromDrop=(lane,event)=>{
+  const timeFromPoint=(lane,clientY)=>{
     const rect=lane.getBoundingClientRect();
-    const y=Math.max(0,Math.min(rect.height,event.clientY-rect.top));
+    const y=Math.max(0,Math.min(rect.height,clientY-rect.top));
     const ratio=rect.height ? y/rect.height : 0;
     const hour=clampHour(startHour+Math.floor(ratio*(endHour-startHour)));
     return `${String(hour).padStart(2,'0')}:00`;
   };
+  const laneAtPoint=(x,y,dragCard)=>{
+    const oldDisplay=dragCard?.style.display;
+    if(dragCard) dragCard.style.display='none';
+    const el=document.elementFromPoint(x,y);
+    if(dragCard) dragCard.style.display=oldDisplay||'';
+    return el?.closest?.('[data-calendar-lane]')||null;
+  };
+  const clearTargets=()=>$$('.calendar-planner-lane.drop-target').forEach(x=>x.classList.remove('drop-target'));
+
   $$('[data-calendar-drag]').forEach(card=>{
-    card.addEventListener('dragstart',e=>{
-      draggedId=card.dataset.calendarDrag;
-      card.classList.add('dragging');
-      document.body.classList.add('calendar-drag-active');
-      e.dataTransfer.effectAllowed='move';
-      e.dataTransfer.setData('text/plain',draggedId);
-    });
-    card.addEventListener('dragend',()=>{
-      card.classList.remove('dragging');
-      document.body.classList.remove('calendar-drag-active');
-      $$('.calendar-planner-lane.drop-target').forEach(x=>x.classList.remove('drop-target'));
-      window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=true;
-      setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;},250);
-    });
-  });
-  $$('[data-calendar-lane]').forEach(lane=>{
-    lane.addEventListener('dragenter',e=>{ if(draggedId){ e.preventDefault(); lane.classList.add('drop-target'); } });
-    lane.addEventListener('dragover',e=>{ if(draggedId){ e.preventDefault(); e.dataTransfer.dropEffect='move'; lane.classList.add('drop-target'); } });
-    lane.addEventListener('dragleave',e=>{ if(!lane.contains(e.relatedTarget)) lane.classList.remove('drop-target'); });
-    lane.addEventListener('drop',e=>{
-      const id=e.dataTransfer.getData('text/plain')||draggedId;
-      if(!id) return;
-      e.preventDefault();
-      e.stopPropagation();
-      lane.classList.remove('drop-target');
-      const w=byId(state.workorders,id);
-      if(!w) return;
-      w.date=lane.dataset.calendarLane;
-      w.time=timeFromDrop(lane,e);
-      save();
-      renderCalendar();
+    card.addEventListener('pointerdown',e=>{
+      if(e.button!==0) return;
+      const workorderId=card.dataset.calendarDrag;
+      const startX=e.clientX;
+      const startY=e.clientY;
+      let dragging=false;
+      let lastLane=null;
+      let lastX=startX;
+      let lastY=startY;
+      const originalTransition=card.style.transition;
+      const originalZ=card.style.zIndex;
+
+      const cleanup=()=>{
+        document.removeEventListener('pointermove',onMove,true);
+        document.removeEventListener('pointerup',onUp,true);
+        document.removeEventListener('pointercancel',onCancel,true);
+        document.body.classList.remove('calendar-drag-active');
+        clearTargets();
+        card.classList.remove('dragging');
+        card.style.transform='';
+        card.style.transition=originalTransition;
+        card.style.zIndex=originalZ;
+      };
+      const beginDrag=()=>{
+        dragging=true;
+        window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=true;
+        document.body.classList.add('calendar-drag-active');
+        card.classList.add('dragging');
+        card.style.transition='none';
+        card.style.zIndex='200';
+      };
+      const onMove=(ev)=>{
+        if(ev.pointerId!==e.pointerId) return;
+        lastX=ev.clientX;
+        lastY=ev.clientY;
+        const dx=lastX-startX;
+        const dy=lastY-startY;
+        if(!dragging && Math.hypot(dx,dy)<8) return;
+        if(!dragging) beginDrag();
+        ev.preventDefault();
+        card.style.transform=`translate(${dx}px, ${dy}px)`;
+        lastLane=laneAtPoint(lastX,lastY,card);
+        clearTargets();
+        if(lastLane) lastLane.classList.add('drop-target');
+      };
+      const onUp=(ev)=>{
+        if(ev.pointerId!==e.pointerId) return;
+        if(dragging){
+          ev.preventDefault();
+          ev.stopPropagation();
+          const lane=lastLane||laneAtPoint(lastX,lastY,card);
+          const w=byId(state.workorders,workorderId);
+          if(w && lane){
+            w.date=lane.dataset.calendarLane;
+            w.time=timeFromPoint(lane,lastY);
+            save();
+          }
+          cleanup();
+          setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;renderCalendar();},0);
+        }else{
+          cleanup();
+        }
+      };
+      const onCancel=()=>{
+        cleanup();
+        setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;},120);
+      };
+      document.addEventListener('pointermove',onMove,true);
+      document.addEventListener('pointerup',onUp,true);
+      document.addEventListener('pointercancel',onCancel,true);
     });
   });
 }

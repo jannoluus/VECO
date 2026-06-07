@@ -17,3 +17,13 @@ Muudatused:
 - Kalendri drag & drop taastatud samale alusele.
 - Kalendri päises lisatud ühtne vaate nimi: KALENDER.
 - Ühtlustatud workspace päise ja tickeri kõrgused, et vaadete vahel liikumisel layout vähem nihkuks.
+
+
+## V3.11.9.3 / 20260607_1519
+- Drag & drop taastatud pointer-event loogikaga.
+- ESC modalite sulgemine säilitatud.
+
+## V3.11.9.4 / 20260607_1544
+- Drag & drop parandatud document-level pointer-event loogikaga.
+- ZIP struktuur korrastatud: üks VECO_V3 juurkaust.
+- ESC modalite sulgemine säilitatud.
