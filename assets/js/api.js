@@ -6,6 +6,7 @@
   let realtimeChannel=null;
   let realtimeDebounce=null;
   let syncing=false;
+  let supabaseSupportsPlannedHours=true;
 
   function cleanUrl(value){
     return String(value||'').trim().replace(/\/rest\/v1\/?$/,'').replace(/\/+$/,'');
@@ -24,7 +25,7 @@
     return window.__VECO_SUPABASE_CLIENT__;
   }
   function toDb(w){
-    return {
+    const row={
       workorder_no:String(w.id||w.workorder_no||'').trim()||null,
       project_id:w.projectId||w.project_id||null,
       object_id:w.objectId||w.object_id||null,
@@ -37,6 +38,10 @@
       time:w.time||null,
       updated_at:new Date().toISOString()
     };
+    if(supabaseSupportsPlannedHours){
+      row.planned_hours=Number(w.plannedHours||w.durationHours||w.hours||2)||2;
+    }
+    return row;
   }
   function fromDb(row){
     return {
@@ -48,7 +53,10 @@
       technicianId:row.technician_id||'',
       status:row.status||'Planeeritud',
       date:row.date||'',
-      time:row.time ? String(row.time).slice(0,5) : ''
+      time:row.time ? String(row.time).slice(0,5) : '',
+      plannedHours:Number(row.planned_hours||2)||2,
+      durationHours:Number(row.planned_hours||2)||2,
+      hours:Number(row.planned_hours||2)||2
     };
   }
   function mergeWorkorders(localData, remoteRows){
@@ -77,10 +85,22 @@
         const found=await client.from(TABLE).select('id').eq('workorder_no',row.workorder_no).maybeSingle();
         if(found.error && found.error.code!=='PGRST116') throw found.error;
         if(found.data?.id){
-          const {error}=await client.from(TABLE).update(row).eq('id',found.data.id);
+          let {error}=await client.from(TABLE).update(row).eq('id',found.data.id);
+          if(error && String(error.message||'').includes('planned_hours')){
+            supabaseSupportsPlannedHours=false;
+            const fallback={...row};
+            delete fallback.planned_hours;
+            ({error}=await client.from(TABLE).update(fallback).eq('id',found.data.id));
+          }
           if(error) throw error;
         }else{
-          const {error}=await client.from(TABLE).insert(row);
+          let {error}=await client.from(TABLE).insert(row);
+          if(error && String(error.message||'').includes('planned_hours')){
+            supabaseSupportsPlannedHours=false;
+            const fallback={...row};
+            delete fallback.planned_hours;
+            ({error}=await client.from(TABLE).insert(fallback));
+          }
           if(error) throw error;
         }
       }
@@ -92,7 +112,7 @@
   }
 
   function signature(data){
-    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description]));
+    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours]));
   }
   async function pullAndNotify(onChange){
     try{

@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.9.5';
-const APP_BUILD='20260607_1600';
+const APP_VERSION='v3.12.0';
+const APP_BUILD='20260607_1615';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -690,8 +690,9 @@ function renderCalendar(){
         const [hh,mm]=(w.time||'09:00').split(':').map(Number);
         const start=((Number.isFinite(hh)?hh:9)+(Number.isFinite(mm)?mm:0)/60);
         const topPct=Math.max(0,Math.min(96,((start-calendarStartHour)/calendarHoursTotal)*100));
-        const height=Math.max(jobs.length>=3?34:40,Math.min(105,workorderHours(w)*34));
-        return `<button class="calendar-event${compactClass}" style="top:${topPct}%;min-height:${height}px" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" type="button" title="Lohista töö teisele ajale või päevale"><span><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small></button>`;
+        const duration=workorderHours(w);
+        const minHeight=Math.max(jobs.length>=3?34:40,Math.min(60,duration*34));
+        return `<button class="calendar-event${compactClass}" style="top:${topPct}%;height:calc((100% / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" type="button" title="Lohista töö teisele ajale või päevale"><span><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kestust" aria-hidden="true"></span></button>`;
       }).join('');
       const slots=hours.map(h=>`<button class="calendar-slot" data-add-date="${date}" data-add-time="${String(h).padStart(2,'0')}:00" title="Lisa töö ${date} ${String(h).padStart(2,'0')}:00" type="button"></button>`).join('');
       return `<div class="calendar-planner-day ${date===today?'today':''}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(date)}</span></div><div class="calendar-planner-lane" data-calendar-lane="${date}">${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTopPct}%"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || '<div class="calendar-empty-note">Töid ei ole</div>'}</div></div>`;
@@ -712,8 +713,80 @@ function renderCalendar(){
   $('#newCalendarWorkorderBtn')?.addEventListener('click',()=>openCalendarWorkorderModal(currentDate,'09:00'));
   $('#calendarImportWorkBtn')?.addEventListener('click',()=>openCalendarImportModal(currentDate));
   $$('[data-add-date]').forEach(el=>el.addEventListener('click',e=>{ if(e.target.closest('[data-calendar-edit]')) return; const date=el.dataset.addDate; const time=el.dataset.addTime||'09:00'; openCalendarWorkorderModal(date,time); }));
+  bindCalendarResize(calendarStartHour,calendarEndHour);
   bindCalendarDragDrop(calendarStartHour,calendarEndHour);
   $$('[data-calendar-edit]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation(); if(window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__){window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false; return;} openWorkorderModal(el.dataset.calendarEdit);}));
+}
+
+
+function bindCalendarResize(startHour=6,endHour=22){
+  const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+  const startHourOf=(w)=>{
+    const [hh]=String(w.time||'09:00').split(':').map(Number);
+    return Number.isFinite(hh)?hh:9;
+  };
+  const resizeLabel=(w,hours)=>{
+    const start=startHourOf(w);
+    const end=clamp(start+hours,start+1,endHour);
+    return `${String(start).padStart(2,'0')}:00–${String(end).padStart(2,'0')}:00 · ${hours} h`;
+  };
+  $$('[data-calendar-resize]').forEach(handle=>{
+    handle.addEventListener('pointerdown',e=>{
+      if(e.button!==0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const card=handle.closest('[data-calendar-drag]');
+      const lane=handle.closest('[data-calendar-lane]');
+      const workorderId=handle.dataset.calendarResize;
+      const w=byId(state.workorders,workorderId);
+      if(!card||!lane||!w) return;
+      const laneRect=lane.getBoundingClientRect();
+      const hourHeight=laneRect.height/(endHour-startHour);
+      const startY=e.clientY;
+      const startHours=workorderHours(w);
+      const maxHours=clamp(endHour-startHourOf(w),1,endHour-startHour);
+      let nextHours=startHours;
+      card.classList.add('resizing');
+      document.body.classList.add('calendar-resize-active');
+      card.setAttribute('data-resize-label',resizeLabel(w,nextHours));
+
+      const applyPreview=()=>{
+        card.style.height=`calc((100% / var(--calendar-hours-count)) * ${nextHours} - 4px)`;
+        card.setAttribute('data-resize-label',resizeLabel(w,nextHours));
+      };
+      const cleanup=()=>{
+        document.removeEventListener('pointermove',onMove,true);
+        document.removeEventListener('pointerup',onUp,true);
+        document.removeEventListener('pointercancel',onCancel,true);
+        document.body.classList.remove('calendar-resize-active');
+        card.classList.remove('resizing');
+        card.removeAttribute('data-resize-label');
+      };
+      const onMove=(ev)=>{
+        if(ev.pointerId!==e.pointerId) return;
+        ev.preventDefault();
+        const delta=Math.round((ev.clientY-startY)/hourHeight);
+        nextHours=clamp(startHours+delta,1,maxHours);
+        applyPreview();
+      };
+      const onUp=(ev)=>{
+        if(ev.pointerId!==e.pointerId) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        w.plannedHours=nextHours;
+        w.durationHours=nextHours;
+        w.hours=nextHours;
+        save();
+        cleanup();
+        window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=true;
+        setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;renderCalendar();},0);
+      };
+      const onCancel=()=>{ cleanup(); renderCalendar(); };
+      document.addEventListener('pointermove',onMove,true);
+      document.addEventListener('pointerup',onUp,true);
+      document.addEventListener('pointercancel',onCancel,true);
+    },true);
+  });
 }
 
 function bindCalendarDragDrop(startHour=6,endHour=22){

@@ -33,3 +33,10 @@ Muudatused:
 - Parandatud kalendri drag & drop nähtavus: lohistamisel kasutatakse body külge lisatud ghost-kaarti, mis ei kao päeva veeru overflow taha.
 - Lohistamisel kuvatakse ghost-kaardil sihtpäev ja sihtkellaaeg.
 - ESC modalite sulgemine säilitatud.
+
+
+## V3.12.0 / 20260607_1615
+- Kalendris töökäsu kestuse muutmine alumisest servast.
+- Kestus muutub 1 h sammuga, algusaeg jääb samaks.
+- Resize ajal kuvatakse ajavahemik ja kestus.
+- Supabase planned_hours tugi lisatud, fallback jääb tööle ka enne andmebaasi veeru lisamist.

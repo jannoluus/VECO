@@ -1067,3 +1067,48 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
   box-shadow:0 8px 18px rgba(0,0,0,.28);
   pointer-events:none;
 }
+
+
+/* V3.12.0: calendar workorder duration resize handle */
+.calendar-event{overflow:hidden!important;}
+.calendar-resize-handle{
+  position:absolute!important;
+  left:8px!important;
+  right:8px!important;
+  bottom:2px!important;
+  height:8px!important;
+  border-radius:999px!important;
+  background:rgba(45,156,255,.18)!important;
+  border:1px solid rgba(45,156,255,.38)!important;
+  cursor:ns-resize!important;
+  opacity:0!important;
+  transition:opacity .14s ease,background .14s ease!important;
+  z-index:8!important;
+}
+.calendar-event:hover .calendar-resize-handle,
+.calendar-event.resizing .calendar-resize-handle{
+  opacity:1!important;
+  background:rgba(45,156,255,.55)!important;
+}
+.calendar-event.resizing{
+  z-index:40!important;
+  box-shadow:0 0 0 3px rgba(45,156,255,.25),0 16px 34px rgba(0,0,0,.28)!important;
+}
+.calendar-event.resizing::after{
+  content:attr(data-resize-label);
+  position:absolute;
+  left:6px;
+  right:6px;
+  bottom:14px;
+  z-index:9;
+  border-radius:6px;
+  padding:5px 7px;
+  background:rgba(23,105,170,.96);
+  color:#fff;
+  font-size:11px;
+  font-weight:900;
+  text-align:center;
+  box-shadow:0 8px 18px rgba(0,0,0,.28);
+  pointer-events:none;
+}
+.calendar-resize-active{cursor:ns-resize!important;}
