@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.12.0';
-const APP_BUILD='20260607_1615';
+const APP_VERSION='v3.12.1';
+const APP_BUILD='20260607_1627';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -388,6 +388,20 @@ function weekStartKeyFrom(value){ const d=value?parseDateKey(value):new Date(); 
 function weekDaysFrom(startKey){ const start=parseDateKey(startKey); return Array.from({length:7},(_,i)=>dateKeyFromDate(addDateDays(start,i))); }
 function isInRange(date,start,end){ return date>=start && date<=end; }
 function workorderHours(w){ return Number(w.hours||w.durationHours||w.plannedHours||2)||2; }
+function timeHourOf(value){
+  const [hh]=String(value||'09:00').split(':').map(Number);
+  return Number.isFinite(hh)?hh:9;
+}
+function timeLabelFromHour(hour){
+  const h=Math.max(0,Math.min(23,Math.floor(Number(hour)||0)));
+  return `${String(h).padStart(2,'0')}:00`;
+}
+function workorderEndTime(w,limitHour=22){
+  const start=timeHourOf(w.time);
+  const duration=workorderHours(w);
+  const end=Math.max(start+1,Math.min(limitHour,start+duration));
+  return timeLabelFromHour(end);
+}
 function teamWeekAbsences(personId,weekDays){ const start=weekDays[0], end=weekDays[6]; return state.absences.filter(a=>a.personId===personId && a.start<=end && a.end>=start); }
 function teamWeekOncall(personId,weekDays){ const start=weekDays[0], end=weekDays[6]; return state.oncall.filter(o=>o.personId===personId && o.start<=end && o.end>=start); }
 function workloadStatus(hours,absences){ if(absences.length) return 'Puudub'; if(hours>=8) return 'Ülekoormus'; if(hours>=4) return 'Koormus'; if(hours>0) return 'Madal'; return 'Vaba'; }
@@ -692,7 +706,8 @@ function renderCalendar(){
         const topPct=Math.max(0,Math.min(96,((start-calendarStartHour)/calendarHoursTotal)*100));
         const duration=workorderHours(w);
         const minHeight=Math.max(jobs.length>=3?34:40,Math.min(60,duration*34));
-        return `<button class="calendar-event${compactClass}" style="top:${topPct}%;height:calc((100% / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" type="button" title="Lohista töö teisele ajale või päevale"><span><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kestust" aria-hidden="true"></span></button>`;
+        const endTime=workorderEndTime(w,calendarEndHour);
+        return `<button class="calendar-event${compactClass}" style="top:${topPct}%;height:calc((100% / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" type="button" title="Lohista töö teisele ajale või päevale"><span class="calendar-event-head"><strong><b class="calendar-start-time">${esc(w.time||'')}</b> · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small><span class="calendar-event-footer" aria-label="Töö lõpp ja kestus"><b class="calendar-end-time">${esc(endTime)}</b><b class="calendar-duration">${duration} h</b></span><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kestust" aria-hidden="true"></span></button>`;
       }).join('');
       const slots=hours.map(h=>`<button class="calendar-slot" data-add-date="${date}" data-add-time="${String(h).padStart(2,'0')}:00" title="Lisa töö ${date} ${String(h).padStart(2,'0')}:00" type="button"></button>`).join('');
       return `<div class="calendar-planner-day ${date===today?'today':''}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(date)}</span></div><div class="calendar-planner-lane" data-calendar-lane="${date}">${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTopPct}%"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || '<div class="calendar-empty-note">Töid ei ole</div>'}</div></div>`;
@@ -721,14 +736,10 @@ function renderCalendar(){
 
 function bindCalendarResize(startHour=6,endHour=22){
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
-  const startHourOf=(w)=>{
-    const [hh]=String(w.time||'09:00').split(':').map(Number);
-    return Number.isFinite(hh)?hh:9;
-  };
+  const startHourOf=(w)=>timeHourOf(w.time);
+  const endLabelFor=(w,hours)=>timeLabelFromHour(clamp(startHourOf(w)+hours,startHourOf(w)+1,endHour));
   const resizeLabel=(w,hours)=>{
-    const start=startHourOf(w);
-    const end=clamp(start+hours,start+1,endHour);
-    return `${String(start).padStart(2,'0')}:00–${String(end).padStart(2,'0')}:00 · ${hours} h`;
+    return `${timeLabelFromHour(startHourOf(w))}–${endLabelFor(w,hours)} · ${hours} h`;
   };
   $$('[data-calendar-resize]').forEach(handle=>{
     handle.addEventListener('pointerdown',e=>{
@@ -753,6 +764,10 @@ function bindCalendarResize(startHour=6,endHour=22){
       const applyPreview=()=>{
         card.style.height=`calc((100% / var(--calendar-hours-count)) * ${nextHours} - 4px)`;
         card.setAttribute('data-resize-label',resizeLabel(w,nextHours));
+        const endEl=card.querySelector('.calendar-end-time');
+        const durEl=card.querySelector('.calendar-duration');
+        if(endEl) endEl.textContent=endLabelFor(w,nextHours);
+        if(durEl) durEl.textContent=`${nextHours} h`;
       };
       const cleanup=()=>{
         document.removeEventListener('pointermove',onMove,true);

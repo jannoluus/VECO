@@ -40,3 +40,9 @@ Muudatused:
 - Kestus muutub 1 h sammuga, algusaeg jääb samaks.
 - Resize ajal kuvatakse ajavahemik ja kestus.
 - Supabase planned_hours tugi lisatud, fallback jääb tööle ka enne andmebaasi veeru lisamist.
+
+
+## V3.12.1 / 20260607_1627
+- Kalendri töökäsu kaardil kuvatakse lõppaeg all vasakul.
+- Kestus kuvatakse all paremal.
+- Kestuse muutmisel uuenevad lõppaeg ja kestus reaalajas.

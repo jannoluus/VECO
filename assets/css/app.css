@@ -1069,14 +1069,25 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 }
 
 
+/* V3.12.1: calendar workorder end time + duration footer */
+.calendar-event{padding-bottom:24px!important;}
+.calendar-event-head{display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:6px!important;}
+.calendar-start-time{font-weight:950!important;}
+.calendar-event-footer{position:absolute!important;left:7px!important;right:7px!important;bottom:10px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:6px!important;color:var(--muted)!important;font-size:11px!important;font-weight:900!important;line-height:1!important;pointer-events:none!important;}
+.calendar-event-footer b{font-weight:950!important;}
+.calendar-duration{opacity:.74!important;}
+.calendar-event.compact{padding-bottom:19px!important;}
+.calendar-event.compact .calendar-event-footer{bottom:8px!important;font-size:10px!important;}
+.calendar-event.compact .calendar-duration{display:none!important;}
+
 /* V3.12.0: calendar workorder duration resize handle */
 .calendar-event{overflow:hidden!important;}
 .calendar-resize-handle{
   position:absolute!important;
   left:8px!important;
   right:8px!important;
-  bottom:2px!important;
-  height:8px!important;
+  bottom:1px!important;
+  height:7px!important;
   border-radius:999px!important;
   background:rgba(45,156,255,.18)!important;
   border:1px solid rgba(45,156,255,.38)!important;
