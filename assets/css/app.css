@@ -1159,3 +1159,29 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 .calendar-slot{z-index:1;}
 .calendar-event{z-index:3!important;}
 .calendar-now-line{z-index:4!important;}
+
+
+/* V3.12.1: VECO native confirmation dialog */
+.confirm-modal{
+  position:fixed!important;
+  inset:0!important;
+  z-index:220!important;
+  display:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:18px!important;
+  background:rgba(0,0,0,.45)!important;
+}
+.confirm-modal.open{display:flex!important;}
+.confirm-dialog{
+  width:min(420px,100%)!important;
+  background:var(--panel)!important;
+  border:1px solid var(--line)!important;
+  border-radius:10px!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.42)!important;
+  overflow:hidden!important;
+}
+.confirm-message{font-size:14px;font-weight:800;line-height:1.35;color:var(--ink);}
+.confirm-details{border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.035);padding:10px 12px;font-size:13px;line-height:1.45;color:var(--muted);}
+.theme-light .confirm-details{background:#f8fafb;}
+.confirm-dialog .dialog-actions{gap:8px;}

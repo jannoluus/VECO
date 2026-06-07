@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.12.2';
-const APP_BUILD='20260607_1708';
+const APP_VERSION='v3.12.3';
+const APP_BUILD='20260607_1713';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -207,6 +207,48 @@ function showSyncNotice(text='Andmed uuendatud'){
 }
 function bindClose(){ $('#modalCloseBtn')?.addEventListener('click',closeModal); $('#cancelModalBtn')?.addEventListener('click',closeModal); }
 
+function openVecoConfirm({title='Kinnitus',message='',details='',confirmText='OK',cancelText='Loobu',danger=false}={}){
+  return new Promise(resolve=>{
+    const existing=document.getElementById('vecoConfirm');
+    if(existing) existing.remove();
+    const el=document.createElement('div');
+    el.id='vecoConfirm';
+    el.className='confirm-modal open';
+    el.innerHTML=`<div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="vecoConfirmTitle">
+      <div class="dialog-head"><h2 id="vecoConfirmTitle">${esc(title)}</h2></div>
+      <div class="detail-body">
+        <div class="confirm-message">${esc(message)}</div>
+        ${details?`<div class="confirm-details">${details}</div>`:''}
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" id="vecoConfirmCancel">${esc(cancelText)}</button>
+        <button type="button" class="btn ${danger?'danger':'primary'}" id="vecoConfirmOk">${esc(confirmText)}</button>
+      </div>
+    </div>`;
+    const cleanup=(value)=>{
+      document.removeEventListener('keydown',onKey);
+      el.remove();
+      resolve(value);
+    };
+    const onKey=(e)=>{
+      if(e.key==='Escape'){
+        e.preventDefault();
+        cleanup(false);
+      }
+      if(e.key==='Enter'){
+        e.preventDefault();
+        cleanup(true);
+      }
+    };
+    document.body.appendChild(el);
+    document.addEventListener('keydown',onKey);
+    el.addEventListener('click',e=>{ if(e.target===el) cleanup(false); });
+    el.querySelector('#vecoConfirmCancel')?.addEventListener('click',()=>cleanup(false));
+    el.querySelector('#vecoConfirmOk')?.addEventListener('click',()=>cleanup(true));
+    setTimeout(()=>el.querySelector('#vecoConfirmCancel')?.focus(),0);
+  });
+}
+
 function renderObjects(){
   const clientFilter=$('#objectClientFilter')?.value||'all';
   const techFilter=$('#objectTechFilter')?.value||'all';
@@ -383,7 +425,14 @@ function openWorkorderModal(id='',defaults={}){
   });
   $('#deleteWorkorderBtn')?.addEventListener('click',async()=>{
     if(!existing) return;
-    const ok=confirm(`Kas soovid töökäsu kustutada?\n\n${existing.id}\n${objectName(existing.objectId)}\n${existing.title}`);
+    const ok=await openVecoConfirm({
+      title:'Kustuta töökäsk',
+      message:'Kas soovid selle töökäsu kustutada?',
+      details:`<strong>${esc(existing.id)}</strong><br>${esc(objectName(existing.objectId))}<br>${esc(existing.title)}`,
+      confirmText:'Kustuta',
+      cancelText:'Loobu',
+      danger:true
+    });
     if(!ok) return;
     state.workorders=state.workorders.filter(x=>x.id!==existing.id);
     window.VECO_STORAGE.save(state);

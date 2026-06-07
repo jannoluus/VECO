@@ -58,3 +58,8 @@ Muudatused:
 - Klient, objekt ja projekt on otsitavad sisestusväljad registri valikutega.
 - Muutmisel olemasoleva töökäsu andmed avanevad täidetuna.
 - Töökäsu kustutamine lisatud kinnitusküsimusega.
+
+
+## V3.12.1 / 20260607_1713
+- Töökäsu kustutamise kinnitus on nüüd VECO enda modal, mitte brauseri confirm popup.
+- ESC, tausta klikk ja Loobu sulgevad kinnituse ilma kustutamata.
