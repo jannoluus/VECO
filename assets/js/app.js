@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.9.1';
-const APP_BUILD='20260607_1434';
+const APP_VERSION='v3.11.9.2';
+const APP_BUILD='20260607_1507';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -16,6 +16,7 @@ let selectedWorkorderId=state.workorders?.[0]?.id||'';
 let selectedActId=state.acts?.[0]?.id||'';
 let selectedTeamPersonId='';
 const detailOpen={objects:false,projects:false,workorders:false,acts:false};
+let modalEscHandler=null;
 
 const pageTitles={calendar:'Kalender',team:'Tiimivaade',objects:'Objektid',projects:'Projektid',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',people:'Tehnikud',vacations:'Puhkused',clients:'Kliendid',mobile:'Tehniku vaade',mobilePreview:'Mobiili eelvaade'};
 const pageFiles={calendar:'index.html',team:'team.html',objects:'objects.html',projects:'projects.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',people:'people.html',vacations:'vacations.html',clients:'clients.html',mobile:'mobile.html',mobilePreview:'mobile-preview.html'};
@@ -171,8 +172,26 @@ function card(title,rows=[],status='',extra=''){
 }
 function table(headers,rows){const body=Array.isArray(rows)?rows.join(''):(rows||'');return `<div class="table-wrap"><table class="data-table"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`}
 function summaryBox(label,value){return `<div class="summary-box"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`}
-function openModal(html){$('#modal').innerHTML=`<div class="dialog">${html}</div>`;$('#modal').classList.add('open')}
-function closeModal(){$('#modal').classList.remove('open');$('#modal').innerHTML=''}
+function openModal(html){
+  $('#modal').innerHTML=`<div class="dialog">${html}</div>`;
+  $('#modal').classList.add('open');
+  if(modalEscHandler) document.removeEventListener('keydown',modalEscHandler);
+  modalEscHandler=(e)=>{
+    if(e.key==='Escape' && $('#modal')?.classList.contains('open')){
+      e.preventDefault();
+      closeModal();
+    }
+  };
+  document.addEventListener('keydown',modalEscHandler);
+}
+function closeModal(){
+  $('#modal')?.classList.remove('open');
+  $('#modal').innerHTML='';
+  if(modalEscHandler){
+    document.removeEventListener('keydown',modalEscHandler);
+    modalEscHandler=null;
+  }
+}
 function showSyncNotice(text='Andmed uuendatud'){
   let el=document.getElementById('syncNotice');
   if(!el){
@@ -699,7 +718,6 @@ function renderCalendar(){
 
 function bindCalendarDragDrop(startHour=6,endHour=22){
   let draggedId='';
-  let dragTooltip=null;
   const clampHour=(value)=>Math.max(startHour,Math.min(endHour-1,value));
   const timeFromDrop=(lane,event)=>{
     const rect=lane.getBoundingClientRect();
@@ -708,39 +726,10 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
     const hour=clampHour(startHour+Math.floor(ratio*(endHour-startHour)));
     return `${String(hour).padStart(2,'0')}:00`;
   };
-  const dragLabel=(lane,event)=>{
-    const date=lane?.dataset?.calendarLane||'';
-    const time=timeFromDrop(lane,event);
-    const day=date ? parseDateKey(date).toLocaleDateString('et-EE',{weekday:'short',day:'2-digit',month:'2-digit'}).replace('.', '') : '';
-    return `${day} · ${time}`;
-  };
-  const ensureTooltip=()=>{
-    if(!dragTooltip){
-      dragTooltip=document.createElement('div');
-      dragTooltip.className='calendar-drag-tooltip';
-      document.body.appendChild(dragTooltip);
-    }
-    return dragTooltip;
-  };
-  const updateDragInfo=(lane,event)=>{
-    if(!draggedId||!lane) return;
-    const label=dragLabel(lane,event);
-    const card=document.querySelector(`[data-calendar-drag="${draggedId}"]`);
-    if(card) card.dataset.dragLabel=label;
-    const tip=ensureTooltip();
-    tip.textContent=`Uus aeg: ${label}`;
-    tip.style.left=`${event.clientX+14}px`;
-    tip.style.top=`${event.clientY+14}px`;
-  };
-  const clearDragInfo=()=>{
-    document.querySelectorAll('[data-calendar-drag][data-drag-label]').forEach(card=>delete card.dataset.dragLabel);
-    if(dragTooltip){dragTooltip.remove();dragTooltip=null;}
-  };
   $$('[data-calendar-drag]').forEach(card=>{
     card.addEventListener('dragstart',e=>{
       draggedId=card.dataset.calendarDrag;
       card.classList.add('dragging');
-      card.dataset.dragLabel=card.querySelector('strong')?.textContent||'';
       document.body.classList.add('calendar-drag-active');
       e.dataTransfer.effectAllowed='move';
       e.dataTransfer.setData('text/plain',draggedId);
@@ -749,14 +738,13 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
       card.classList.remove('dragging');
       document.body.classList.remove('calendar-drag-active');
       $$('.calendar-planner-lane.drop-target').forEach(x=>x.classList.remove('drop-target'));
-      clearDragInfo();
       window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=true;
       setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;},250);
     });
   });
   $$('[data-calendar-lane]').forEach(lane=>{
-    lane.addEventListener('dragenter',e=>{ if(draggedId){ e.preventDefault(); lane.classList.add('drop-target'); updateDragInfo(lane,e); } });
-    lane.addEventListener('dragover',e=>{ if(draggedId){ e.preventDefault(); e.dataTransfer.dropEffect='move'; lane.classList.add('drop-target'); updateDragInfo(lane,e); } });
+    lane.addEventListener('dragenter',e=>{ if(draggedId){ e.preventDefault(); lane.classList.add('drop-target'); } });
+    lane.addEventListener('dragover',e=>{ if(draggedId){ e.preventDefault(); e.dataTransfer.dropEffect='move'; lane.classList.add('drop-target'); } });
     lane.addEventListener('dragleave',e=>{ if(!lane.contains(e.relatedTarget)) lane.classList.remove('drop-target'); });
     lane.addEventListener('drop',e=>{
       const id=e.dataTransfer.getData('text/plain')||draggedId;
@@ -768,7 +756,6 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
       if(!w) return;
       w.date=lane.dataset.calendarLane;
       w.time=timeFromDrop(lane,e);
-      clearDragInfo();
       save();
       renderCalendar();
     });
