@@ -1185,3 +1185,9 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 .confirm-details{border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.035);padding:10px 12px;font-size:13px;line-height:1.45;color:var(--muted);}
 .theme-light .confirm-details{background:#f8fafb;}
 .confirm-dialog .dialog-actions{gap:8px;}
+
+
+/* V3.12.4: duration field unit label */
+.unit-field{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;}
+.unit-field span{min-height:38px;display:inline-flex;align-items:center;justify-content:center;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:rgba(255,255,255,.04);color:var(--muted);font-weight:900;}
+.theme-light .unit-field span{background:#f8fafb;}

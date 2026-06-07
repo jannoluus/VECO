@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.12.3';
-const APP_BUILD='20260607_1713';
+const APP_VERSION='v3.12.4';
+const APP_BUILD='20260607_1725';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -387,7 +387,7 @@ function openWorkorderModal(id='',defaults={}){
     <label>Staatus<select class="select" name="status">${['Uus','Planeeritud','Töös','Ootel','Pausil','Täidetud','Suletud'].map(s=>`<option ${w.status===s?'selected':''}>${s}</option>`).join('')}</select></label>
     <label>Kuupäev<input class="field" name="date" type="date" value="${esc(w.date)}"></label>
     <label>Algusaeg<input class="field" name="time" type="time" value="${esc(w.time)}"></label>
-    <label>Kestus<input class="field" name="plannedHours" type="number" min="1" max="16" step="1" value="${esc(currentHours)}"></label>
+    <label>Kestus<div class="unit-field"><input class="field" name="plannedHours" type="number" min="1" max="16" step="1" value="${esc(currentHours)}"><span>h</span></div></label>
     <label class="full">Kirjeldus<textarea name="description" placeholder="Lisa töö kirjeldus või juhised...">${esc(w.description)}</textarea></label>
     ${!isEdit?'<div class="full muted">Uue töökäsu loomisel klienti, objekti, projekti ega tehnikut automaatselt ei valita. Kuupäev ja kell võivad tulla kalendris klikitud ajast.</div>':''}
   </div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Sulge</button>${isEdit?'<button type="button" class="btn danger" id="deleteWorkorderBtn">Kustuta</button>':''}<button class="btn primary" type="submit">Salvesta</button></div></form>`);

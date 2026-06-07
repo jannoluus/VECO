@@ -63,3 +63,8 @@ Muudatused:
 ## V3.12.1 / 20260607_1713
 - Töökäsu kustutamise kinnitus on nüüd VECO enda modal, mitte brauseri confirm popup.
 - ESC, tausta klikk ja Loobu sulgevad kinnituse ilma kustutamata.
+
+
+## V3.12.4 / 20260607_1725
+- Töökäsu muutmise aknas kuvatakse kestuse ühik eraldi: [ 4 ] h.
+- Sisestus jääb numbriliseks, Supabase salvestab endiselt planned_hours väärtuse numbrina.
