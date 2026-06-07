@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.9.4';
-const APP_BUILD='20260607_1544';
+const APP_VERSION='v3.11.9.5';
+const APP_BUILD='20260607_1600';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -725,14 +725,18 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
     const hour=clampHour(startHour+Math.floor(ratio*(endHour-startHour)));
     return `${String(hour).padStart(2,'0')}:00`;
   };
-  const laneAtPoint=(x,y,dragCard)=>{
-    const oldDisplay=dragCard?.style.display;
-    if(dragCard) dragCard.style.display='none';
+  const laneAtPoint=(x,y,ignoreEl)=>{
+    const oldPointer=ignoreEl?.style.pointerEvents;
+    if(ignoreEl) ignoreEl.style.pointerEvents='none';
     const el=document.elementFromPoint(x,y);
-    if(dragCard) dragCard.style.display=oldDisplay||'';
+    if(ignoreEl) ignoreEl.style.pointerEvents=oldPointer||'';
     return el?.closest?.('[data-calendar-lane]')||null;
   };
   const clearTargets=()=>$$('.calendar-planner-lane.drop-target').forEach(x=>x.classList.remove('drop-target'));
+  const dayShort=(date)=>{
+    const d=parseDateKey(date);
+    return ['P','E','T','K','N','R','L'][d.getDay()]+' '+fmtShortDate(date);
+  };
 
   $$('[data-calendar-drag]').forEach(card=>{
     card.addEventListener('pointerdown',e=>{
@@ -740,13 +744,40 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
       const workorderId=card.dataset.calendarDrag;
       const startX=e.clientX;
       const startY=e.clientY;
+      const cardRect=card.getBoundingClientRect();
+      const offsetX=startX-cardRect.left;
+      const offsetY=startY-cardRect.top;
       let dragging=false;
+      let ghost=null;
       let lastLane=null;
       let lastX=startX;
       let lastY=startY;
       const originalTransition=card.style.transition;
       const originalZ=card.style.zIndex;
 
+      const createGhost=()=>{
+        ghost=card.cloneNode(true);
+        ghost.classList.add('calendar-drag-ghost');
+        ghost.classList.remove('dragging');
+        ghost.style.width=`${cardRect.width}px`;
+        ghost.style.height=`${cardRect.height}px`;
+        ghost.style.left=`${cardRect.left}px`;
+        ghost.style.top=`${cardRect.top}px`;
+        ghost.style.transform='none';
+        ghost.style.pointerEvents='none';
+        document.body.appendChild(ghost);
+      };
+      const updateGhost=(clientX,clientY,lane)=>{
+        const targetDate=lane?.dataset.calendarLane||'';
+        const targetTime=lane?timeFromPoint(lane,clientY):'';
+        const label=targetDate&&targetTime ? `${dayShort(targetDate)} · ${targetTime}` : 'Lohista kalendrisse';
+        card.setAttribute('data-drag-label',label);
+        if(ghost){
+          ghost.style.left=`${clientX-offsetX}px`;
+          ghost.style.top=`${clientY-offsetY}px`;
+          ghost.setAttribute('data-drag-label',label);
+        }
+      };
       const cleanup=()=>{
         document.removeEventListener('pointermove',onMove,true);
         document.removeEventListener('pointerup',onUp,true);
@@ -757,6 +788,9 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
         card.style.transform='';
         card.style.transition=originalTransition;
         card.style.zIndex=originalZ;
+        card.removeAttribute('data-drag-label');
+        ghost?.remove?.();
+        ghost=null;
       };
       const beginDrag=()=>{
         dragging=true;
@@ -765,6 +799,7 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
         card.classList.add('dragging');
         card.style.transition='none';
         card.style.zIndex='200';
+        createGhost();
       };
       const onMove=(ev)=>{
         if(ev.pointerId!==e.pointerId) return;
@@ -775,17 +810,17 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
         if(!dragging && Math.hypot(dx,dy)<8) return;
         if(!dragging) beginDrag();
         ev.preventDefault();
-        card.style.transform=`translate(${dx}px, ${dy}px)`;
-        lastLane=laneAtPoint(lastX,lastY,card);
+        lastLane=laneAtPoint(lastX,lastY,ghost||card);
         clearTargets();
         if(lastLane) lastLane.classList.add('drop-target');
+        updateGhost(lastX,lastY,lastLane);
       };
       const onUp=(ev)=>{
         if(ev.pointerId!==e.pointerId) return;
         if(dragging){
           ev.preventDefault();
           ev.stopPropagation();
-          const lane=lastLane||laneAtPoint(lastX,lastY,card);
+          const lane=lastLane||laneAtPoint(lastX,lastY,ghost||card);
           const w=byId(state.workorders,workorderId);
           if(w && lane){
             w.date=lane.dataset.calendarLane;
@@ -808,7 +843,6 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
     });
   });
 }
-
 function openCalendarImportModal(defaultDate){
   openModal(`<form id="calendarImportForm"><div class="dialog-head"><h2>Impordi töö</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label class="full">Kleebi töökäsu tekst või snipilt loetud info<textarea name="importText" placeholder="Näide: klient, objekt, aadress, töö kirjeldus, kuupäev, kellaaeg..."></textarea></label><label>Kuupäev<input class="field" name="date" type="date" value="${esc(defaultDate||dateKeyFromDate(new Date()))}"></label><label>Kell<input class="field" name="time" type="time" value="09:00"></label></div><span class="muted">Praegu teeb import tekstist eeltäidetud töökäsu. Pildi/OCR automaatika jääb hilisemaks etapiks.</span></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Ava eeltäidetud töökäsk</button></div></form>`);
   bindClose();

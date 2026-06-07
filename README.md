@@ -27,3 +27,9 @@ Muudatused:
 - Drag & drop parandatud document-level pointer-event loogikaga.
 - ZIP struktuur korrastatud: üks VECO_V3 juurkaust.
 - ESC modalite sulgemine säilitatud.
+
+
+## V3.11.9.5 / 20260607_1600
+- Parandatud kalendri drag & drop nähtavus: lohistamisel kasutatakse body külge lisatud ghost-kaarti, mis ei kao päeva veeru overflow taha.
+- Lohistamisel kuvatakse ghost-kaardil sihtpäev ja sihtkellaaeg.
+- ESC modalite sulgemine säilitatud.
