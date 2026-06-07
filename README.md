@@ -46,3 +46,8 @@ Muudatused:
 - Kalendri töökäsu kaardil kuvatakse lõppaeg all vasakul.
 - Kestus kuvatakse all paremal.
 - Kestuse muutmisel uuenevad lõppaeg ja kestus reaalajas.
+
+
+## V3.11.10 / 20260607_1630
+- Kalender kuvab tööpäeva ala 08:00–17:00 õrna taustatooniga.
+- 08:00 ja 17:00 orientiirijooned lisatud, ilma tugeva kontrastita.
