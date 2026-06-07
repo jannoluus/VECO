@@ -6,6 +6,7 @@
   let realtimeChannel=null;
   let realtimeDebounce=null;
   let syncing=false;
+  let pendingWorkorders=null;
   let supabaseSupportsPlannedHours=true;
   let supabaseSupportsCompletedFields=true;
 
@@ -97,10 +98,15 @@
   }
   async function syncWorkorders(workorders){
     const client=getClient();
-    if(!client||syncing) return;
+    if(!client) return;
+    const snapshot=JSON.parse(JSON.stringify(workorders||[]));
+    if(syncing){
+      pendingWorkorders=snapshot;
+      return;
+    }
     syncing=true;
     try{
-      for(const w of (workorders||[])){
+      for(const w of snapshot){
         const row=toDb(w);
         if(!row.workorder_no) continue;
         const found=await client.from(TABLE).select('id').eq('workorder_no',row.workorder_no).maybeSingle();
@@ -125,6 +131,11 @@
       console.warn('VECO Supabase sync failed',err);
     }finally{
       syncing=false;
+      if(pendingWorkorders){
+        const next=pendingWorkorders;
+        pendingWorkorders=null;
+        setTimeout(()=>syncWorkorders(next),0);
+      }
     }
   }
 
@@ -203,7 +214,7 @@
           const after=signature(merged);
           if(before!==after && typeof onChange==='function') onChange(merged,{source:'polling'});
         }catch(err){console.warn('VECO Supabase polling failed',err);}
-      },15000);
+      },5000);
     },
     startWorkorderRealtime(onChange,onStatus){
       const client=getClient();
@@ -218,7 +229,7 @@
         .subscribe((status)=>{
           if(typeof onStatus==='function') onStatus(status);
           if(status==='SUBSCRIBED'){
-            if(pollingTimer){ clearInterval(pollingTimer); pollingTimer=null; }
+            this.startWorkorderPolling(onChange);
           }
           if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
             console.warn('VECO Supabase realtime status',status);

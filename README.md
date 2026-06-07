@@ -18,3 +18,8 @@ alter table workorders
 add column if not exists completed_at timestamptz,
 add column if not exists completed_by text;
 ```
+
+
+## V3.11.9.5 / 20260607_1915
+- Supabase sync järjekord: kiire järjestikune salvestamine ei jää enam syncing-luku taha.
+- Realtime kõrvale lisatud 5 s turvapolling, et telefoni/admini vaated uueneksid ka juhul, kui brauser realtime sündmuse maha magab.
