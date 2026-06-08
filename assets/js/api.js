@@ -46,6 +46,7 @@
     if(supabaseSupportsCompletedFields){
       row.completed_at=w.completedAt||w.completed_at||null;
       row.completed_by=w.completedBy||w.completed_by||null;
+      row.completion_comment=w.completionComment||w.completion_comment||null;
     }
     return row;
   }
@@ -64,7 +65,8 @@
       durationHours:Number(row.planned_hours||2)||2,
       hours:Number(row.planned_hours||2)||2,
       completedAt:row.completed_at||'',
-      completedBy:row.completed_by||''
+      completedBy:row.completed_by||'',
+      completionComment:row.completion_comment||''
     };
   }
   function mergeWorkorders(localData, remoteRows){
@@ -89,10 +91,11 @@
       supabaseSupportsPlannedHours=false;
       delete fallback.planned_hours;
     }
-    if(msg.includes('completed_at')||msg.includes('completed_by')){
+    if(msg.includes('completed_at')||msg.includes('completed_by')||msg.includes('completion_comment')){
       supabaseSupportsCompletedFields=false;
       delete fallback.completed_at;
       delete fallback.completed_by;
+      delete fallback.completion_comment;
     }
     return fallback;
   }
@@ -113,14 +116,14 @@
         if(found.error && found.error.code!=='PGRST116') throw found.error;
         if(found.data?.id){
           let {error}=await client.from(TABLE).update(row).eq('id',found.data.id);
-          if(error && /planned_hours|completed_at|completed_by/.test(String(error.message||''))){
+          if(error && /planned_hours|completed_at|completed_by|completion_comment/.test(String(error.message||''))){
             const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).update(fallback).eq('id',found.data.id));
           }
           if(error) throw error;
         }else{
           let {error}=await client.from(TABLE).insert(row);
-          if(error && /planned_hours|completed_at|completed_by/.test(String(error.message||''))){
+          if(error && /planned_hours|completed_at|completed_by|completion_comment/.test(String(error.message||''))){
             const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).insert(fallback));
           }
@@ -140,7 +143,7 @@
   }
 
   function signature(data){
-    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.completedAt||'',w.completedBy||'']));
+    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.completedAt||'',w.completedBy||'',w.completionComment||'']));
   }
   async function pullAndNotify(onChange){
     try{

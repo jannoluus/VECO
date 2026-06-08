@@ -50,3 +50,9 @@ add column if not exists completed_by text;
 - Lõpetatud: „Ava / muuda“, „Ava uuesti“.
 - „Peata“ viib töö tagasi staatusesse Planeeritud; „Ava uuesti“ viib töö staatusesse Töös.
 - Lõpetatud tööde sektsioon on tehniku vaates kokkuklapitav.
+
+## V3.11.17 / 20260608_0919
+- Tehnik peab töö lõpetamisel lisama kohustusliku töö tulemuse kommentaari.
+- Lõpetamise kommentaar salvestub `completion_comment` väljale ning dubleeritakse tehniku vaates töö tulemuse kuvamiseks.
+- Lõpetatud töö kaardil kuvatakse töö tulemus eraldi plokina.
+- Admini töökaardi kaudu lõpetamisel küsitakse samuti töö tulemust, kui kommentaar puudub.

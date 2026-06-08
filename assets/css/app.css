@@ -1238,3 +1238,11 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 .app-mobile .mobile-actions{grid-template-columns:repeat(2,minmax(0,1fr));}
 .app-mobile .mobile-actions .btn.primary:last-child:nth-child(3){grid-column:1/-1;}
 @media(max-width:420px){.app-mobile .mobile-actions{grid-template-columns:1fr;}}
+
+/* V3.11.17: required completion comment */
+.form-error{border:1px solid rgba(178,58,54,.45);border-radius:7px;background:rgba(178,58,54,.12);color:#ffb7b2;padding:8px 10px;font-size:12px;font-weight:800;}
+.theme-light .form-error{background:#fdebea;color:#9c312e;border-color:#f2c7c3;}
+.mobile-completion-comment{border:1px solid var(--line);border-radius:7px;padding:8px;background:rgba(255,255,255,.025);display:grid;gap:4px;font-size:12px;line-height:1.35;}
+.theme-light .mobile-completion-comment{background:#f8fafb;}
+.mobile-completion-comment strong{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
+.mobile-completion-comment span{white-space:pre-wrap;}

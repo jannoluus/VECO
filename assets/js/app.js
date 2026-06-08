@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.11.16';
-const APP_BUILD='20260608_0820';
+const APP_BUILD='20260608_0919';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -44,6 +44,7 @@ const isCompletedStatus=(s)=>completedStatuses.includes(String(s||'').trim());
 const openWorkorders=()=>state.workorders.filter(w=>!isCompletedStatus(w.status));
 const workorderStatusOptions=['Planeeritud','Töös','Lõpetatud'];
 const completedByLabel=(w)=>techName(w?.technicianId)||'VECO';
+const completionCommentText=(w)=>String(w?.completionComment||w?.completion_comment||w?.done||w?.workDone||'').trim();
 const statusClass=(s)=>{
   if(/lõpetatud|täidetud|valmis/i.test(s||'')) return 'done';
   if(/töös/i.test(s||'')) return 'progress';
@@ -296,6 +297,49 @@ function openVecoConfirm({title='Kinnitus',message='',details='',confirmText='OK
   });
 }
 
+function openCompletionCommentModal(w,initial=''){
+  return new Promise(resolve=>{
+    const existing=document.getElementById('vecoConfirm');
+    if(existing) existing.remove();
+    const el=document.createElement('div');
+    el.id='vecoConfirm';
+    el.className='confirm-modal open';
+    el.innerHTML=`<form class="confirm-dialog" id="completionCommentForm" role="dialog" aria-modal="true" aria-labelledby="completionCommentTitle">
+      <div class="dialog-head"><h2 id="completionCommentTitle">Töö lõpetamine</h2></div>
+      <div class="detail-body">
+        <div class="confirm-message">Lisa töö tulemus enne töökäsu lõpetamist.</div>
+        <div class="confirm-details"><strong>${esc(w?.id||'')}</strong><br>${esc(objectName(w?.objectId))}<br>${esc(w?.title||'')}</div>
+        <label class="full" style="display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650;">Töö tulemus *<textarea id="completionCommentInput" required minlength="5" placeholder="Kirjelda lühidalt, mis tehti või mis seis jäi.">${esc(initial||'')}</textarea></label>
+        <div class="form-error hidden" id="completionCommentError">Töö tulemus on kohustuslik.</div>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" id="completionCommentCancel">Loobu</button>
+        <button type="submit" class="btn primary" id="completionCommentOk">Lõpeta töö</button>
+      </div>
+    </form>`;
+    const cleanup=(value)=>{
+      document.removeEventListener('keydown',onKey);
+      el.remove();
+      resolve(value);
+    };
+    const input=()=>el.querySelector('#completionCommentInput');
+    const error=()=>el.querySelector('#completionCommentError');
+    const onKey=(e)=>{ if(e.key==='Escape'){ e.preventDefault(); cleanup(null); } };
+    document.body.appendChild(el);
+    document.addEventListener('keydown',onKey);
+    el.addEventListener('click',e=>{ if(e.target===el) cleanup(null); });
+    el.querySelector('#completionCommentCancel')?.addEventListener('click',()=>cleanup(null));
+    el.querySelector('#completionCommentForm')?.addEventListener('submit',e=>{
+      e.preventDefault();
+      const value=String(input()?.value||'').trim();
+      if(value.length<5){ error()?.classList.remove('hidden'); input()?.focus(); return; }
+      cleanup(value);
+    });
+    input()?.addEventListener('input',()=>error()?.classList.add('hidden'));
+    setTimeout(()=>input()?.focus(),0);
+  });
+}
+
 function renderObjects(){
   const clientFilter=$('#objectClientFilter')?.value||'all';
   const techFilter=$('#objectTechFilter')?.value||'all';
@@ -511,22 +555,26 @@ function openWorkorderModal(id='',defaults={}){
       hours:hours
     };
     if(nextStatus==='Lõpetatud' && !isCompletedStatus(previousStatus)){
-      const ok=await openVecoConfirm({
-        title:'Lõpeta töö',
-        message:'Kas soovid töö lõpetada?',
-        details:`<strong>${esc(next.id)}</strong><br>${esc(objectName(next.objectId))}<br>${esc(next.title)}`,
-        confirmText:'Lõpeta töö',
-        cancelText:'Loobu'
-      });
-      if(!ok) return;
+      const comment=await openCompletionCommentModal(next,completionCommentText(existing));
+      if(!comment) return;
       next.completedAt=new Date().toISOString();
       next.completedBy=completedByLabel(next);
+      next.completionComment=comment;
     }else if(nextStatus==='Lõpetatud' && isEdit){
+      const currentComment=completionCommentText(existing);
+      if(!currentComment){
+        const comment=await openCompletionCommentModal(next,'');
+        if(!comment) return;
+        next.completionComment=comment;
+      }else{
+        next.completionComment=currentComment;
+      }
       next.completedAt=existing.completedAt||new Date().toISOString();
       next.completedBy=existing.completedBy||completedByLabel(next);
     }else{
       next.completedAt='';
       next.completedBy='';
+      next.completionComment='';
     }
     if(isEdit){Object.assign(existing,next)}else{state.workorders.push(next);selectedWorkorderId=next.id;detailOpen.workorders=true}
     save();closeModal();
@@ -773,24 +821,28 @@ async function applyMobileWorkorderAction(action,workorderId){
     w.status='Töös';
     w.completedAt='';
     w.completedBy='';
+    w.completionComment='';
   }else if(action==='pause'){
     w.status='Planeeritud';
     w.completedAt='';
     w.completedBy='';
+    w.completionComment='';
   }else if(action==='finish'){
-    if(!isCompletedStatus(w.status)){
-      const ok=await openVecoConfirm({title:'Lõpeta töö',message:'Kas soovid töö lõpetada?',details:`<strong>${esc(w.id)}</strong><br>${esc(objectName(w.objectId))}<br>${esc(w.title)}`,confirmText:'Lõpeta töö',cancelText:'Loobu'});
-      if(!ok) return;
-    }
+    const comment=await openCompletionCommentModal(w,completionCommentText(w));
+    if(!comment) return;
     w.status='Lõpetatud';
     w.completedAt=new Date().toISOString();
     w.completedBy=completedByLabel(w);
+    w.completionComment=comment;
+    w.done=comment;
+    w.workDone=comment;
   }else if(action==='reopen'){
     const ok=await openVecoConfirm({title:'Ava töö uuesti',message:'Kas soovid lõpetatud töö uuesti avada?',details:`<strong>${esc(w.id)}</strong><br>${esc(objectName(w.objectId))}<br>${esc(w.title)}`,confirmText:'Ava uuesti',cancelText:'Loobu'});
     if(!ok) return;
     w.status='Töös';
     w.completedAt='';
     w.completedBy='';
+    w.completionComment='';
   }
   save();
   state=window.VECO_STORAGE.load();
@@ -825,7 +877,7 @@ function renderMobile(){
   const filters=`<select class="select" id="mobileScope"><option value="today" ${show==='today'?'selected':''}>Täna</option><option value="open" ${show==='open'?'selected':''}>Avatud tööd</option><option value="all" ${show==='all'?'selected':''}>Kõik aktiivsed tööd</option></select>`;
   const actions=`<button class="btn primary" id="mobileAddWorkBtn" type="button">＋ Lisa töö</button><button class="btn ghost" id="mobileSwitchUserBtn" type="button">⇄ Vaheta</button>`;
   const activeRows=activeJobs.map(w=>`<div class="card mobile-work-card"><div class="card-top"><h3>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</h3><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div><div class="kv"><span>Klient</span><strong>${esc(clientName(objectClientId(w.objectId)))}</strong></div><div class="kv"><span>Töö</span><strong>${esc(w.title)}</strong></div><div class="kv"><span>Kuupäev</span><strong>${esc(w.date)}</strong></div><div class="muted">${esc(w.description||'')}</div><div class="actions mobile-actions">${mobileWorkflowButtons(w)}</div></div>`).join('')||'<div class="card"><strong>Aktiivseid töid ei ole</strong><span class="muted">Valitud vahemikus sellele kasutajale aktiivseid töid ei ole.</span></div>';
-  const completedRows=completedJobs.map(w=>`<div class="card mobile-work-card mobile-completed-card"><div class="card-top"><h3>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</h3><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div><div class="kv"><span>Klient</span><strong>${esc(clientName(objectClientId(w.objectId)))}</strong></div><div class="kv"><span>Töö</span><strong>${esc(w.title)}</strong></div><div class="kv"><span>Kuupäev</span><strong>${esc(w.date)}</strong></div><div class="muted">${esc(w.description||'')}</div><div class="actions mobile-actions">${mobileWorkflowButtons(w)}</div></div>`).join('')||'<div class="card"><strong>Lõpetatud töid ei ole</strong><span class="muted">Kui töö lõpetatakse, jääb see siia vajadusel uuesti avamiseks.</span></div>';
+  const completedRows=completedJobs.map(w=>{const comment=completionCommentText(w);return `<div class="card mobile-work-card mobile-completed-card"><div class="card-top"><h3>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</h3><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div><div class="kv"><span>Klient</span><strong>${esc(clientName(objectClientId(w.objectId)))}</strong></div><div class="kv"><span>Töö</span><strong>${esc(w.title)}</strong></div><div class="kv"><span>Kuupäev</span><strong>${esc(w.date)}</strong></div>${comment?`<div class="mobile-completion-comment"><strong>Töö tulemus</strong><span>${esc(comment)}</span></div>`:`<div class="muted">Töö tulemus puudub.</div>`}<div class="actions mobile-actions">${mobileWorkflowButtons(w)}</div></div>`}).join('')||'<div class="card"><strong>Lõpetatud töid ei ole</strong><span class="muted">Kui töö lõpetatakse, jääb see siia vajadusel uuesti avamiseks.</span></div>';
   const completedOpen=localStorage.getItem('veco_mobile_completed_open')==='true';
   const completedToggleLabel=`${completedOpen?'▼':'▶'} Lõpetatud tööd (${completedJobs.length})`;
   shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2><span class="muted">${activeJobs.length} aktiivset · ${completedJobs.length} lõpetatud · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${filters}${actions}</div></div><div class="detail-body mobile-detail"><div class="section-title">Aktiivsed tööd</div><div class="grid mobile-work-grid">${activeRows}</div><button class="mobile-section-toggle" id="mobileCompletedToggle" type="button">${esc(completedToggleLabel)}</button>${completedOpen?`<div class="grid mobile-work-grid mobile-completed-grid">${completedRows}</div>`:''}</div>`,'',{wide:true});
@@ -849,7 +901,7 @@ function openMobileWorkModal(id){
   const w=byId(state.workorders,id); if(!w) return;
   openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(w.date)} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Tehtud töö / märkus<textarea name="done">${esc(w.done||w.workDone||'')}</textarea></label><label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Foto lisamine tuleb järgmises etapis"></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
-  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;if(nextStatus==='Lõpetatud'&&!isCompletedStatus(w.status)){const ok=await openVecoConfirm({title:'Lõpeta töö',message:'Kas soovid töö lõpetada?',details:`<strong>${esc(w.id)}</strong><br>${esc(objectName(w.objectId))}<br>${esc(w.title)}`,confirmText:'Lõpeta töö',cancelText:'Loobu'});if(!ok)return;w.completedAt=new Date().toISOString();w.completedBy=completedByLabel(w);}else if(nextStatus!=='Lõpetatud'){w.completedAt='';w.completedBy='';}w.done=f.done.value;w.workDone=f.done.value;w.status=nextStatus;w.photoNote=f.photoNote.value;save();closeModal();state=window.VECO_STORAGE.load();renderMobile();});
+  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;const note=String(f.done.value||'').trim();if(nextStatus==='Lõpetatud'){const comment=isCompletedStatus(w.status)?(completionCommentText(w)||note):await openCompletionCommentModal(w,note);if(!comment)return;w.completedAt=w.completedAt||new Date().toISOString();w.completedBy=w.completedBy||completedByLabel(w);w.completionComment=comment;w.done=comment;w.workDone=comment;}else{w.completedAt='';w.completedBy='';w.completionComment='';w.done=note;w.workDone=note;}w.status=nextStatus;w.photoNote=f.photoNote.value;save();closeModal();state=window.VECO_STORAGE.load();renderMobile();});
 }
 function renderMobilePreview(){
   const devices=[['iPhone SE','320px','568px'],['Android 360','360px','740px'],['iPhone 14','390px','844px'],['Large phone','414px','896px'],['Tahvel','768px','1024px']];
