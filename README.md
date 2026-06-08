@@ -56,3 +56,7 @@ add column if not exists completed_by text;
 - Lõpetamise kommentaar salvestub `completion_comment` väljale ning dubleeritakse tehniku vaates töö tulemuse kuvamiseks.
 - Lõpetatud töö kaardil kuvatakse töö tulemus eraldi plokina.
 - Admini töökaardi kaudu lõpetamisel küsitakse samuti töö tulemust, kui kommentaar puudub.
+
+## V3.11.17 / 20260608_1226
+- Headeri VALVE pill kasutab nüüd valitud kalendri/tiimivaate perioodi, mitte ainult tänast kuupäeva.
+- Parandatud olukord, kus Tiimivaade näitas Jannot valves, aga päise VALVE pill näitas DEMO.
