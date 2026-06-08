@@ -72,3 +72,9 @@ add column if not exists completed_by text;
 - Objektiväli on otsitav: saab valida olemasoleva objekti või kirjutada uue objekti nime.
 - Uue objektinime sisestamisel lisatakse objekt registrisse ja seotakse töökäsuga.
 - Sisaldab varasemat kuupäeva/Täna nupu ning sync paranduste baasi.
+
+
+## V3.11.20 / 20260608_1254
+- Kalendri Lisa töökäsk objektiväli lubab nüüd uue objekti kirjutamist.
+- Eemaldatud brauseri alert objektivalideerimisel; tühi objekt fookustatakse väljal.
+- Kui klient on valitud, seotakse uus objekt selle kliendiga.

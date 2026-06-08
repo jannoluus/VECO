@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.19';
-const APP_BUILD='20260608_1246';
+const APP_VERSION='v3.11.20';
+const APP_BUILD='20260608_1254';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -512,20 +512,36 @@ function openWorkorderModal(id='',defaults={}){
   bindClose();
   const form=$('#workorderForm');
   const resolveObject=()=>{
-    const objectText=form.elements.objectName.value.trim().toLowerCase();
+    const rawObject=form.elements.objectName.value.trim();
+    const objectText=rawObject.toLowerCase();
     const clientText=form.elements.clientName.value.trim().toLowerCase();
-    let obj=state.objects.find(o=>o.name.toLowerCase()===objectText);
-    if(!obj && objectText){
-      obj=state.objects.find(o=>o.name.toLowerCase().includes(objectText));
+    if(!objectText) return null;
+    const client=clientText
+      ? (state.clients.find(c=>c.name.toLowerCase()===clientText)||state.clients.find(c=>c.name.toLowerCase().includes(clientText)))
+      : null;
+    let candidates=state.objects;
+    if(client){
+      const scoped=state.objects.filter(o=>o.clientId===client.id);
+      if(scoped.length) candidates=scoped;
     }
-    if(clientText && obj){
-      const client=byId(state.clients,obj.clientId);
-      if(client && !client.name.toLowerCase().includes(clientText)){
-        const sameClientObjects=state.objects.filter(o=>byId(state.clients,o.clientId)?.name.toLowerCase().includes(clientText));
-        obj=sameClientObjects.find(o=>o.name.toLowerCase()===objectText)||sameClientObjects.find(o=>o.name.toLowerCase().includes(objectText))||obj;
-      }
-    }
-    return obj||null;
+    let obj=candidates.find(o=>o.name.toLowerCase()===objectText)
+      || candidates.find(o=>o.name.toLowerCase().includes(objectText))
+      || state.objects.find(o=>o.name.toLowerCase()===objectText);
+    if(obj) return obj;
+    obj={
+      id:uid('O'),
+      clientId:client?.id||'',
+      name:rawObject,
+      address:'',
+      mainContact:'',
+      responsibleTechId:form.elements.technicianId?.value||'',
+      contract:'',
+      status:'active',
+      notes:'Lisatud kalendri töökäsu loomisel.',
+      contacts:[]
+    };
+    state.objects.push(obj);
+    return obj;
   };
   const resolveProject=(obj)=>{
     const text=form.elements.projectName.value.trim().toLowerCase();
@@ -562,7 +578,7 @@ function openWorkorderModal(id='',defaults={}){
     e.preventDefault();
     const f=e.currentTarget.elements;
     const obj=resolveObject();
-    if(!obj){ alert('Vali objekt registrist või otsingust.'); return; }
+    if(!obj){ f.objectName.focus(); return; }
     const project=resolveProject(obj);
     const hours=Number(f.plannedHours.value)||2;
     const previousStatus=isEdit?existing.status:'';
