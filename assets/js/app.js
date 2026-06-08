@@ -1431,7 +1431,7 @@ function renderCalendar(){
         const duration=workorderHours(w);
         const minHeight=Math.max(jobs.length>=3?34:40,Math.min(60,duration*34));
         const endTime=workorderEndTime(w,calendarEndHour);
-        return `<button class="calendar-event calendar-status-${statusSlug(w.status)}${compactClass}" style="top:${topPct}%;height:calc((100% / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" type="button" title="Lohista töö teisele ajale või päevale"><span class="calendar-event-head"><strong><b class="calendar-start-time">${esc(w.time||'')}</b> · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small><span class="calendar-event-footer" aria-label="Töö lõpp ja kestus"><b class="calendar-end-time">${esc(endTime)}</b><b class="calendar-duration">${duration} h</b></span><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kestust" aria-hidden="true"></span></button>`;
+        return `<button class="calendar-event calendar-status-${statusSlug(w.status)}${compactClass}" style="top:${topPct}%;height:calc((100% / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" type="button" title="Lohista töö teisele ajale või päevale"><span class="calendar-move-edge calendar-move-edge-left" title="Lohista vasakule / eelmisele päevale" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-right" title="Lohista paremale / järgmisele päevale" aria-hidden="true"></span><span class="calendar-event-head"><strong><b class="calendar-start-time">${esc(w.time||'')}</b> · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small><span class="calendar-event-footer" aria-label="Töö lõpp ja kestus"><b class="calendar-end-time">${esc(endTime)}</b><b class="calendar-duration">${duration} h</b></span><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kestust" aria-hidden="true"></span></button>`;
       }).join('');
       const slots=hours.map(h=>`<button class="calendar-slot" data-add-date="${date}" data-add-time="${String(h).padStart(2,'0')}:00" title="Lisa töö ${date} ${String(h).padStart(2,'0')}:00" type="button"></button>`).join('');
       const workdayMarkers=`<span class="calendar-workday-shade" style="top:${workdayStartPct}%;height:${workdayHeightPct}%" aria-hidden="true"></span><span class="calendar-workday-line calendar-workday-start" style="top:${workdayStartPct}%" aria-hidden="true"></span><span class="calendar-workday-line calendar-workday-end" style="top:${workdayEndPct}%" aria-hidden="true"></span>`;
@@ -1556,16 +1556,20 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
     card.addEventListener('pointerdown',e=>{
       if(e.button!==0) return;
       const workorderId=card.dataset.calendarDrag;
+      const wStart=byId(state.workorders,workorderId);
+      if(!wStart) return;
       const startX=e.clientX;
       const startY=e.clientY;
       const cardRect=card.getBoundingClientRect();
       const offsetX=startX-cardRect.left;
       const offsetY=startY-cardRect.top;
+      const originalTime=wStart.time||'09:00';
       let dragging=false;
       let ghost=null;
       let lastLane=null;
       let lastX=startX;
       let lastY=startY;
+      let horizontalMove=false;
       const originalTransition=card.style.transition;
       const originalZ=card.style.zIndex;
 
@@ -1583,8 +1587,8 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
       };
       const updateGhost=(clientX,clientY,lane)=>{
         const targetDate=lane?.dataset.calendarLane||'';
-        const targetTime=lane?timeFromPoint(lane,clientY):'';
-        const label=targetDate&&targetTime ? `${dayShort(targetDate)} · ${targetTime}` : 'Lohista kalendrisse';
+        const targetTime=lane?(horizontalMove?originalTime:timeFromPoint(lane,clientY)):'';
+        const label=targetDate&&targetTime ? `${dayShort(targetDate)} · ${targetTime}${horizontalMove?' · kellaaeg jääb':''}` : 'Lohista kalendrisse';
         card.setAttribute('data-drag-label',label);
         if(ghost){
           ghost.style.left=`${clientX-offsetX}px`;
@@ -1623,6 +1627,7 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
         const dy=lastY-startY;
         if(!dragging && Math.hypot(dx,dy)<8) return;
         if(!dragging) beginDrag();
+        horizontalMove=Math.abs(dx)>Math.max(18,Math.abs(dy)*1.35);
         ev.preventDefault();
         lastLane=laneAtPoint(lastX,lastY,ghost||card);
         clearTargets();
@@ -1638,7 +1643,7 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
           const w=byId(state.workorders,workorderId);
           if(w && lane){
             w.date=lane.dataset.calendarLane;
-            w.time=timeFromPoint(lane,lastY);
+            w.time=horizontalMove?originalTime:timeFromPoint(lane,lastY);
             save();
           }
           cleanup();

@@ -151,3 +151,8 @@ add column if not exists completed_by text;
 - PDF akti sektsioonide vahed korrigeeritud: Töö tulemus ja Allkirjad ei alga enam kohe eelneva kasti all.
 - Kuupäevade kuvamine veebirakenduses ühtlustatud kujule DD.MM.YYYY kohtades, kus kuupäeva näidatakse kasutajale.
 - Sisestusväljade ISO kuupäeva väärtused jäid muutmata.
+## 2026-06-08 calendar update
+- Kalendrisündmust saab lohistada vasakule/paremale teisele päevale.
+- Kui liikumine on peamiselt horisontaalne, säilib algne kellaaeg.
+- Töökaardil on vasakul/paremal serval visuaalne riba, mis annab märku nihutamise võimalusest.
+- Vertikaalne lohistamine muudab jätkuvalt päeva sees kellaaega.

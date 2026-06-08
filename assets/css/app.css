@@ -1338,3 +1338,20 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
     grid-template-columns:minmax(0,1fr) minmax(360px,410px);
   }
 }
+
+/* Calendar event horizontal move affordance */
+.calendar-move-edge{
+  position:absolute!important;
+  top:0!important;
+  bottom:20px!important;
+  width:7px!important;
+  z-index:4!important;
+  opacity:0!important;
+  pointer-events:none!important;
+  background:rgba(23,105,170,.26)!important;
+}
+.calendar-move-edge-left{left:0!important;border-radius:7px 0 0 7px!important;}
+.calendar-move-edge-right{right:0!important;border-radius:0 7px 7px 0!important;}
+.calendar-event:hover .calendar-move-edge,
+.calendar-event.dragging .calendar-move-edge{opacity:1!important;}
+.calendar-event.dragging[data-drag-label*="kellaaeg jääb"]{cursor:ew-resize!important;}
