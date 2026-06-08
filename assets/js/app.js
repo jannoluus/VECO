@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.11.20';
-const APP_BUILD='20260608_1254';
+const APP_BUILD='20260608_1314';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -74,6 +74,23 @@ function notifyLocalPeers(){
     if(localSyncChannel) localSyncChannel.postMessage(msg);
   }catch(e){ /* ignore local sync errors */ }
 }
+function isUserEditingOrChoosing(){
+  const el=document.activeElement;
+  if(!el) return false;
+  const tag=String(el.tagName||'').toLowerCase();
+  if(['select','input','textarea'].includes(tag)) return true;
+  if(el.isContentEditable) return true;
+  if(el.closest?.('.dialog')) return true;
+  return false;
+}
+function renderCurrentPageWhenIdle(){
+  if(isUserEditingOrChoosing()){
+    clearTimeout(localSyncTimer);
+    localSyncTimer=setTimeout(renderCurrentPageWhenIdle,650);
+    return;
+  }
+  renderCurrentPage();
+}
 function scheduleLocalRefresh(){
   clearTimeout(localSyncTimer);
   localSyncTimer=setTimeout(()=>{
@@ -81,7 +98,7 @@ function scheduleLocalRefresh(){
       if($('#modal')?.classList.contains('open')) return;
       state=window.VECO_STORAGE.load();
       localStateSnapshot=localStateSignature(state);
-      renderCurrentPage();
+      renderCurrentPageWhenIdle();
     }catch(e){ console.warn('VECO local peer refresh failed',e); }
   },120);
 }
@@ -96,7 +113,7 @@ function startLocalStateWatch(){
       if(nextSig!==localStateSnapshot){
         localStateSnapshot=nextSig;
         state=latest;
-        renderCurrentPage();
+        renderCurrentPageWhenIdle();
       }
     }catch(e){ console.warn('VECO local state watch failed',e); }
   },1000);
@@ -1379,7 +1396,7 @@ async function bootstrapApp(){
       selectedWorkorderId=state.workorders?.[0]?.id||selectedWorkorderId||'';
       selectedActId=state.acts?.[0]?.id||selectedActId||'';
       renderCurrentPage();
-      const onRemoteWorkorders=(merged,meta={})=>{ state=merged; renderCurrentPage(); showSyncNotice(meta.source==='polling'?'Andmed uuendatud':'Realtime uuendus'); };
+      const onRemoteWorkorders=(merged,meta={})=>{ state=merged; renderCurrentPageWhenIdle(); showSyncNotice(meta.source==='polling'?'Andmed uuendatud':'Realtime uuendus'); };
       const realtimeStarted=window.VECO_API.startWorkorderRealtime?.(onRemoteWorkorders,(status)=>{
         if(status==='SUBSCRIBED') showSyncNotice('Realtime ühendus aktiivne');
       });

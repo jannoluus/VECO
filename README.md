@@ -78,3 +78,8 @@ add column if not exists completed_by text;
 - Kalendri Lisa töökäsk objektiväli lubab nüüd uue objekti kirjutamist.
 - Eemaldatud brauseri alert objektivalideerimisel; tühi objekt fookustatakse väljal.
 - Kui klient on valitud, seotakse uus objekt selle kliendiga.
+
+
+## V3.11.21 / 20260608_1314
+- Parandatud kogu rakenduse taustasünkrooni renderdamine: select/input väljade kasutamise ajal ei renderdata vaadet üle.
+- Kalendri ja teiste vaadete rippmenüüd ei sulgu enam kohe pärast avamist.
