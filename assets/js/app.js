@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.11.24';
-const APP_BUILD='20260608_1527';
+const APP_BUILD='20260608_1547';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -720,13 +720,13 @@ function actPrintHtml(actId,{autoPrint=false,autoPdf=false}={}){
   const headerRight=[['Objekt',obj.name||''],['Töökäsk',w.id||a.workorderId]];
   const topItems=[
     ['Klient',client.name||''],['Staatus',w.status||a.status],['Tehnik',techName(w.technicianId)],['Kestus',`${workorderHours(w)} h`],
-    ['Algus',fmtActDateTime(w.date||a.date||'',startTime)],['Lõpp',endTime]
+    ['Algus',fmtActDateTime(w.date||a.date||'',startTime)],['Lõpp',endTime],['Tüüp',a.type||'Väljakutse akt'],['Töökäsk',w.id||a.workorderId]
   ];
   const autoScript=autoPrint?`<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>`:'';
   const helper=autoPrint?'Prindivaade avatakse automaatselt.':'Akti eelvaade.';
   return `<!doctype html><html lang="et"><head><meta charset="utf-8"><title>${esc(actNumber(a))} · ${esc(a.title||'Väljakutse akt')}</title><style>
-    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;font-size:12px;line-height:1.28;background:#fff}.actions{margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.act-head{display:grid;grid-template-columns:1fr 170px 1fr;gap:12px;align-items:start;margin-bottom:8px}.head-side{display:grid;gap:5px}.head-card{border:1px solid #d9dee7;border-radius:7px;min-height:40px;padding:6px 8px;background:#f7f9fc}.head-card .value{font-size:12px}.top{text-align:center;display:flex;align-items:center;justify-content:center;min-height:118px}.logo-img{width:62px;height:62px;object-fit:contain;display:block;margin:0 auto}.muted{color:#555;font-size:11px}.meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.meta-item{border:1px solid #d9dee7;border-radius:7px;min-height:40px;padding:6px 8px;overflow:hidden;background:#f7f9fc}.meta-item.address{grid-column:1/-1;min-height:35px}.label{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}.value{font-size:12px;font-weight:700;color:#0f172a;overflow-wrap:anywhere}.section-title{font-size:13px;font-weight:800;margin:9px 0 5px;border-bottom:1px solid #bbb;padding-bottom:3px;letter-spacing:.02em}.box{border:1px solid #d9dee7;border-radius:7px;padding:9px 10px;white-space:pre-wrap;overflow-wrap:anywhere}.box.description{min-height:34px}.box.result{min-height:215px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #d9dee7;border-radius:7px;min-height:66px;padding:9px}.signature-line{border-top:1px solid #999;margin-top:24px;padding-top:5px;color:#555}@media(max-width:800px){.act-head{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}.meta-item.address{grid-column:1/-1}}@media print{.actions{display:none} body{margin:10mm}.act-head{grid-template-columns:1fr 150px 1fr;gap:9px}.top{min-height:116px}.logo-img{width:58px;height:58px}.head-card,.meta-item{min-height:36px;padding:5px 7px}.section-title{margin-top:10px}.box.description{min-height:28px}.box.result{min-height:150px}.signature{min-height:64px}}
-  </style>${autoScript}</head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi</button><button class="btn" onclick="window.close()">Sulge</button><span class="muted">${esc(helper)}</span></div><div class="act-head"><div class="head-side">${headerLeft.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="top"><img class="logo-img" src="${logoUrl}" alt="VECO"></div><div class="head-side">${headerRight.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div></div><div class="section-title">Üldandmed</div><div class="meta">${topItems.map(([k,v])=>`<div class="meta-item"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}<div class="meta-item address"><div class="label">Aadress</div><div class="value">${esc(obj.address||'-')}</div></div></div><div class="section-title">Töö kirjeldus</div><div class="box description">${esc(w.description||'-')}</div><div class="section-title">Töö tulemus</div><div class="box result">${esc(result)}</div><div class="section-title">Allkirjad</div><div class="signatures"><div class="signature"><strong>Teostaja</strong><div>${esc(techName(w.technicianId))}</div><div class="signature-line">Allkiri / kuupäev</div></div><div class="signature"><strong>Tellija</strong><div>&nbsp;</div><div class="signature-line">Allkiri / kuupäev</div></div></div></body></html>`;
+    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;font-size:12px;line-height:1.28;background:#fff}.actions{margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.act-head{display:grid;grid-template-columns:1fr 170px 1fr;gap:18px;align-items:start;margin-bottom:16px}.head-side{display:grid;gap:10px}.head-card{border:1px solid #d9dee7;border-radius:8px;min-height:42px;padding:7px 9px;background:#f7f9fc}.head-card .value{font-size:12px}.top{text-align:center;display:flex;align-items:flex-start;justify-content:center;min-height:118px;padding-top:10px}.logo-img{width:68px;height:68px;object-fit:contain;display:block;margin:0 auto}.muted{color:#555;font-size:11px}.meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.meta-item{border:1px solid #d9dee7;border-radius:8px;min-height:42px;padding:7px 9px;overflow:hidden;background:#f7f9fc}.meta-item.address{grid-column:1/-1;min-height:42px}.label{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}.value{font-size:12px;font-weight:700;color:#0f172a;overflow-wrap:anywhere}.section-title{font-size:14px;font-weight:800;margin:12px 0 7px;border-bottom:1px solid #cbd5e1;padding-bottom:5px;letter-spacing:.02em}.section-title.desc{margin-top:22px}.box{border:1px solid #d9dee7;border-radius:8px;padding:9px 10px;white-space:pre-wrap;overflow-wrap:anywhere}.box.description{min-height:36px}.box.result{min-height:96px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #d9dee7;border-radius:8px;min-height:72px;padding:9px}.signature-line{border-top:1px solid #999;margin-top:24px;padding-top:5px;color:#555}@media(max-width:800px){.act-head{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}.meta-item.address{grid-column:1/-1}}@media print{.actions{display:none} body{margin:10mm}.act-head{grid-template-columns:1fr 150px 1fr;gap:12px;margin-bottom:14px}.top{min-height:116px;padding-top:8px}.logo-img{width:62px;height:62px}.head-card,.meta-item{min-height:38px;padding:5px 7px}.meta{gap:8px}.section-title{margin-top:11px}.section-title.desc{margin-top:20px}.box.description{min-height:30px}.box.result{min-height:90px}.signature{min-height:68px}}
+  </style>${autoScript}</head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi</button><button class="btn" onclick="window.close()">Sulge</button><span class="muted">${esc(helper)}</span></div><div class="act-head"><div class="head-side">${headerLeft.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="top"><img class="logo-img" src="${logoUrl}" alt="VECO"></div><div class="head-side">${headerRight.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div></div><div class="section-title">Üldandmed</div><div class="meta">${topItems.map(([k,v])=>`<div class="meta-item"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}<div class="meta-item address"><div class="label">Aadress</div><div class="value">${esc(obj.address||'-')}</div></div></div><div class="section-title desc">Töö kirjeldus</div><div class="box description">${esc(w.description||'-')}</div><div class="section-title">Töö tulemus</div><div class="box result">${esc(result)}</div><div class="section-title">Allkirjad</div><div class="signatures"><div class="signature"><strong>Teostaja</strong><div>${esc(techName(w.technicianId))}</div><div class="signature-line">Allkiri / kuupäev</div></div><div class="signature"><strong>Tellija</strong><div>&nbsp;</div><div class="signature-line">Allkiri / kuupäev</div></div></div></body></html>`;
 }
 function openActWindow(actId,mode='preview'){
   const html=actPrintHtml(actId,{autoPrint:mode==='print',autoPdf:mode==='pdf'});
@@ -760,6 +760,7 @@ function actPdfData(actId){
     start:fmtActDateTime(w.date||a.date||'',w.time||''),
     end:w.time?workorderEndTime(w):'',
     duration:`${workorderHours(w)} h`,
+    type:a.type||'Väljakutse akt',
     description:w.description||'-',
     result:completionCommentText(w)||'Töö tulemus puudub.'
   };
@@ -861,19 +862,19 @@ async function renderActPdfCanvas(actId){
   drawInfoCell(ctx,'Kuupäev',d.date,left,headY+72,colW*1.55,58);
   drawInfoCell(ctx,'Objekt',d.objectName,canvas.width-left-colW*1.55,headY,colW*1.55,58);
   drawInfoCell(ctx,'Töökäsk',d.workorder,canvas.width-left-colW*1.55,headY+72,colW*1.55,58);
-  if(logo){ ctx.drawImage(logo, (canvas.width-logoSize)/2, headY, logoSize, logoSize); }
-  else { ctx.fillStyle='#2483ff'; ctx.beginPath(); ctx.arc(canvas.width/2,headY+logoSize/2,logoSize/2,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#fff'; ctx.font='700 26px Arial'; ctx.textAlign='center'; ctx.fillText('VECO',canvas.width/2,headY+logoSize/2+8); ctx.textAlign='left'; }
+  if(logo){ ctx.drawImage(logo, (canvas.width-logoSize)/2, headY+16, logoSize, logoSize); }
+  else { ctx.fillStyle='#2483ff'; ctx.beginPath(); ctx.arc(canvas.width/2,headY+16+logoSize/2,logoSize/2,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#fff'; ctx.font='700 26px Arial'; ctx.textAlign='center'; ctx.fillText('VECO',canvas.width/2,headY+16+logoSize/2+8); ctx.textAlign='left'; }
   ctx.textAlign='left';
 
-  let y=176;
+  let y=205;
   const cells=[
     ['Klient',d.clientName],['Staatus',d.status],['Tehnik',d.technician],['Kestus',d.duration],
-    ['Algus',d.start],['Lõpp',d.end]
+    ['Algus',d.start],['Lõpp',d.end],['Tüüp',d.type],['Töökäsk',d.workorder]
   ];
   cells.forEach((c,i)=>{ const x=left+(i%4)*(colW+gap); const yy=y+Math.floor(i/4)*74; drawInfoCell(ctx,c[0],c[1],x,yy,colW,58); });
   y+=Math.ceil(cells.length/4)*74;
   drawInfoCell(ctx,'Aadress',d.address,left,y,canvas.width-left*2,58);
-  y+=78;
+  y+=94;
 
   function section(title,body,minH,maxLines){
     ctx.fillStyle='#0f172a'; ctx.font='800 22px Arial, Helvetica, sans-serif'; ctx.fillText(title.toUpperCase(),left,y);
@@ -883,8 +884,8 @@ async function renderActPdfCanvas(actId){
     wrapCanvasText(ctx,body,left+20,y+34,canvas.width-left*2-40,29,maxLines || Math.floor((minH-38)/29));
     y+=minH+26;
   }
-  section('Töö kirjeldus',d.description,58,2);
-  section('Töö tulemus',d.result,360,12);
+  section('Töö kirjeldus',d.description,62,2);
+  section('Töö tulemus',d.result,150,6);
 
   ctx.fillStyle='#0f172a'; ctx.font='800 22px Arial, Helvetica, sans-serif'; ctx.fillText('ALLKIRJAD',left,y); y+=18;
   ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(canvas.width-left,y); ctx.stroke(); y+=22;
