@@ -1,7 +1,7 @@
 # VECO V3
 
 Versioon: v3.11.13
-Build: 20260608_1411
+Build: 20260608_1448
 
 Muudatused:
 - Töökäsu staatuse töövoog: Planeeritud / Töös / Lõpetatud.
@@ -110,3 +110,9 @@ add column if not exists completed_by text;
 - Akti eelvaates kasutatakse lisatud VECO ümmargust logo failist assets/img/veco-act-logo.jpg.
 - Prindi ja Salvesta PDF on eraldi toimingud.
 - Salvesta PDF käivitab PDF-faili allalaadimise, mitte brauseri printimise dialoogi.
+
+
+## V3.11.22 / Build 20260608_1448
+- Akt V2 PDF salvestus renderdab A4 akti canvas-põhiselt PDF-i sisse, et Eesti täpitähed säiliksid.
+- PDF failinimi kujul VECO_AKT_....pdf.
+- PDF kasutab ümmargust VECO logo, kompaktset 3-veerulist üldandmete plokki ja suuremat töö tulemuse ala.

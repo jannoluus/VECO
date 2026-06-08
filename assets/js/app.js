@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.21';
-const APP_BUILD='20260608_1411';
+const APP_VERSION='v3.11.22';
+const APP_BUILD='20260608_1448';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -721,76 +721,171 @@ function openActWindow(actId,mode='preview'){
 function openActPreview(actId){ openActWindow(actId,'preview'); }
 function printAct(actId){ openActWindow(actId,'print'); }
 
-function pdfEscapeText(value){ return String(value||'').replace(/[\\()]/g,'\\$&').replace(/\r?\n/g,' '); }
-function actPdfLines(actId){
-  const a=byId(state.acts,actId); if(!a) return [];
+function actPdfData(actId){
+  const a=byId(state.acts,actId); if(!a) return null;
   const w=byId(state.workorders,a.workorderId)||{};
   const obj=byId(state.objects,a.objectId||w.objectId)||{};
   const client=byId(state.clients,obj.clientId)||{};
-  const lines=[];
-  lines.push('VECO');
-  lines.push(String(a.type||'Väljakutse akt'));
-  lines.push('Akti nr: '+actNumber(a));
-  lines.push('Kuupäev: '+(a.date||w.date||''));
-  lines.push('Klient: '+(client.name||''));
-  lines.push('Objekt: '+(obj.name||''));
-  lines.push('Aadress: '+(obj.address||''));
-  lines.push('Tehnik: '+techName(w.technicianId));
-  lines.push('Töökäsk: '+(w.id||a.workorderId||''));
-  lines.push('Aeg: '+(w.date||'')+' '+(w.time||'')+' - '+(w.time?workorderEndTime(w):''));
-  lines.push('Kestus: '+workorderHours(w)+' h');
-  lines.push('Staatus: '+(w.status||a.status||''));
-  lines.push('');
-  lines.push('Töö kirjeldus:');
-  lines.push(w.description||'-');
-  lines.push('');
-  lines.push('Töö tulemus:');
-  lines.push(completionCommentText(w)||'Töö tulemus puudub.');
-  lines.push('');
-  lines.push('Allkirjad:');
-  lines.push('Tehnik: '+techName(w.technicianId)+' ____________________');
-  lines.push('Klient: ____________________');
-  return lines;
+  return {
+    act:a, workorder:w, object:obj, client,
+    number:actNumber(a),
+    type:a.type||'Väljakutse akt',
+    date:a.date||w.date||'',
+    clientName:client.name||'',
+    objectName:obj.name||'',
+    address:obj.address||'',
+    technician:techName(w.technicianId),
+    workorder:w.id||a.workorderId||'',
+    status:w.status||a.status||'',
+    start:`${w.date||''} ${w.time||''}`.trim(),
+    end:w.time?workorderEndTime(w):'',
+    duration:`${workorderHours(w)} h`,
+    description:w.description||'-',
+    result:completionCommentText(w)||'Töö tulemus puudub.'
+  };
 }
-function simplePdfBlob(lines){
-  const objects=[];
-  function add(str){ objects.push(str); return objects.length; }
-  add('<< /Type /Catalog /Pages 2 0 R >>');
-  add('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
-  add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>');
-  add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
-  add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
-  let y=790;
-  let content='';
-  lines.forEach((line,i)=>{
-    const isHead=i<2 || ['Töö kirjeldus:','Töö tulemus:','Allkirjad:'].includes(line);
-    const size=i===0?18:(i===1?15:(isHead?11:10));
-    const font=isHead?'/F2':'/F1';
-    const parts=String(line||'').match(/.{1,95}(\s|$)|.{1,95}/g)||[''];
-    parts.forEach(part=>{ if(y<58) return; content+=`BT ${font} ${size} Tf 40 ${y} Td (${pdfEscapeText(part.trim())}) Tj ET\n`; y-=size+6; });
-    if(line==='') y-=4;
+function actPdfFileName(a){
+  const nr=String(actNumber(a)||timestampActId()).replace(/^VECO[-_]?/i,'').replace(/[^0-9A-Za-z]+/g,'_').replace(/^_+|_+$/g,'');
+  return `VECO_AKT_${nr}.pdf`;
+}
+function loadActLogo(){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=()=>resolve(null);
+    img.src=new URL('assets/img/veco-act-logo.jpg', window.location.href).href;
   });
-  add(`<< /Length ${content.length} >>\nstream\n${content}endstream`);
-  let pdf='%PDF-1.4\n';
-  const offsets=[0];
-  objects.forEach((obj,i)=>{ offsets.push(pdf.length); pdf+=`${i+1} 0 obj\n${obj}\nendobj\n`; });
-  const xref=pdf.length;
-  pdf+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
-  for(let i=1;i<offsets.length;i++) pdf+=`${String(offsets[i]).padStart(10,'0')} 00000 n \n`;
-  pdf+=`trailer << /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-  return new Blob([pdf],{type:'application/pdf'});
 }
-function saveActPdf(actId){
+function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight,maxLines=99){
+  const words=String(text||'').replace(/\r/g,'').split(/\s+/);
+  const lines=[];
+  let line='';
+  for(const word of words){
+    const test=line?line+' '+word:word;
+    if(ctx.measureText(test).width>maxWidth && line){ lines.push(line); line=word; }
+    else line=test;
+  }
+  if(line) lines.push(line);
+  const shown=lines.slice(0,maxLines);
+  if(lines.length>maxLines && shown.length){ shown[shown.length-1]=shown[shown.length-1].replace(/\s*$/,'')+'…'; }
+  shown.forEach((ln,i)=>ctx.fillText(ln,x,y+i*lineHeight));
+  return y+shown.length*lineHeight;
+}
+function roundRectPath(ctx,x,y,w,h,r){
+  const rr=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr,y); ctx.lineTo(x+w-rr,y); ctx.quadraticCurveTo(x+w,y,x+w,y+rr);
+  ctx.lineTo(x+w,y+h-rr); ctx.quadraticCurveTo(x+w,y+h,x+w-rr,y+h);
+  ctx.lineTo(x+rr,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-rr);
+  ctx.lineTo(x,y+rr); ctx.quadraticCurveTo(x,y,x+rr,y); ctx.closePath();
+}
+function drawInfoCell(ctx,label,value,x,y,w,h){
+  ctx.strokeStyle='#d7dee8'; ctx.lineWidth=1; ctx.fillStyle='#f7f9fc';
+  roundRectPath(ctx,x,y,w,h,10); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#64748b'; ctx.font='700 17px Arial, Helvetica, sans-serif'; ctx.fillText(String(label).toUpperCase(),x+16,y+23);
+  ctx.fillStyle='#0f172a'; ctx.font='700 21px Arial, Helvetica, sans-serif';
+  wrapCanvasText(ctx,value||'-',x+16,y+54,w-32,25,2);
+}
+function jpegBytesFromDataUrl(dataUrl){
+  const b64=dataUrl.split(',')[1]||'';
+  const bin=atob(b64);
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes;
+}
+function asciiBytes(str){ return new TextEncoder().encode(str); }
+function buildImagePdf(jpegBytes,imgW,imgH){
+  const pageW=595.28, pageH=841.89;
+  const content=`q\n${pageW.toFixed(2)} 0 0 ${pageH.toFixed(2)} 0 0 cm\n/Im1 Do\nQ\n`;
+  const objs=[
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW.toFixed(2)} ${pageH.toFixed(2)}] /Resources << /XObject << /Im1 5 0 R >> >> /Contents 4 0 R >>`,
+    `<< /Length ${asciiBytes(content).length} >>\nstream\n${content}endstream`,
+    {image:true, bytes:jpegBytes, header:`<< /Type /XObject /Subtype /Image /Width ${imgW} /Height ${imgH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`, footer:'\nendstream'}
+  ];
+  const parts=[]; let offset=0; const offsets=[0];
+  function push(part){
+    const bytes=part instanceof Uint8Array ? part : asciiBytes(String(part));
+    parts.push(bytes); offset+=bytes.length;
+  }
+  push('%PDF-1.4\n');
+  objs.forEach((obj,i)=>{
+    offsets.push(offset);
+    push(`${i+1} 0 obj\n`);
+    if(obj && obj.image){ push(obj.header); push(obj.bytes); push(obj.footer); }
+    else push(obj);
+    push('\nendobj\n');
+  });
+  const xref=offset;
+  push(`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`);
+  for(let i=1;i<offsets.length;i++) push(`${String(offsets[i]).padStart(10,'0')} 00000 n \n`);
+  push(`trailer << /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(parts,{type:'application/pdf'});
+}
+async function renderActPdfCanvas(actId){
+  const d=actPdfData(actId); if(!d) return null;
+  const canvas=document.createElement('canvas');
+  canvas.width=1240; canvas.height=1754;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  const logo=await loadActLogo();
+  if(logo){ ctx.drawImage(logo, (canvas.width-170)/2, 54, 170, 170); }
+  else { ctx.fillStyle='#2483ff'; ctx.beginPath(); ctx.arc(canvas.width/2,139,84,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#fff'; ctx.font='700 44px Arial'; ctx.textAlign='center'; ctx.fillText('VECO',canvas.width/2,154); ctx.textAlign='left'; }
+  ctx.fillStyle='#0f172a'; ctx.textAlign='center'; ctx.font='800 38px Arial, Helvetica, sans-serif'; ctx.fillText(String(d.type).toUpperCase(),canvas.width/2,266);
+  ctx.font='600 22px Arial, Helvetica, sans-serif'; ctx.fillStyle='#475569'; ctx.fillText(d.number,canvas.width/2,302); ctx.textAlign='left';
+  const left=86, gap=18, colW=(canvas.width-left*2-gap*2)/3; let y=350;
+  const cells=[
+    ['Akt nr',d.number],['Kuupäev',d.date],['Staatus',d.status],
+    ['Klient',d.clientName],['Objekt',d.objectName],['Tehnik',d.technician],
+    ['Algus',d.start],['Lõpp',d.end],['Kestus',d.duration],
+    ['Töökäsk',d.workorder],['Tüüp',d.type],['Aadress',d.address]
+  ];
+  cells.forEach((c,i)=>{ const x=left+(i%3)*(colW+gap); const yy=y+Math.floor(i/3)*92; drawInfoCell(ctx,c[0],c[1],x,yy,colW,74); });
+  y+=Math.ceil(cells.length/3)*92+24;
+  function section(title,body,minH){
+    ctx.fillStyle='#0f172a'; ctx.font='800 24px Arial, Helvetica, sans-serif'; ctx.fillText(title.toUpperCase(),left,y);
+    y+=18; ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(canvas.width-left,y); ctx.stroke(); y+=20;
+    ctx.fillStyle='#fff'; ctx.strokeStyle='#d7dee8'; roundRectPath(ctx,left,y,canvas.width-left*2,minH,12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#111827'; ctx.font='22px Arial, Helvetica, sans-serif';
+    const endY=wrapCanvasText(ctx,body,left+22,y+36,canvas.width-left*2-44,30,Math.floor((minH-40)/30));
+    y+=minH+34;
+  }
+  section('Töö kirjeldus',d.description,150);
+  section('Töö tulemus',d.result,250);
+  ctx.fillStyle='#0f172a'; ctx.font='800 24px Arial, Helvetica, sans-serif'; ctx.fillText('ALLKIRJAD',left,y); y+=20;
+  ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(canvas.width-left,y); ctx.stroke(); y+=28;
+  const sigW=(canvas.width-left*2-gap)/2;
+  [['TEOSTAJA',d.technician],['TELLIJA','']].forEach((s,i)=>{
+    const x=left+i*(sigW+gap);
+    ctx.fillStyle='#fff'; ctx.strokeStyle='#d7dee8'; roundRectPath(ctx,x,y,sigW,150,12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#64748b'; ctx.font='700 17px Arial'; ctx.fillText(s[0],x+20,y+30);
+    ctx.fillStyle='#0f172a'; ctx.font='700 22px Arial'; ctx.fillText(s[1]||'Nimi',x+20,y+65);
+    ctx.strokeStyle='#94a3b8'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x+20,y+112); ctx.lineTo(x+sigW-20,y+112); ctx.stroke();
+    ctx.fillStyle='#64748b'; ctx.font='17px Arial'; ctx.fillText('Allkiri / kuupäev',x+20,y+138);
+  });
+  ctx.fillStyle='#94a3b8'; ctx.font='16px Arial'; ctx.textAlign='center'; ctx.fillText('VECO · kinnisvara hooldus',canvas.width/2,1708); ctx.textAlign='left';
+  return canvas;
+}
+async function saveActPdf(actId){
   const a=byId(state.acts,actId); if(!a) return;
-  const blob=simplePdfBlob(actPdfLines(actId));
-  const url=URL.createObjectURL(blob);
-  const link=document.createElement('a');
-  link.href=url;
-  link.download=`${actNumber(a)}.pdf`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  try{
+    const canvas=await renderActPdfCanvas(actId);
+    if(!canvas) return;
+    const jpegBytes=jpegBytesFromDataUrl(canvas.toDataURL('image/jpeg',0.92));
+    const blob=buildImagePdf(jpegBytes,canvas.width,canvas.height);
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
+    link.href=url;
+    link.download=actPdfFileName(a);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }catch(err){
+    console.error('PDF salvestamine ebaõnnestus',err);
+    alert('PDF salvestamine ebaõnnestus. Proovi akt avada eelvaates ja salvesta brauseri kaudu.');
+  }
 }
 
 function openActPrint(actId){ openActPreview(actId); }
