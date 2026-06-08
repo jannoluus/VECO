@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.25';
-const APP_BUILD='20260608_1504';
+const APP_VERSION='v3.11.24';
+const APP_BUILD='20260608_1527';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -405,6 +405,26 @@ function timestampActId(){
   const pad=n=>String(n).padStart(2,'0');
   return `VECO-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 }
+function actTypeCode(type){
+  const t=String(type||'').toLowerCase();
+  if(t.includes('väljakutse')||t.includes('valjakutse')) return 'VA';
+  if(t.includes('hooldus')) return 'HA';
+  if(t.includes('defekt')) return 'DA';
+  if(t.includes('elektr')) return 'EA';
+  if(t.includes('gaas')) return 'GA';
+  if(t.includes('jahut')) return 'JA';
+  return 'AKT';
+}
+function fmtActDate(dateKey){
+  if(!dateKey) return '';
+  const m=String(dateKey).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return `${m[3]}.${m[2]}.${m[1]}`;
+  return String(dateKey);
+}
+function fmtActDateTime(dateKey,time){
+  const d=fmtActDate(dateKey);
+  return `${d}${time?' '+time:''}`.trim();
+}
 function renderObjects(){
   const clientFilter=$('#objectClientFilter')?.value||'all';
   const techFilter=$('#objectTechFilter')?.value||'all';
@@ -696,16 +716,16 @@ function actPrintHtml(actId,{autoPrint=false,autoPdf=false}={}){
   const endTime=w.time?workorderEndTime(w):'';
   const result=completionCommentText(w)||'Töö tulemus puudub.';
   const logoUrl=new URL('assets/img/veco-act-logo.jpg', window.location.href).href;
-  const headerLeft=[['Akt nr',actNumber(a)],['Kuupäev',a.date||w.date||'']];
+  const headerLeft=[['Akt nr',actNumber(a)],['Kuupäev',fmtActDate(a.date||w.date||'')]];
   const headerRight=[['Objekt',obj.name||''],['Töökäsk',w.id||a.workorderId]];
   const topItems=[
     ['Klient',client.name||''],['Staatus',w.status||a.status],['Tehnik',techName(w.technicianId)],['Kestus',`${workorderHours(w)} h`],
-    ['Algus',startTime],['Lõpp',endTime]
+    ['Algus',fmtActDateTime(w.date||a.date||'',startTime)],['Lõpp',endTime]
   ];
   const autoScript=autoPrint?`<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>`:'';
   const helper=autoPrint?'Prindivaade avatakse automaatselt.':'Akti eelvaade.';
   return `<!doctype html><html lang="et"><head><meta charset="utf-8"><title>${esc(actNumber(a))} · ${esc(a.title||'Väljakutse akt')}</title><style>
-    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;font-size:12px;line-height:1.28;background:#fff}.actions{margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.act-head{display:grid;grid-template-columns:1fr 170px 1fr;gap:12px;align-items:start;margin-bottom:8px}.head-side{display:grid;gap:5px}.head-card{border:1px solid #d9dee7;border-radius:7px;min-height:40px;padding:6px 8px;background:#f7f9fc}.head-card .value{font-size:12px}.top{text-align:center}.logo-img{width:62px;height:62px;object-fit:contain;display:block;margin:0 auto}.muted{color:#555;font-size:11px}.meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.meta-item{border:1px solid #d9dee7;border-radius:7px;min-height:40px;padding:6px 8px;overflow:hidden;background:#f7f9fc}.meta-item.address{grid-column:1/-1;min-height:35px}.label{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}.value{font-size:12px;font-weight:700;color:#0f172a;overflow-wrap:anywhere}.section-title{font-size:13px;font-weight:800;margin:9px 0 5px;border-bottom:1px solid #bbb;padding-bottom:3px;letter-spacing:.02em}.box{border:1px solid #d9dee7;border-radius:7px;padding:9px 10px;white-space:pre-wrap;overflow-wrap:anywhere}.box.description{min-height:34px}.box.result{min-height:215px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #d9dee7;border-radius:7px;min-height:66px;padding:9px}.signature-line{border-top:1px solid #999;margin-top:24px;padding-top:5px;color:#555}@media(max-width:800px){.act-head{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}.meta-item.address{grid-column:1/-1}}@media print{.actions{display:none} body{margin:10mm}.act-head{grid-template-columns:1fr 150px 1fr;gap:9px}.logo-img{width:56px;height:56px}.head-card,.meta-item{min-height:36px;padding:5px 7px}.section-title{margin-top:8px}.box.description{min-height:30px}.box.result{min-height:225px}.signature{min-height:64px}}
+    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;font-size:12px;line-height:1.28;background:#fff}.actions{margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.act-head{display:grid;grid-template-columns:1fr 170px 1fr;gap:12px;align-items:start;margin-bottom:8px}.head-side{display:grid;gap:5px}.head-card{border:1px solid #d9dee7;border-radius:7px;min-height:40px;padding:6px 8px;background:#f7f9fc}.head-card .value{font-size:12px}.top{text-align:center;display:flex;align-items:center;justify-content:center;min-height:118px}.logo-img{width:62px;height:62px;object-fit:contain;display:block;margin:0 auto}.muted{color:#555;font-size:11px}.meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.meta-item{border:1px solid #d9dee7;border-radius:7px;min-height:40px;padding:6px 8px;overflow:hidden;background:#f7f9fc}.meta-item.address{grid-column:1/-1;min-height:35px}.label{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}.value{font-size:12px;font-weight:700;color:#0f172a;overflow-wrap:anywhere}.section-title{font-size:13px;font-weight:800;margin:9px 0 5px;border-bottom:1px solid #bbb;padding-bottom:3px;letter-spacing:.02em}.box{border:1px solid #d9dee7;border-radius:7px;padding:9px 10px;white-space:pre-wrap;overflow-wrap:anywhere}.box.description{min-height:34px}.box.result{min-height:215px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #d9dee7;border-radius:7px;min-height:66px;padding:9px}.signature-line{border-top:1px solid #999;margin-top:24px;padding-top:5px;color:#555}@media(max-width:800px){.act-head{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}.meta-item.address{grid-column:1/-1}}@media print{.actions{display:none} body{margin:10mm}.act-head{grid-template-columns:1fr 150px 1fr;gap:9px}.top{min-height:116px}.logo-img{width:58px;height:58px}.head-card,.meta-item{min-height:36px;padding:5px 7px}.section-title{margin-top:10px}.box.description{min-height:28px}.box.result{min-height:150px}.signature{min-height:64px}}
   </style>${autoScript}</head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi</button><button class="btn" onclick="window.close()">Sulge</button><span class="muted">${esc(helper)}</span></div><div class="act-head"><div class="head-side">${headerLeft.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="top"><img class="logo-img" src="${logoUrl}" alt="VECO"></div><div class="head-side">${headerRight.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div></div><div class="section-title">Üldandmed</div><div class="meta">${topItems.map(([k,v])=>`<div class="meta-item"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}<div class="meta-item address"><div class="label">Aadress</div><div class="value">${esc(obj.address||'-')}</div></div></div><div class="section-title">Töö kirjeldus</div><div class="box description">${esc(w.description||'-')}</div><div class="section-title">Töö tulemus</div><div class="box result">${esc(result)}</div><div class="section-title">Allkirjad</div><div class="signatures"><div class="signature"><strong>Teostaja</strong><div>${esc(techName(w.technicianId))}</div><div class="signature-line">Allkiri / kuupäev</div></div><div class="signature"><strong>Tellija</strong><div>&nbsp;</div><div class="signature-line">Allkiri / kuupäev</div></div></div></body></html>`;
 }
 function openActWindow(actId,mode='preview'){
@@ -730,14 +750,14 @@ function actPdfData(actId){
     act:a, workorder:w, object:obj, client,
     number:actNumber(a),
     type:a.type||'Väljakutse akt',
-    date:a.date||w.date||'',
+    date:fmtActDate(a.date||w.date||''),
     clientName:client.name||'',
     objectName:obj.name||'',
     address:obj.address||'',
     technician:techName(w.technicianId),
     workorder:w.id||a.workorderId||'',
     status:w.status||a.status||'',
-    start:`${w.date||''} ${w.time||''}`.trim(),
+    start:fmtActDateTime(w.date||a.date||'',w.time||''),
     end:w.time?workorderEndTime(w):'',
     duration:`${workorderHours(w)} h`,
     description:w.description||'-',
@@ -745,8 +765,12 @@ function actPdfData(actId){
   };
 }
 function actPdfFileName(a){
-  const nr=String(actNumber(a)||timestampActId()).replace(/^VECO[-_]?/i,'').replace(/[^0-9A-Za-z]+/g,'_').replace(/^_+|_+$/g,'');
-  return `VECO_AKT_${nr}.pdf`;
+  const code=actTypeCode(a?.type||'Väljakutse akt');
+  const number=String(actNumber(a)||timestampActId());
+  const date=(number.match(/(\d{8})/)||[])[1] || String(a?.date||dateKeyFromDate(new Date())).replace(/[^0-9]/g,'').slice(0,8);
+  let seq=(number.match(/(T\d{3,})$/i)||number.match(/(\d{6})$/)||[])[1] || String(a?.id||'0001').replace(/[^0-9A-Za-z]/g,'').slice(-4).toUpperCase();
+  seq=String(seq).toUpperCase();
+  return `VECO_${code}_${date}_${seq}.pdf`;
 }
 function loadActLogo(){
   return new Promise(resolve=>{
@@ -831,8 +855,8 @@ async function renderActPdfCanvas(actId){
   ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
   const left=70, gap=14, colW=(canvas.width-left*2-gap*3)/4;
   const logo=await loadActLogo();
-  const logoSize=112;
-  const headY=44;
+  const logoSize=88;
+  const headY=46;
   drawInfoCell(ctx,'Akt nr',d.number,left,headY,colW*1.55,58);
   drawInfoCell(ctx,'Kuupäev',d.date,left,headY+72,colW*1.55,58);
   drawInfoCell(ctx,'Objekt',d.objectName,canvas.width-left-colW*1.55,headY,colW*1.55,58);
@@ -841,7 +865,7 @@ async function renderActPdfCanvas(actId){
   else { ctx.fillStyle='#2483ff'; ctx.beginPath(); ctx.arc(canvas.width/2,headY+logoSize/2,logoSize/2,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#fff'; ctx.font='700 26px Arial'; ctx.textAlign='center'; ctx.fillText('VECO',canvas.width/2,headY+logoSize/2+8); ctx.textAlign='left'; }
   ctx.textAlign='left';
 
-  let y=190;
+  let y=176;
   const cells=[
     ['Klient',d.clientName],['Staatus',d.status],['Tehnik',d.technician],['Kestus',d.duration],
     ['Algus',d.start],['Lõpp',d.end]
@@ -859,8 +883,8 @@ async function renderActPdfCanvas(actId){
     wrapCanvasText(ctx,body,left+20,y+34,canvas.width-left*2-40,29,maxLines || Math.floor((minH-38)/29));
     y+=minH+26;
   }
-  section('Töö kirjeldus',d.description,56,2);
-  section('Töö tulemus',d.result,460,15);
+  section('Töö kirjeldus',d.description,58,2);
+  section('Töö tulemus',d.result,360,12);
 
   ctx.fillStyle='#0f172a'; ctx.font='800 22px Arial, Helvetica, sans-serif'; ctx.fillText('ALLKIRJAD',left,y); y+=18;
   ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(canvas.width-left,y); ctx.stroke(); y+=22;

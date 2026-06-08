@@ -1,7 +1,7 @@
 # VECO V3
 
 Versioon: v3.11.13
-Build: 20260608_1448
+Build: 20260608_1527
 
 Muudatused:
 - Töökäsu staatuse töövoog: Planeeritud / Töös / Lõpetatud.
@@ -126,15 +126,15 @@ add column if not exists completed_by text;
 - Allkirjaplokk kompaktsem.
 
 
-## V3.11.25 / Build 20260608_1504
-
-- Akti/PDF päisest eemaldatud suur pealkiri.
-- Üldandmetest eemaldatud dubleeriv tüüp.
-- Päises jäävad fookusesse akti nr, kuupäev, objekt, töökäsk ja logo.
-- Töö kirjelduse ala kompaktsem ning töö tulemuse ala säilitatud põhilise sisualana.
-
 ## V3.11.24 / Build 20260608_1522
 
 - Akti/PDF päis ümber kujundatud: akti nr ja kuupäev vasakul, objekt ja töökäsk paremal, logo keskel.
 - Üldandmetest eemaldatud dubleerivad akti nr, kuupäev, objekt ja töökäsk.
 - Töö kirjelduse ala kompaktsem, töö tulemuse ala suurem.
+
+
+## V3.11.25 / Build 20260608_1527
+- Aktide PDF: pealkiri eemaldatud, tüübi väli eemaldatud.
+- PDF kuupäevad formaadis DD.MM.YYYY.
+- PDF failinimi tulevikukindla aktitüübi prefiksiga, hetkel väljakutse akt: VECO_VA_YYYYMMDD_Txxx.pdf.
+- Töö kirjeldus kompaktsem ja töö tulemuse ala mõõdukam.
