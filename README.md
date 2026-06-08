@@ -116,3 +116,11 @@ add column if not exists completed_by text;
 - Akt V2 PDF salvestus renderdab A4 akti canvas-põhiselt PDF-i sisse, et Eesti täpitähed säiliksid.
 - PDF failinimi kujul VECO_AKT_....pdf.
 - PDF kasutab ümmargust VECO logo, kompaktset 3-veerulist üldandmete plokki ja suuremat töö tulemuse ala.
+
+
+## V3.11.23 / 20260608_1501
+- Akti PDF/print layout optimeeritud.
+- Logo ja pealkiri väiksemaks.
+- Üldandmed 4 veerus + aadress täislaiuses.
+- Töö kirjeldus kompaktsem, töö tulemus suurem.
+- Allkirjaplokk kompaktsem.
