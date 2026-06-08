@@ -124,3 +124,10 @@ add column if not exists completed_by text;
 - Üldandmed 4 veerus + aadress täislaiuses.
 - Töö kirjeldus kompaktsem, töö tulemus suurem.
 - Allkirjaplokk kompaktsem.
+
+
+## V3.11.24 / Build 20260608_1522
+
+- Akti/PDF päis ümber kujundatud: akti nr ja kuupäev vasakul, objekt ja töökäsk paremal, logo keskel.
+- Üldandmetest eemaldatud dubleerivad akti nr, kuupäev, objekt ja töökäsk.
+- Töö kirjelduse ala kompaktsem, töö tulemuse ala suurem.
