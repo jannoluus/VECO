@@ -1246,3 +1246,95 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 .theme-light .mobile-completion-comment{background:#f8fafb;}
 .mobile-completion-comment strong{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
 .mobile-completion-comment span{white-space:pre-wrap;}
+
+/* VECO detail panel responsive fix - 20260608_1358 */
+.detail{
+  min-width:0;
+}
+.detail .panel-head.detail-head,
+.detail .panel-head{
+  align-items:flex-start;
+  flex-wrap:wrap;
+  gap:10px;
+  min-height:auto;
+  overflow:visible;
+}
+.detail .panel-head .view-head-left,
+.detail .panel-head .view-head-right{
+  min-width:0;
+}
+.detail .panel-head .view-head-left{
+  flex:1 1 160px;
+}
+.detail .panel-head .view-head-right{
+  flex:1 1 180px;
+  justify-items:end;
+}
+.detail .panel-head .action-row,
+.detail .action-row{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  align-items:center;
+  gap:8px;
+  max-width:100%;
+}
+.detail .context-pill{
+  white-space:normal;
+  overflow-wrap:anywhere;
+  max-width:100%;
+}
+.detail .btn{
+  white-space:normal;
+  line-height:1.2;
+  text-align:center;
+  min-width:0;
+}
+.detail .btn.small{
+  min-height:32px;
+  padding:7px 10px;
+}
+.detail .summary-grid{
+  grid-template-columns:repeat(auto-fit,minmax(86px,1fr));
+  gap:8px;
+}
+.detail .summary-box{
+  min-width:0;
+  overflow:hidden;
+}
+.detail .summary-box span,
+.detail .summary-box strong,
+.detail .kv,
+.detail .kv span,
+.detail .kv strong,
+.detail .event-row,
+.detail .card,
+.detail .list{
+  min-width:0;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.detail .summary-box strong{
+  font-size:clamp(17px,2vw,22px);
+  line-height:1.15;
+}
+.detail .tabs{
+  overflow:visible;
+}
+.detail .tab{
+  white-space:normal;
+  line-height:1.15;
+  padding-top:7px;
+  padding-bottom:7px;
+  height:auto;
+}
+@media (min-width:1121px){
+  .content:not(.wide){
+    grid-template-columns:minmax(0,1fr) minmax(410px,460px);
+  }
+}
+@media (max-width:1320px){
+  .content:not(.wide){
+    grid-template-columns:minmax(0,1fr) minmax(360px,410px);
+  }
+}
