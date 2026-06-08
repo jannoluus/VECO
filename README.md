@@ -105,3 +105,8 @@ add column if not exists completed_by text;
 - Lisatud VECO ümmargune logo akti ülaossa.
 - Akti number vormingus VECO-YYYYMMDD-HHMMSS.
 - Töö lõpetamisel saab valida akti tüübi: Väljakutse akt.
+
+## V3.11.15 / Build 20260608_1433
+- Akti eelvaates kasutatakse lisatud VECO ümmargust logo failist assets/img/veco-act-logo.jpg.
+- Prindi ja Salvesta PDF on eraldi toimingud.
+- Salvesta PDF käivitab PDF-faili allalaadimise, mitte brauseri printimise dialoogi.

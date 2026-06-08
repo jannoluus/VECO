@@ -514,7 +514,7 @@ function workorderDetailHtml(){
   const w=byId(state.workorders,selectedWorkorderId); if(!w) return detailHeader('Töökäsu detail')+`<div class="detail-body"><span class="muted">Vali töökäsk.</span></div>`;
   const acts=state.acts.filter(a=>a.workorderId===w.id);
   const body=`<div class="summary-grid">${summaryBox('Aktid',acts.length)}${summaryBox('Kuupäev',w.date)}${summaryBox('Kell',w.time)}${summaryBox('Staatus',w.status)}</div>${card(w.title,[['Klient',clientName(objectClientId(w.objectId))],['Objekt',objectName(w.objectId)],['Projekt',projectName(w.projectId)],['Tehnik',techName(w.technicianId)],['Aeg',`${w.date} ${w.time}`]],w.status,`<div class="section-title">Kirjeldus</div><div class="muted">${esc(w.description)}</div>`)}<div class="section-title">Aktid</div><div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(a.date)} · ${esc(a.title)}</strong><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
-  return detailHeader('Töökäsu detail','<button class="btn small" id="editWorkorderBtn">✎ Muuda</button><button class="btn small primary" id="createActBtn">＋ Loo akt</button><button class="btn small" id="previewWorkorderActBtn" type="button">👁 Eelvaade</button><button class="btn small" id="printWorkorderActBtn" type="button">⎙ Prindi</button><button class="btn small" id="pdfWorkorderActBtn" type="button">⇩ PDF</button><button class="btn small ghost" id="workorderDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body">${body}</div>`;
+  return detailHeader('Töökäsu detail','<button class="btn small" id="editWorkorderBtn">✎ Muuda</button><button class="btn small primary" id="createActBtn">＋ Loo akt</button><button class="btn small" id="previewWorkorderActBtn" type="button">👁 Eelvaade</button><button class="btn small" id="printWorkorderActBtn" type="button">⎙ Prindi</button><button class="btn small" id="pdfWorkorderActBtn" type="button">⇩ Salvesta PDF</button><button class="btn small ghost" id="workorderDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body">${body}</div>`;
 }
 function bindWorkorderDetail(){ $('#editWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal(selectedWorkorderId)); $('#createActBtn')?.addEventListener('click',()=>openActModal('',{workorderId:selectedWorkorderId})); $('#previewWorkorderActBtn')?.addEventListener('click',()=>openWorkorderActPrint(selectedWorkorderId)); $('#printWorkorderActBtn')?.addEventListener('click',()=>{const a=ensureActForWorkorder(selectedWorkorderId); if(a) printAct(a.id);}); $('#pdfWorkorderActBtn')?.addEventListener('click',()=>{const a=ensureActForWorkorder(selectedWorkorderId); if(a) saveActPdf(a.id);}); $('#workorderDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.workorders=false;renderWorkorders();}); }
 function openWorkorderModal(id='',defaults={}){
@@ -701,11 +701,12 @@ function actPrintHtml(actId,{autoPrint=false,autoPdf=false}={}){
     ['Tehnik',techName(w.technicianId)],['Töökäsk',w.id||a.workorderId],['Staatus',w.status||a.status],
     ['Algus',startTime],['Lõpp',endTime],['Kestus',`${workorderHours(w)} h`]
   ];
-  const autoScript=autoPrint||autoPdf?`<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>`:'';
-  const helper=autoPdf?'Vali prindiaknas sihtkohaks “Save as PDF / Salvesta PDF-ina”.':'Akti eelvaade.';
+  const autoScript=autoPrint?`<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>`:'';
+  const helper=autoPrint?'Prindivaade avatakse automaatselt.':'Akti eelvaade.';
+  const logoUrl=new URL('assets/img/veco-act-logo.jpg', window.location.href).href;
   return `<!doctype html><html lang="et"><head><meta charset="utf-8"><title>${esc(actNumber(a))} · ${esc(a.title||'Väljakutse akt')}</title><style>
-    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:22px;font-size:12px;line-height:1.3;background:#fff}.actions{margin:0 0 16px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.logo{width:70px;height:70px;border-radius:50%;border:3px solid #0b66b1;color:#0b66b1;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;margin:0 auto 10px}.top{text-align:center;margin-bottom:12px} h1{font-size:21px;margin:0 0 4px}.muted{color:#555}.meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;border-top:1px solid #ddd;border-left:1px solid #ddd}.meta-item{display:grid;grid-template-columns:88px 1fr;min-height:28px;border-right:1px solid #ddd;border-bottom:1px solid #ddd}.label{font-weight:700;background:#f4f4f4;padding:7px}.value{padding:7px;overflow-wrap:anywhere}.section-title{font-size:14px;font-weight:700;margin:18px 0 7px;border-bottom:1px solid #bbb;padding-bottom:5px}.box{border:1px solid #ddd;min-height:70px;padding:10px;white-space:pre-wrap}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #ddd;min-height:76px;padding:10px}.signature-line{border-top:1px solid #999;margin-top:34px;padding-top:6px;color:#555}@media(max-width:800px){.meta{grid-template-columns:1fr}.meta-item{grid-template-columns:110px 1fr}}@media print{.actions{display:none} body{margin:14mm}.logo{width:62px;height:62px;font-size:16px}.box{min-height:58px}}
-  </style>${autoScript}</head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi</button><button class="btn" onclick="window.print()">Salvesta PDF</button><button class="btn" onclick="window.close()">Sulge</button><span class="muted">${esc(helper)}</span></div><div class="top"><div class="logo">VECO</div><h1>${esc(a.type||'Väljakutse akt')}</h1><div class="muted">${esc(actNumber(a))}</div></div><div class="section-title">Üldandmed</div><div class="meta">${data.map(([k,v])=>`<div class="meta-item"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="section-title">Töö kirjeldus</div><div class="box">${esc(w.description||'-')}</div><div class="section-title">Töö tulemus</div><div class="box">${esc(result)}</div><div class="section-title">Allkirjad</div><div class="signatures"><div class="signature"><strong>Tehnik</strong><div>${esc(techName(w.technicianId))}</div><div class="signature-line">Allkiri / kuupäev</div></div><div class="signature"><strong>Klient</strong><div>&nbsp;</div><div class="signature-line">Allkiri / kuupäev</div></div></div></body></html>`;
+    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:22px;font-size:12px;line-height:1.3;background:#fff}.actions{margin:0 0 16px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.logo-img{width:86px;height:86px;object-fit:contain;display:block;margin:0 auto 10px}.top{text-align:center;margin-bottom:12px} h1{font-size:21px;margin:0 0 4px}.muted{color:#555}.meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;border-top:1px solid #ddd;border-left:1px solid #ddd}.meta-item{display:grid;grid-template-columns:88px 1fr;min-height:28px;border-right:1px solid #ddd;border-bottom:1px solid #ddd}.label{font-weight:700;background:#f4f4f4;padding:7px}.value{padding:7px;overflow-wrap:anywhere}.section-title{font-size:14px;font-weight:700;margin:18px 0 7px;border-bottom:1px solid #bbb;padding-bottom:5px}.box{border:1px solid #ddd;min-height:70px;padding:10px;white-space:pre-wrap}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #ddd;min-height:76px;padding:10px}.signature-line{border-top:1px solid #999;margin-top:34px;padding-top:6px;color:#555}@media(max-width:800px){.meta{grid-template-columns:1fr}.meta-item{grid-template-columns:110px 1fr}}@media print{.actions{display:none} body{margin:14mm}.logo-img{width:72px;height:72px}.box{min-height:58px}}
+  </style>${autoScript}</head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi</button><button class="btn" onclick="window.close()">Sulge</button><span class="muted">${esc(helper)}</span></div><div class="top"><img class="logo-img" src="${logoUrl}" alt="VECO"><h1>${esc(a.type||'Väljakutse akt')}</h1><div class="muted">${esc(actNumber(a))}</div></div><div class="section-title">Üldandmed</div><div class="meta">${data.map(([k,v])=>`<div class="meta-item"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="section-title">Töö kirjeldus</div><div class="box">${esc(w.description||'-')}</div><div class="section-title">Töö tulemus</div><div class="box">${esc(result)}</div><div class="section-title">Allkirjad</div><div class="signatures"><div class="signature"><strong>Tehnik</strong><div>${esc(techName(w.technicianId))}</div><div class="signature-line">Allkiri / kuupäev</div></div><div class="signature"><strong>Klient</strong><div>&nbsp;</div><div class="signature-line">Allkiri / kuupäev</div></div></div></body></html>`;
 }
 function openActWindow(actId,mode='preview'){
   const html=actPrintHtml(actId,{autoPrint:mode==='print',autoPdf:mode==='pdf'});
@@ -719,7 +720,79 @@ function openActWindow(actId,mode='preview'){
 }
 function openActPreview(actId){ openActWindow(actId,'preview'); }
 function printAct(actId){ openActWindow(actId,'print'); }
-function saveActPdf(actId){ openActWindow(actId,'pdf'); }
+
+function pdfEscapeText(value){ return String(value||'').replace(/[\\()]/g,'\\$&').replace(/\r?\n/g,' '); }
+function actPdfLines(actId){
+  const a=byId(state.acts,actId); if(!a) return [];
+  const w=byId(state.workorders,a.workorderId)||{};
+  const obj=byId(state.objects,a.objectId||w.objectId)||{};
+  const client=byId(state.clients,obj.clientId)||{};
+  const lines=[];
+  lines.push('VECO');
+  lines.push(String(a.type||'Väljakutse akt'));
+  lines.push('Akti nr: '+actNumber(a));
+  lines.push('Kuupäev: '+(a.date||w.date||''));
+  lines.push('Klient: '+(client.name||''));
+  lines.push('Objekt: '+(obj.name||''));
+  lines.push('Aadress: '+(obj.address||''));
+  lines.push('Tehnik: '+techName(w.technicianId));
+  lines.push('Töökäsk: '+(w.id||a.workorderId||''));
+  lines.push('Aeg: '+(w.date||'')+' '+(w.time||'')+' - '+(w.time?workorderEndTime(w):''));
+  lines.push('Kestus: '+workorderHours(w)+' h');
+  lines.push('Staatus: '+(w.status||a.status||''));
+  lines.push('');
+  lines.push('Töö kirjeldus:');
+  lines.push(w.description||'-');
+  lines.push('');
+  lines.push('Töö tulemus:');
+  lines.push(completionCommentText(w)||'Töö tulemus puudub.');
+  lines.push('');
+  lines.push('Allkirjad:');
+  lines.push('Tehnik: '+techName(w.technicianId)+' ____________________');
+  lines.push('Klient: ____________________');
+  return lines;
+}
+function simplePdfBlob(lines){
+  const objects=[];
+  function add(str){ objects.push(str); return objects.length; }
+  add('<< /Type /Catalog /Pages 2 0 R >>');
+  add('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>');
+  add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>');
+  let y=790;
+  let content='';
+  lines.forEach((line,i)=>{
+    const isHead=i<2 || ['Töö kirjeldus:','Töö tulemus:','Allkirjad:'].includes(line);
+    const size=i===0?18:(i===1?15:(isHead?11:10));
+    const font=isHead?'/F2':'/F1';
+    const parts=String(line||'').match(/.{1,95}(\s|$)|.{1,95}/g)||[''];
+    parts.forEach(part=>{ if(y<58) return; content+=`BT ${font} ${size} Tf 40 ${y} Td (${pdfEscapeText(part.trim())}) Tj ET\n`; y-=size+6; });
+    if(line==='') y-=4;
+  });
+  add(`<< /Length ${content.length} >>\nstream\n${content}endstream`);
+  let pdf='%PDF-1.4\n';
+  const offsets=[0];
+  objects.forEach((obj,i)=>{ offsets.push(pdf.length); pdf+=`${i+1} 0 obj\n${obj}\nendobj\n`; });
+  const xref=pdf.length;
+  pdf+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
+  for(let i=1;i<offsets.length;i++) pdf+=`${String(offsets[i]).padStart(10,'0')} 00000 n \n`;
+  pdf+=`trailer << /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return new Blob([pdf],{type:'application/pdf'});
+}
+function saveActPdf(actId){
+  const a=byId(state.acts,actId); if(!a) return;
+  const blob=simplePdfBlob(actPdfLines(actId));
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');
+  link.href=url;
+  link.download=`${actNumber(a)}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
 function openActPrint(actId){ openActPreview(actId); }
 function openWorkorderActPrint(workorderId){
   const a=ensureActForWorkorder(workorderId);
@@ -742,8 +815,8 @@ function renderActs(){
 function actDetailHtml(){
   const a=byId(state.acts,selectedActId); if(!a) return detailHeader('Akti detail')+`<div class="detail-body"><span class="muted">Vali akt.</span></div>`;
   const w=byId(state.workorders,a.workorderId)||{};
-  const body=`<div class="summary-grid">${summaryBox('Kuupäev',a.date)}${summaryBox('Staatus',a.status)}${summaryBox('Objekt',objectName(a.objectId))}${summaryBox('Töökäsk',a.workorderId)}</div>${card(a.title,[['Klient',clientName(objectClientId(a.objectId))],['Objekt',objectName(a.objectId)],['Töökäsk',w.title||a.workorderId],['Kuupäev',a.date]],a.status,`<div class="section-title">Märkused</div><div class="muted">Kasuta eelvaadet, printimist või PDF-salvestust. PDF salvestamine toimub brauseri prindivaate kaudu.</div>`)}`;
-  return detailHeader('Akti detail','<button class="btn small" id="editActBtn">✎ Muuda</button><button class="btn small" id="previewActBtn" type="button">👁 Eelvaade</button><button class="btn small" id="printActBtn" type="button">⎙ Prindi</button><button class="btn small" id="pdfActBtn" type="button">⇩ PDF</button><button class="btn small primary" id="markActSentBtn">↗ Märgi saadetuks</button><button class="btn small ghost" id="actDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body">${body}</div>`;
+  const body=`<div class="summary-grid">${summaryBox('Kuupäev',a.date)}${summaryBox('Staatus',a.status)}${summaryBox('Objekt',objectName(a.objectId))}${summaryBox('Töökäsk',a.workorderId)}</div>${card(a.title,[['Klient',clientName(objectClientId(a.objectId))],['Objekt',objectName(a.objectId)],['Töökäsk',w.title||a.workorderId],['Kuupäev',a.date]],a.status,`<div class="section-title">Märkused</div><div class="muted">Kasuta eelvaadet, printimist või salvesta akt otse PDF-failina.</div>`)}`;
+  return detailHeader('Akti detail','<button class="btn small" id="editActBtn">✎ Muuda</button><button class="btn small" id="previewActBtn" type="button">👁 Eelvaade</button><button class="btn small" id="printActBtn" type="button">⎙ Prindi</button><button class="btn small" id="pdfActBtn" type="button">⇩ Salvesta PDF</button><button class="btn small primary" id="markActSentBtn">↗ Märgi saadetuks</button><button class="btn small ghost" id="actDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body">${body}</div>`;
 }
 function bindActDetail(){ $('#editActBtn')?.addEventListener('click',()=>openActModal(selectedActId)); $('#previewActBtn')?.addEventListener('click',()=>openActPreview(selectedActId)); $('#printActBtn')?.addEventListener('click',()=>printAct(selectedActId)); $('#pdfActBtn')?.addEventListener('click',()=>saveActPdf(selectedActId)); $('#markActSentBtn')?.addEventListener('click',()=>{const a=byId(state.acts,selectedActId); if(a){a.status='Saadetud'; save(); renderActs();}}); $('#actDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.acts=false;renderActs();}); }
 function openActModal(id='',defaults={}){
