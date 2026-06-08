@@ -41,3 +41,12 @@ add column if not exists completed_by text;
 - Lõpetatud töö ei kao tehniku jaoks lõplikult ära.
 - Tehnik saab lõpetatud töö avada/muuta või "Ava uuesti" kaudu tagasi töösse panna.
 - Build sisaldab varasema 1949 sync-paranduse muudatusi.
+
+
+## V3.11.16 / 20260608_0820
+- Tehniku vaate töökaardi nupud sõltuvad nüüd staatusest.
+- Planeeritud: „Alusta“.
+- Töös: „Peata“, „Täida“, „Lõpeta“.
+- Lõpetatud: „Ava / muuda“, „Ava uuesti“.
+- „Peata“ viib töö tagasi staatusesse Planeeritud; „Ava uuesti“ viib töö staatusesse Töös.
+- Lõpetatud tööde sektsioon on tehniku vaates kokkuklapitav.
