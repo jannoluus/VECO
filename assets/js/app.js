@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.11.21';
-const APP_BUILD='20260608_1358';
+const APP_BUILD='20260608_1411';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -353,6 +353,7 @@ function openCompletionCommentModal(w,initial=''){
       <div class="detail-body">
         <div class="confirm-message">Lisa töö tulemus enne töökäsu lõpetamist.</div>
         <div class="confirm-details"><strong>${esc(w?.id||'')}</strong><br>${esc(objectName(w?.objectId))}<br>${esc(w?.title||'')}</div>
+        <label class="full" style="display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650;">Akti tüüp<select class="select" id="completionActType"><option value="Väljakutse akt">Väljakutse akt</option></select></label>
         <label class="full" style="display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650;">Töö tulemus *<textarea id="completionCommentInput" required minlength="5" placeholder="Kirjelda lühidalt, mis tehti või mis seis jäi.">${esc(initial||'')}</textarea></label>
         <div class="form-error hidden" id="completionCommentError">Töö tulemus on kohustuslik.</div>
       </div>
@@ -377,13 +378,33 @@ function openCompletionCommentModal(w,initial=''){
       e.preventDefault();
       const value=String(input()?.value||'').trim();
       if(value.length<5){ error()?.classList.remove('hidden'); input()?.focus(); return; }
-      cleanup(value);
+      cleanup({comment:value,actType:el.querySelector('#completionActType')?.value||'Väljakutse akt'});
     });
     input()?.addEventListener('input',()=>error()?.classList.add('hidden'));
     setTimeout(()=>input()?.focus(),0);
   });
 }
 
+function normalizeCompletionResult(result){
+  if(!result) return null;
+  if(typeof result==='string') return {comment:result,actType:'Väljakutse akt'};
+  return {comment:String(result.comment||'').trim(),actType:result.actType||'Väljakutse akt'};
+}
+
+function actNumber(a){
+  if(!a) return '';
+  if(String(a.number||'').startsWith('VECO-')) return a.number;
+  if(String(a.id||'').startsWith('VECO-')) return a.id;
+  const date=String(a.createdAt||a.date||dateKeyFromDate(new Date())).replace(/[^0-9]/g,'').slice(0,8)||dateKeyFromDate(new Date()).replace(/-/g,'');
+  const suffix=String(a.id||'ACT').replace(/[^0-9A-Za-z]/g,'').slice(-4).toUpperCase();
+  return `VECO-${date}-${suffix}`;
+}
+
+function timestampActId(){
+  const d=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  return `VECO-${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+}
 function renderObjects(){
   const clientFilter=$('#objectClientFilter')?.value||'all';
   const techFilter=$('#objectTechFilter')?.value||'all';
@@ -493,9 +514,9 @@ function workorderDetailHtml(){
   const w=byId(state.workorders,selectedWorkorderId); if(!w) return detailHeader('Töökäsu detail')+`<div class="detail-body"><span class="muted">Vali töökäsk.</span></div>`;
   const acts=state.acts.filter(a=>a.workorderId===w.id);
   const body=`<div class="summary-grid">${summaryBox('Aktid',acts.length)}${summaryBox('Kuupäev',w.date)}${summaryBox('Kell',w.time)}${summaryBox('Staatus',w.status)}</div>${card(w.title,[['Klient',clientName(objectClientId(w.objectId))],['Objekt',objectName(w.objectId)],['Projekt',projectName(w.projectId)],['Tehnik',techName(w.technicianId)],['Aeg',`${w.date} ${w.time}`]],w.status,`<div class="section-title">Kirjeldus</div><div class="muted">${esc(w.description)}</div>`)}<div class="section-title">Aktid</div><div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(a.date)} · ${esc(a.title)}</strong><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
-  return detailHeader('Töökäsu detail','<button class="btn small" id="editWorkorderBtn">✎ Muuda</button><button class="btn small primary" id="createActBtn">＋ Loo akt</button><button class="btn small" id="printWorkorderActBtn" type="button">⎙ Prindi / PDF</button><button class="btn small ghost" id="workorderDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body">${body}</div>`;
+  return detailHeader('Töökäsu detail','<button class="btn small" id="editWorkorderBtn">✎ Muuda</button><button class="btn small primary" id="createActBtn">＋ Loo akt</button><button class="btn small" id="previewWorkorderActBtn" type="button">👁 Eelvaade</button><button class="btn small" id="printWorkorderActBtn" type="button">⎙ Prindi</button><button class="btn small" id="pdfWorkorderActBtn" type="button">⇩ PDF</button><button class="btn small ghost" id="workorderDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body">${body}</div>`;
 }
-function bindWorkorderDetail(){ $('#editWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal(selectedWorkorderId)); $('#createActBtn')?.addEventListener('click',()=>openActModal('',{workorderId:selectedWorkorderId})); $('#printWorkorderActBtn')?.addEventListener('click',()=>openWorkorderActPrint(selectedWorkorderId)); $('#workorderDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.workorders=false;renderWorkorders();}); }
+function bindWorkorderDetail(){ $('#editWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal(selectedWorkorderId)); $('#createActBtn')?.addEventListener('click',()=>openActModal('',{workorderId:selectedWorkorderId})); $('#previewWorkorderActBtn')?.addEventListener('click',()=>openWorkorderActPrint(selectedWorkorderId)); $('#printWorkorderActBtn')?.addEventListener('click',()=>{const a=ensureActForWorkorder(selectedWorkorderId); if(a) printAct(a.id);}); $('#pdfWorkorderActBtn')?.addEventListener('click',()=>{const a=ensureActForWorkorder(selectedWorkorderId); if(a) saveActPdf(a.id);}); $('#workorderDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.workorders=false;renderWorkorders();}); }
 function openWorkorderModal(id='',defaults={}){
   const isEdit=!!id;
   const existing=isEdit?byId(state.workorders,id):null;
@@ -615,17 +636,19 @@ function openWorkorderModal(id='',defaults={}){
       hours:hours
     };
     if(nextStatus==='Lõpetatud' && !isCompletedStatus(previousStatus)){
-      const comment=await openCompletionCommentModal(next,completionCommentText(existing));
-      if(!comment) return;
+      const result=normalizeCompletionResult(await openCompletionCommentModal(next,completionCommentText(existing)));
+      if(!result) return;
       next.completedAt=new Date().toISOString();
       next.completedBy=completedByLabel(next);
-      next.completionComment=comment;
+      next.completionComment=result.comment;
+      next.actType=result.actType;
     }else if(nextStatus==='Lõpetatud' && isEdit){
       const currentComment=completionCommentText(existing);
       if(!currentComment){
-        const comment=await openCompletionCommentModal(next,'');
-        if(!comment) return;
-        next.completionComment=comment;
+        const result=normalizeCompletionResult(await openCompletionCommentModal(next,''));
+        if(!result) return;
+        next.completionComment=result.comment;
+        next.actType=result.actType;
       }else{
         next.completionComment=currentComment;
       }
@@ -637,6 +660,7 @@ function openWorkorderModal(id='',defaults={}){
       next.completionComment='';
     }
     if(isEdit){Object.assign(existing,next)}else{state.workorders.push(next);selectedWorkorderId=next.id;detailOpen.workorders=true}
+    if(isCompletedStatus(next.status)) ensureActForWorkorder(next.id);
     save();closeModal();
     if(page==='calendar') renderCalendar(); else if(page==='projects') renderProjects(); else if(page==='objects') renderObjects(); else renderWorkorders();
   });
@@ -648,51 +672,61 @@ function ensureActForWorkorder(workorderId){
   let a=state.acts.find(x=>x.workorderId===w.id);
   if(a) return a;
   a={
-    id:uid('ACT'),
+    id:timestampActId(),
+    number:timestampActId(),
     workorderId:w.id,
     objectId:w.objectId,
     date:w.date||dateKeyFromDate(new Date()),
-    title:`Väljakutse akt - ${objectName(w.objectId)}`,
+    title:`${w.actType||'Väljakutse akt'} - ${objectName(w.objectId)}`,
     status:'Mustand',
-    type:'Väljakutse akt'
+    type:w.actType||'Väljakutse akt',
+    createdAt:new Date().toISOString()
   };
   state.acts.push(a);
   save();
   return a;
 }
-function actPrintHtml(actId){
+function actPrintHtml(actId,{autoPrint=false,autoPdf=false}={}){
   const a=byId(state.acts,actId);
   if(!a) return '';
   const w=byId(state.workorders,a.workorderId)||{};
   const obj=byId(state.objects,a.objectId||w.objectId)||{};
   const client=byId(state.clients,obj.clientId)||{};
-  const start=`${w.date||a.date||''} ${w.time||''}`.trim();
-  const end=w.time?`${w.date||a.date||''} ${workorderEndTime(w)}`.trim():'';
+  const startTime=w.time||'';
+  const endTime=w.time?workorderEndTime(w):'';
   const result=completionCommentText(w)||'Töö tulemus puudub.';
-  const rows=[
-    ['Akti nr',a.id],['Tüüp',a.type||'Väljakutse akt'],['Kuupäev',a.date||w.date||''],['Klient',client.name||''],['Objekt',obj.name||''],['Aadress',obj.address||''],['Tehnik',techName(w.technicianId)],['Töökäsk',w.id||a.workorderId],['Staatus',w.status||a.status],['Algus',start],['Lõpp',end],['Kestus',`${workorderHours(w)} h`]
+  const data=[
+    ['Akti nr',actNumber(a)],['Kuupäev',a.date||w.date||''],['Tüüp',a.type||'Väljakutse akt'],
+    ['Klient',client.name||''],['Objekt',obj.name||''],['Aadress',obj.address||''],
+    ['Tehnik',techName(w.technicianId)],['Töökäsk',w.id||a.workorderId],['Staatus',w.status||a.status],
+    ['Algus',startTime],['Lõpp',endTime],['Kestus',`${workorderHours(w)} h`]
   ];
-  return `<!doctype html><html lang="et"><head><meta charset="utf-8"><title>${esc(a.title||'Väljakutse akt')}</title><style>
-    body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:28px;font-size:13px;line-height:1.35} h1{font-size:22px;margin:0 0 4px} h2{font-size:15px;margin:22px 0 8px;border-bottom:1px solid #bbb;padding-bottom:5px}.muted{color:#555}.grid{display:grid;grid-template-columns:180px 1fr;border-top:1px solid #ddd;border-left:1px solid #ddd}.grid div{padding:8px;border-right:1px solid #ddd;border-bottom:1px solid #ddd}.label{font-weight:700;background:#f4f4f4}.box{border:1px solid #ddd;min-height:80px;padding:10px;white-space:pre-wrap}.actions{margin:0 0 18px;display:flex;gap:8px}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.brand{font-weight:700;color:#0b66b1;margin-bottom:16px}@media print{.actions{display:none} body{margin:16mm}}
-  </style></head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi / salvesta PDF</button><button class="btn" onclick="window.close()">Sulge</button></div><div class="brand">VECO</div><h1>${esc(a.title||'Väljakutse akt')}</h1><div class="muted">Lihtne väljakutse akt töökäsu põhjal</div><h2>Üldandmed</h2><div class="grid">${rows.map(([k,v])=>`<div class="label">${esc(k)}</div><div>${esc(v||'-')}</div>`).join('')}</div><h2>Töö kirjeldus</h2><div class="box">${esc(w.description||'-')}</div><h2>Töö tulemus</h2><div class="box">${esc(result)}</div><h2>Allkirjad</h2><div class="grid"><div class="label">Tehnik</div><div>${esc(techName(w.technicianId))}</div><div class="label">Klient</div><div>&nbsp;</div></div></body></html>`;
+  const autoScript=autoPrint||autoPdf?`<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>`:'';
+  const helper=autoPdf?'Vali prindiaknas sihtkohaks “Save as PDF / Salvesta PDF-ina”.':'Akti eelvaade.';
+  return `<!doctype html><html lang="et"><head><meta charset="utf-8"><title>${esc(actNumber(a))} · ${esc(a.title||'Väljakutse akt')}</title><style>
+    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:22px;font-size:12px;line-height:1.3;background:#fff}.actions{margin:0 0 16px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.logo{width:70px;height:70px;border-radius:50%;border:3px solid #0b66b1;color:#0b66b1;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;margin:0 auto 10px}.top{text-align:center;margin-bottom:12px} h1{font-size:21px;margin:0 0 4px}.muted{color:#555}.meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;border-top:1px solid #ddd;border-left:1px solid #ddd}.meta-item{display:grid;grid-template-columns:88px 1fr;min-height:28px;border-right:1px solid #ddd;border-bottom:1px solid #ddd}.label{font-weight:700;background:#f4f4f4;padding:7px}.value{padding:7px;overflow-wrap:anywhere}.section-title{font-size:14px;font-weight:700;margin:18px 0 7px;border-bottom:1px solid #bbb;padding-bottom:5px}.box{border:1px solid #ddd;min-height:70px;padding:10px;white-space:pre-wrap}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #ddd;min-height:76px;padding:10px}.signature-line{border-top:1px solid #999;margin-top:34px;padding-top:6px;color:#555}@media(max-width:800px){.meta{grid-template-columns:1fr}.meta-item{grid-template-columns:110px 1fr}}@media print{.actions{display:none} body{margin:14mm}.logo{width:62px;height:62px;font-size:16px}.box{min-height:58px}}
+  </style>${autoScript}</head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi</button><button class="btn" onclick="window.print()">Salvesta PDF</button><button class="btn" onclick="window.close()">Sulge</button><span class="muted">${esc(helper)}</span></div><div class="top"><div class="logo">VECO</div><h1>${esc(a.type||'Väljakutse akt')}</h1><div class="muted">${esc(actNumber(a))}</div></div><div class="section-title">Üldandmed</div><div class="meta">${data.map(([k,v])=>`<div class="meta-item"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="section-title">Töö kirjeldus</div><div class="box">${esc(w.description||'-')}</div><div class="section-title">Töö tulemus</div><div class="box">${esc(result)}</div><div class="section-title">Allkirjad</div><div class="signatures"><div class="signature"><strong>Tehnik</strong><div>${esc(techName(w.technicianId))}</div><div class="signature-line">Allkiri / kuupäev</div></div><div class="signature"><strong>Klient</strong><div>&nbsp;</div><div class="signature-line">Allkiri / kuupäev</div></div></div></body></html>`;
 }
-function openActPrint(actId){
-  const html=actPrintHtml(actId);
+function openActWindow(actId,mode='preview'){
+  const html=actPrintHtml(actId,{autoPrint:mode==='print',autoPdf:mode==='pdf'});
   if(!html) return;
   const win=window.open('','_blank');
-  if(!win){ alert('Brauser blokeeris prindi/PDF akna. Luba popupid või proovi uuesti.'); return; }
+  if(!win){ alert('Brauser blokeeris akti akna. Luba popupid või proovi uuesti.'); return; }
   win.document.open();
   win.document.write(html);
   win.document.close();
   setTimeout(()=>win.focus(),100);
 }
+function openActPreview(actId){ openActWindow(actId,'preview'); }
+function printAct(actId){ openActWindow(actId,'print'); }
+function saveActPdf(actId){ openActWindow(actId,'pdf'); }
+function openActPrint(actId){ openActPreview(actId); }
 function openWorkorderActPrint(workorderId){
   const a=ensureActForWorkorder(workorderId);
   if(!a) return;
   selectedActId=a.id;
-  openActPrint(a.id);
+  openActPreview(a.id);
 }
-
 function renderActs(){
   const status=$('#actStatusFilter')?.value||'all'; const q=($('#actSearch')?.value||'').toLowerCase(); const statuses=[...new Set(state.acts.map(a=>a.status))];
   const list=state.acts.filter(a=>(status==='all'||a.status===status)&&`${a.title} ${objectName(a.objectId)} ${a.workorderId}`.toLowerCase().includes(q));
@@ -708,15 +742,15 @@ function renderActs(){
 function actDetailHtml(){
   const a=byId(state.acts,selectedActId); if(!a) return detailHeader('Akti detail')+`<div class="detail-body"><span class="muted">Vali akt.</span></div>`;
   const w=byId(state.workorders,a.workorderId)||{};
-  const body=`<div class="summary-grid">${summaryBox('Kuupäev',a.date)}${summaryBox('Staatus',a.status)}${summaryBox('Objekt',objectName(a.objectId))}${summaryBox('Töökäsk',a.workorderId)}</div>${card(a.title,[['Klient',clientName(objectClientId(a.objectId))],['Objekt',objectName(a.objectId)],['Töökäsk',w.title||a.workorderId],['Kuupäev',a.date]],a.status,`<div class="section-title">Märkused</div><div class="muted">Kasuta nuppu Prindi / PDF, et avada lihtne väljakutse akt prindivaates. Brauserist saab selle printida või PDF-ina salvestada.</div>`)}`;
-  return detailHeader('Akti detail','<button class="btn small" id="editActBtn">✎ Muuda</button><button class="btn small" id="printActBtn" type="button">⎙ Prindi / PDF</button><button class="btn small primary" id="markActSentBtn">↗ Märgi saadetuks</button><button class="btn small ghost" id="actDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body">${body}</div>`;
+  const body=`<div class="summary-grid">${summaryBox('Kuupäev',a.date)}${summaryBox('Staatus',a.status)}${summaryBox('Objekt',objectName(a.objectId))}${summaryBox('Töökäsk',a.workorderId)}</div>${card(a.title,[['Klient',clientName(objectClientId(a.objectId))],['Objekt',objectName(a.objectId)],['Töökäsk',w.title||a.workorderId],['Kuupäev',a.date]],a.status,`<div class="section-title">Märkused</div><div class="muted">Kasuta eelvaadet, printimist või PDF-salvestust. PDF salvestamine toimub brauseri prindivaate kaudu.</div>`)}`;
+  return detailHeader('Akti detail','<button class="btn small" id="editActBtn">✎ Muuda</button><button class="btn small" id="previewActBtn" type="button">👁 Eelvaade</button><button class="btn small" id="printActBtn" type="button">⎙ Prindi</button><button class="btn small" id="pdfActBtn" type="button">⇩ PDF</button><button class="btn small primary" id="markActSentBtn">↗ Märgi saadetuks</button><button class="btn small ghost" id="actDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body">${body}</div>`;
 }
-function bindActDetail(){ $('#editActBtn')?.addEventListener('click',()=>openActModal(selectedActId)); $('#printActBtn')?.addEventListener('click',()=>openActPrint(selectedActId)); $('#markActSentBtn')?.addEventListener('click',()=>{const a=byId(state.acts,selectedActId); if(a){a.status='Saadetud'; save(); renderActs();}}); $('#actDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.acts=false;renderActs();}); }
+function bindActDetail(){ $('#editActBtn')?.addEventListener('click',()=>openActModal(selectedActId)); $('#previewActBtn')?.addEventListener('click',()=>openActPreview(selectedActId)); $('#printActBtn')?.addEventListener('click',()=>printAct(selectedActId)); $('#pdfActBtn')?.addEventListener('click',()=>saveActPdf(selectedActId)); $('#markActSentBtn')?.addEventListener('click',()=>{const a=byId(state.acts,selectedActId); if(a){a.status='Saadetud'; save(); renderActs();}}); $('#actDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.acts=false;renderActs();}); }
 function openActModal(id='',defaults={}){
-  const a=id?byId(state.acts,id):{workorderId:defaults.workorderId||state.workorders[0]?.id||'',objectId:defaults.objectId||byId(state.workorders,defaults.workorderId)?.objectId||state.objects[0]?.id||'',date:'',title:'',status:'Mustand'};
-  openModal(`<form id="actForm"><div class="dialog-head"><h2>${id?'Muuda akti':'Lisa akt'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label class="full">Akti nimetus<input class="field" name="title" required value="${esc(a.title)}"></label><label>Töökäsk<select class="select" name="workorderId">${state.workorders.map(w=>`<option value="${w.id}" ${a.workorderId===w.id?'selected':''}>${esc(w.id)} · ${esc(w.title)}</option>`).join('')}</select></label><label>Objekt<select class="select" name="objectId">${state.objects.map(o=>`<option value="${o.id}" ${a.objectId===o.id?'selected':''}>${esc(o.name)}</option>`).join('')}</select></label><label>Kuupäev<input class="field" name="date" type="date" value="${esc(a.date)}"></label><label>Staatus<select class="select" name="status">${['Mustand','Valmis','Saadetud','Arhiveeritud'].map(s=>`<option ${a.status===s?'selected':''}>${s}</option>`).join('')}</select></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  const a=id?byId(state.acts,id):{workorderId:defaults.workorderId||state.workorders[0]?.id||'',objectId:defaults.objectId||byId(state.workorders,defaults.workorderId)?.objectId||state.objects[0]?.id||'',date:'',title:'',status:'Mustand',type:'Väljakutse akt'};
+  openModal(`<form id="actForm"><div class="dialog-head"><h2>${id?'Muuda akti':'Lisa akt'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label class="full">Akti nimetus<input class="field" name="title" required value="${esc(a.title)}"></label><label>Töökäsk<select class="select" name="workorderId">${state.workorders.map(w=>`<option value="${w.id}" ${a.workorderId===w.id?'selected':''}>${esc(w.id)} · ${esc(w.title)}</option>`).join('')}</select></label><label>Objekt<select class="select" name="objectId">${state.objects.map(o=>`<option value="${o.id}" ${a.objectId===o.id?'selected':''}>${esc(o.name)}</option>`).join('')}</select></label><label>Kuupäev<input class="field" name="date" type="date" value="${esc(a.date)}"></label><label>Staatus<select class="select" name="status">${['Mustand','Valmis','Saadetud','Arhiveeritud'].map(s=>`<option ${a.status===s?'selected':''}>${s}</option>`).join('')}</select></label><label>Akti tüüp<select class="select" name="type"><option value="Väljakutse akt" ${a.type==='Väljakutse akt'?'selected':''}>Väljakutse akt</option></select></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose(); $('#actForm').elements.workorderId?.addEventListener('change',e=>{const oid=byId(state.workorders,e.target.value)?.objectId; if(oid) $('#actForm').elements.objectId.value=oid;});
-  $('#actForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('ACT'),workorderId:f.workorderId.value,objectId:f.objectId.value,date:f.date.value,title:f.title.value,status:f.status.value}; if(id){Object.assign(a,next)}else{state.acts.push(next);selectedActId=next.id;detailOpen.acts=true} save();closeModal(); if(page==='workorders') renderWorkorders(); else renderActs();});
+  $('#actForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const newId=timestampActId();const next={id:id||newId,number:a.number||newId,workorderId:f.workorderId.value,objectId:f.objectId.value,date:f.date.value,title:f.title.value,status:f.status.value,type:f.type?.value||'Väljakutse akt',createdAt:a.createdAt||new Date().toISOString()}; if(id){Object.assign(a,next)}else{state.acts.push(next);selectedActId=next.id;detailOpen.acts=true} save();closeModal(); if(page==='workorders') renderWorkorders(); else renderActs();});
 }
 
 function renderPeople(){
@@ -959,14 +993,16 @@ async function applyMobileWorkorderAction(action,workorderId){
     w.completedBy='';
     w.completionComment='';
   }else if(action==='finish'){
-    const comment=await openCompletionCommentModal(w,completionCommentText(w));
-    if(!comment) return;
+    const result=normalizeCompletionResult(await openCompletionCommentModal(w,completionCommentText(w)));
+    if(!result) return;
     w.status='Lõpetatud';
     w.completedAt=new Date().toISOString();
     w.completedBy=completedByLabel(w);
-    w.completionComment=comment;
-    w.done=comment;
-    w.workDone=comment;
+    w.completionComment=result.comment;
+    w.actType=result.actType;
+    w.done=result.comment;
+    w.workDone=result.comment;
+    ensureActForWorkorder(w.id);
   }else if(action==='reopen'){
     const ok=await openVecoConfirm({title:'Ava töö uuesti',message:'Kas soovid lõpetatud töö uuesti avada?',details:`<strong>${esc(w.id)}</strong><br>${esc(objectName(w.objectId))}<br>${esc(w.title)}`,confirmText:'Ava uuesti',cancelText:'Loobu'});
     if(!ok) return;
@@ -1069,7 +1105,7 @@ function openMobileWorkModal(id){
   const w=byId(state.workorders,id); if(!w) return;
   openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(w.date)} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Tehtud töö / märkus<textarea name="done">${esc(w.done||w.workDone||'')}</textarea></label><label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Foto lisamine tuleb järgmises etapis"></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
-  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;const note=String(f.done.value||'').trim();if(nextStatus==='Lõpetatud'){const comment=isCompletedStatus(w.status)?(completionCommentText(w)||note):await openCompletionCommentModal(w,note);if(!comment)return;w.completedAt=w.completedAt||new Date().toISOString();w.completedBy=w.completedBy||completedByLabel(w);w.completionComment=comment;w.done=comment;w.workDone=comment;}else{w.completedAt='';w.completedBy='';w.completionComment='';w.done=note;w.workDone=note;}w.status=nextStatus;w.photoNote=f.photoNote.value;save();closeModal();state=window.VECO_STORAGE.load();renderMobile();});
+  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;const note=String(f.done.value||'').trim();if(nextStatus==='Lõpetatud'){const result=isCompletedStatus(w.status)?{comment:(completionCommentText(w)||note),actType:w.actType||'Väljakutse akt'}:normalizeCompletionResult(await openCompletionCommentModal(w,note));if(!result||!result.comment)return;w.completedAt=w.completedAt||new Date().toISOString();w.completedBy=w.completedBy||completedByLabel(w);w.completionComment=result.comment;w.actType=result.actType;w.done=result.comment;w.workDone=result.comment;ensureActForWorkorder(w.id);}else{w.completedAt='';w.completedBy='';w.completionComment='';w.done=note;w.workDone=note;}w.status=nextStatus;w.photoNote=f.photoNote.value;save();closeModal();state=window.VECO_STORAGE.load();renderMobile();});
 }
 function renderMobilePreview(){
   const devices=[['iPhone SE','320px','568px'],['Android 360','360px','740px'],['iPhone 14','390px','844px'],['Large phone','414px','896px'],['Tahvel','768px','1024px']];

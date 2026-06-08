@@ -1,7 +1,7 @@
 # VECO V3
 
 Versioon: v3.11.13
-Build: 20260607_1907
+Build: 20260608_1411
 
 Muudatused:
 - Töökäsu staatuse töövoog: Planeeritud / Töös / Lõpetatud.
@@ -96,3 +96,12 @@ add column if not exists completed_by text;
 - Parempoolse paneeli nupud saavad murduda ja ei lõiku.
 - KPI kastid kohanduvad kitsas paneelis.
 - Detailtekstidel on word-wrap/overflow-wrap.
+
+
+## V3.11.22 / 20260608_1411
+- Akti nupud eraldatud: Eelvaade, Prindi, PDF.
+- Akti eelvaade avaneb uues aknas.
+- Akti prindivaade kompaktsem: üldandmed 3 veerus.
+- Lisatud VECO ümmargune logo akti ülaossa.
+- Akti number vormingus VECO-YYYYMMDD-HHMMSS.
+- Töö lõpetamisel saab valida akti tüübi: Väljakutse akt.
