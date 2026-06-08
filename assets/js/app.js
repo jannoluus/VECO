@@ -493,9 +493,9 @@ function workorderDetailHtml(){
   const w=byId(state.workorders,selectedWorkorderId); if(!w) return detailHeader('Töökäsu detail')+`<div class="detail-body"><span class="muted">Vali töökäsk.</span></div>`;
   const acts=state.acts.filter(a=>a.workorderId===w.id);
   const body=`<div class="summary-grid">${summaryBox('Aktid',acts.length)}${summaryBox('Kuupäev',w.date)}${summaryBox('Kell',w.time)}${summaryBox('Staatus',w.status)}</div>${card(w.title,[['Klient',clientName(objectClientId(w.objectId))],['Objekt',objectName(w.objectId)],['Projekt',projectName(w.projectId)],['Tehnik',techName(w.technicianId)],['Aeg',`${w.date} ${w.time}`]],w.status,`<div class="section-title">Kirjeldus</div><div class="muted">${esc(w.description)}</div>`)}<div class="section-title">Aktid</div><div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(a.date)} · ${esc(a.title)}</strong><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
-  return detailHeader('Töökäsu detail','<button class="btn small" id="editWorkorderBtn">✎ Muuda</button><button class="btn small primary" id="createActBtn">＋ Loo akt</button><button class="btn small ghost" id="workorderDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body">${body}</div>`;
+  return detailHeader('Töökäsu detail','<button class="btn small" id="editWorkorderBtn">✎ Muuda</button><button class="btn small primary" id="createActBtn">＋ Loo akt</button><button class="btn small" id="printWorkorderActBtn" type="button">⎙ Prindi / PDF</button><button class="btn small ghost" id="workorderDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body">${body}</div>`;
 }
-function bindWorkorderDetail(){ $('#editWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal(selectedWorkorderId)); $('#createActBtn')?.addEventListener('click',()=>openActModal('',{workorderId:selectedWorkorderId})); $('#workorderDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.workorders=false;renderWorkorders();}); }
+function bindWorkorderDetail(){ $('#editWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal(selectedWorkorderId)); $('#createActBtn')?.addEventListener('click',()=>openActModal('',{workorderId:selectedWorkorderId})); $('#printWorkorderActBtn')?.addEventListener('click',()=>openWorkorderActPrint(selectedWorkorderId)); $('#workorderDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.workorders=false;renderWorkorders();}); }
 function openWorkorderModal(id='',defaults={}){
   const isEdit=!!id;
   const existing=isEdit?byId(state.workorders,id):null;
@@ -641,6 +641,58 @@ function openWorkorderModal(id='',defaults={}){
     if(page==='calendar') renderCalendar(); else if(page==='projects') renderProjects(); else if(page==='objects') renderObjects(); else renderWorkorders();
   });
 }
+
+function ensureActForWorkorder(workorderId){
+  const w=byId(state.workorders,workorderId);
+  if(!w) return null;
+  let a=state.acts.find(x=>x.workorderId===w.id);
+  if(a) return a;
+  a={
+    id:uid('ACT'),
+    workorderId:w.id,
+    objectId:w.objectId,
+    date:w.date||dateKeyFromDate(new Date()),
+    title:`Väljakutse akt - ${objectName(w.objectId)}`,
+    status:'Mustand',
+    type:'Väljakutse akt'
+  };
+  state.acts.push(a);
+  save();
+  return a;
+}
+function actPrintHtml(actId){
+  const a=byId(state.acts,actId);
+  if(!a) return '';
+  const w=byId(state.workorders,a.workorderId)||{};
+  const obj=byId(state.objects,a.objectId||w.objectId)||{};
+  const client=byId(state.clients,obj.clientId)||{};
+  const start=`${w.date||a.date||''} ${w.time||''}`.trim();
+  const end=w.time?`${w.date||a.date||''} ${workorderEndTime(w)}`.trim():'';
+  const result=completionCommentText(w)||'Töö tulemus puudub.';
+  const rows=[
+    ['Akti nr',a.id],['Tüüp',a.type||'Väljakutse akt'],['Kuupäev',a.date||w.date||''],['Klient',client.name||''],['Objekt',obj.name||''],['Aadress',obj.address||''],['Tehnik',techName(w.technicianId)],['Töökäsk',w.id||a.workorderId],['Staatus',w.status||a.status],['Algus',start],['Lõpp',end],['Kestus',`${workorderHours(w)} h`]
+  ];
+  return `<!doctype html><html lang="et"><head><meta charset="utf-8"><title>${esc(a.title||'Väljakutse akt')}</title><style>
+    body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:28px;font-size:13px;line-height:1.35} h1{font-size:22px;margin:0 0 4px} h2{font-size:15px;margin:22px 0 8px;border-bottom:1px solid #bbb;padding-bottom:5px}.muted{color:#555}.grid{display:grid;grid-template-columns:180px 1fr;border-top:1px solid #ddd;border-left:1px solid #ddd}.grid div{padding:8px;border-right:1px solid #ddd;border-bottom:1px solid #ddd}.label{font-weight:700;background:#f4f4f4}.box{border:1px solid #ddd;min-height:80px;padding:10px;white-space:pre-wrap}.actions{margin:0 0 18px;display:flex;gap:8px}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.brand{font-weight:700;color:#0b66b1;margin-bottom:16px}@media print{.actions{display:none} body{margin:16mm}}
+  </style></head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi / salvesta PDF</button><button class="btn" onclick="window.close()">Sulge</button></div><div class="brand">VECO</div><h1>${esc(a.title||'Väljakutse akt')}</h1><div class="muted">Lihtne väljakutse akt töökäsu põhjal</div><h2>Üldandmed</h2><div class="grid">${rows.map(([k,v])=>`<div class="label">${esc(k)}</div><div>${esc(v||'-')}</div>`).join('')}</div><h2>Töö kirjeldus</h2><div class="box">${esc(w.description||'-')}</div><h2>Töö tulemus</h2><div class="box">${esc(result)}</div><h2>Allkirjad</h2><div class="grid"><div class="label">Tehnik</div><div>${esc(techName(w.technicianId))}</div><div class="label">Klient</div><div>&nbsp;</div></div></body></html>`;
+}
+function openActPrint(actId){
+  const html=actPrintHtml(actId);
+  if(!html) return;
+  const win=window.open('','_blank');
+  if(!win){ alert('Brauser blokeeris prindi/PDF akna. Luba popupid või proovi uuesti.'); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  setTimeout(()=>win.focus(),100);
+}
+function openWorkorderActPrint(workorderId){
+  const a=ensureActForWorkorder(workorderId);
+  if(!a) return;
+  selectedActId=a.id;
+  openActPrint(a.id);
+}
+
 function renderActs(){
   const status=$('#actStatusFilter')?.value||'all'; const q=($('#actSearch')?.value||'').toLowerCase(); const statuses=[...new Set(state.acts.map(a=>a.status))];
   const list=state.acts.filter(a=>(status==='all'||a.status===status)&&`${a.title} ${objectName(a.objectId)} ${a.workorderId}`.toLowerCase().includes(q));
@@ -656,10 +708,10 @@ function renderActs(){
 function actDetailHtml(){
   const a=byId(state.acts,selectedActId); if(!a) return detailHeader('Akti detail')+`<div class="detail-body"><span class="muted">Vali akt.</span></div>`;
   const w=byId(state.workorders,a.workorderId)||{};
-  const body=`<div class="summary-grid">${summaryBox('Kuupäev',a.date)}${summaryBox('Staatus',a.status)}${summaryBox('Objekt',objectName(a.objectId))}${summaryBox('Töökäsk',a.workorderId)}</div>${card(a.title,[['Klient',clientName(objectClientId(a.objectId))],['Objekt',objectName(a.objectId)],['Töökäsk',w.title||a.workorderId],['Kuupäev',a.date]],a.status,`<div class="section-title">Märkused</div><div class="muted">PDF genereerimine tuleb järgmises etapis. Praegu on akt seotud töökäsu ja objektiga.</div>`)}`;
-  return detailHeader('Akti detail','<button class="btn small" id="editActBtn">✎ Muuda</button><button class="btn small primary" id="markActSentBtn">↗ Märgi saadetuks</button><button class="btn small ghost" id="actDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body">${body}</div>`;
+  const body=`<div class="summary-grid">${summaryBox('Kuupäev',a.date)}${summaryBox('Staatus',a.status)}${summaryBox('Objekt',objectName(a.objectId))}${summaryBox('Töökäsk',a.workorderId)}</div>${card(a.title,[['Klient',clientName(objectClientId(a.objectId))],['Objekt',objectName(a.objectId)],['Töökäsk',w.title||a.workorderId],['Kuupäev',a.date]],a.status,`<div class="section-title">Märkused</div><div class="muted">Kasuta nuppu Prindi / PDF, et avada lihtne väljakutse akt prindivaates. Brauserist saab selle printida või PDF-ina salvestada.</div>`)}`;
+  return detailHeader('Akti detail','<button class="btn small" id="editActBtn">✎ Muuda</button><button class="btn small" id="printActBtn" type="button">⎙ Prindi / PDF</button><button class="btn small primary" id="markActSentBtn">↗ Märgi saadetuks</button><button class="btn small ghost" id="actDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body">${body}</div>`;
 }
-function bindActDetail(){ $('#editActBtn')?.addEventListener('click',()=>openActModal(selectedActId)); $('#markActSentBtn')?.addEventListener('click',()=>{const a=byId(state.acts,selectedActId); if(a){a.status='Saadetud'; save(); renderActs();}}); $('#actDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.acts=false;renderActs();}); }
+function bindActDetail(){ $('#editActBtn')?.addEventListener('click',()=>openActModal(selectedActId)); $('#printActBtn')?.addEventListener('click',()=>openActPrint(selectedActId)); $('#markActSentBtn')?.addEventListener('click',()=>{const a=byId(state.acts,selectedActId); if(a){a.status='Saadetud'; save(); renderActs();}}); $('#actDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.acts=false;renderActs();}); }
 function openActModal(id='',defaults={}){
   const a=id?byId(state.acts,id):{workorderId:defaults.workorderId||state.workorders[0]?.id||'',objectId:defaults.objectId||byId(state.workorders,defaults.workorderId)?.objectId||state.objects[0]?.id||'',date:'',title:'',status:'Mustand'};
   openModal(`<form id="actForm"><div class="dialog-head"><h2>${id?'Muuda akti':'Lisa akt'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label class="full">Akti nimetus<input class="field" name="title" required value="${esc(a.title)}"></label><label>Töökäsk<select class="select" name="workorderId">${state.workorders.map(w=>`<option value="${w.id}" ${a.workorderId===w.id?'selected':''}>${esc(w.id)} · ${esc(w.title)}</option>`).join('')}</select></label><label>Objekt<select class="select" name="objectId">${state.objects.map(o=>`<option value="${o.id}" ${a.objectId===o.id?'selected':''}>${esc(o.name)}</option>`).join('')}</select></label><label>Kuupäev<input class="field" name="date" type="date" value="${esc(a.date)}"></label><label>Staatus<select class="select" name="status">${['Mustand','Valmis','Saadetud','Arhiveeritud'].map(s=>`<option ${a.status===s?'selected':''}>${s}</option>`).join('')}</select></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
@@ -719,8 +771,26 @@ function workorderEndTime(w,limitHour=22){
 }
 function teamWeekAbsences(personId,weekDays){ const start=weekDays[0], end=weekDays[6]; return state.absences.filter(a=>a.personId===personId && a.start<=end && a.end>=start); }
 function teamWeekOncall(personId,weekDays){ const start=weekDays[0], end=weekDays[6]; return state.oncall.filter(o=>o.personId===personId && o.start<=end && o.end>=start); }
-function workloadStatus(hours,absences){ if(absences.length) return 'Puudub'; if(hours>=8) return 'Ülekoormus'; if(hours>=4) return 'Koormus'; if(hours>0) return 'Madal'; return 'Vaba'; }
-function workloadClass(hours,absences){ if(absences.length) return 'warn'; if(hours>=8) return 'red'; if(hours>=4) return 'ok'; if(hours>0) return ''; return ''; }
+function workloadStatus(hours,absences,limit=8){
+  if(absences.length) return 'Puudub';
+  const h=Number(hours)||0;
+  const l=Number(limit)||8;
+  if(h<=0) return 'Vaba';
+  if(h>l) return 'Ülekoormus';
+  if(Math.abs(h-l)<0.001) return 'Täis';
+  if(h>=l*0.75) return 'Normaalne';
+  return 'Madal';
+}
+function workloadClass(hours,absences,limit=8){
+  if(absences.length) return 'warn';
+  const h=Number(hours)||0;
+  const l=Number(limit)||8;
+  if(h<=0) return '';
+  if(h>l) return 'red';
+  if(Math.abs(h-l)<0.001) return 'warn';
+  if(h>=l*0.75) return 'ok';
+  return '';
+}
 function renderTeam(){
   const currentWeek=$('#teamWeekStart')?.value||weekStartKeyFrom(localStorage.getItem('veco_team_week')||'');
   const statusFilter=$('#teamStatusFilter')?.value||'open';
@@ -766,7 +836,7 @@ function renderTeam(){
     ].filter(Boolean);
     const jobList=jobs.slice(0,5).map(w=>`<div class="team-job-line"><strong>${esc(w.date)} ${esc(w.time)} · ${esc(objectName(w.objectId))}</strong><span>${esc(w.title)}</span></div>`).join('') || '<span class="muted">Selles vahemikus töid ei ole.</span>';
     return `<div class="card clickable team-card ${p.id===selectedTeamPersonId?'selected':''}" data-team-person="${p.id}">
-      <div class="card-top"><h3>${esc(p.name)}</h3><span class="status ${workloadClass(hours,abs)}">${esc(workloadStatus(hours,abs))}</span></div>
+      <div class="card-top"><h3>${esc(p.name)}</h3><span class="status ${workloadClass(hours,abs,limit)}">${esc(workloadStatus(hours,abs,limit))}</span></div>
       <div class="team-load-row"><span>${jobs.length} tööd</span><strong>${hours} h</strong></div>
       <div class="load-meter"><span style="width:${loadPct}%"></span></div>
       <div class="muted">${esc(p.role||'Tehnik')} · ${esc(p.region||'-')}</div>

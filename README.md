@@ -83,3 +83,9 @@ add column if not exists completed_by text;
 ## V3.11.21 / 20260608_1314
 - Parandatud kogu rakenduse taustasünkrooni renderdamine: select/input väljade kasutamise ajal ei renderdata vaadet üle.
 - Kalendri ja teiste vaadete rippmenüüd ei sulgu enam kohe pärast avamist.
+
+## V3.11.15 / Build 20260608_1331
+- Tiimivaate koormuse loogika korrigeeritud: 8 h ei ole enam ülekoormus, ülekoormus algab üle tööaja piiri.
+- Koormuse staatused: Vaba, Madal, Normaalne, Täis, Ülekoormus.
+- Lisatud lihtsa väljakutse akti prindi/PDF eelvaade töökäsu ja akti detailvaates.
+- PDF toimub esimeses versioonis brauseri prindivaate kaudu: Prindi / salvesta PDF.
