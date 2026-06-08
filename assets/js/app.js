@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.17';
-const APP_BUILD='20260608_1226';
+const APP_VERSION='v3.11.18';
+const APP_BUILD='20260608_1230';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -61,8 +61,14 @@ function save(){
 const LOCAL_SYNC_KEY='veco_v3_sync_pulse';
 let localSyncChannel=null;
 let localSyncTimer=null;
+let localStateWatchTimer=null;
+let localStateSnapshot='';
+function localStateSignature(data){
+  return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.completedAt||'',w.completedBy||'',w.completionComment||'']));
+}
 function notifyLocalPeers(){
   try{
+    localStateSnapshot=localStateSignature(state);
     const msg={type:'workorders-updated',page,t:Date.now()};
     localStorage.setItem(LOCAL_SYNC_KEY,JSON.stringify(msg));
     if(localSyncChannel) localSyncChannel.postMessage(msg);
@@ -72,10 +78,28 @@ function scheduleLocalRefresh(){
   clearTimeout(localSyncTimer);
   localSyncTimer=setTimeout(()=>{
     try{
+      if($('#modal')?.classList.contains('open')) return;
       state=window.VECO_STORAGE.load();
+      localStateSnapshot=localStateSignature(state);
       renderCurrentPage();
     }catch(e){ console.warn('VECO local peer refresh failed',e); }
   },120);
+}
+function startLocalStateWatch(){
+  if(localStateWatchTimer) return;
+  try{ localStateSnapshot=localStateSignature(window.VECO_STORAGE.load()); }catch(e){ localStateSnapshot=''; }
+  localStateWatchTimer=setInterval(()=>{
+    try{
+      if($('#modal')?.classList.contains('open')) return;
+      const latest=window.VECO_STORAGE.load();
+      const nextSig=localStateSignature(latest);
+      if(nextSig!==localStateSnapshot){
+        localStateSnapshot=nextSig;
+        state=latest;
+        renderCurrentPage();
+      }
+    }catch(e){ console.warn('VECO local state watch failed',e); }
+  },1000);
 }
 function bindLocalPeerSync(){
   try{
@@ -86,8 +110,9 @@ function bindLocalPeerSync(){
       };
     }
     window.addEventListener('storage',(event)=>{
-      if(event.key===LOCAL_SYNC_KEY) scheduleLocalRefresh();
+      if(event.key===LOCAL_SYNC_KEY || event.key===window.VECO_STORAGE?.key) scheduleLocalRefresh();
     });
+    startLocalStateWatch();
   }catch(e){ console.warn('VECO local peer sync unavailable',e); }
 }
 function uid(prefix){return `${prefix}-${String(Date.now()).slice(-6)}`}

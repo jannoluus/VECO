@@ -60,3 +60,8 @@ add column if not exists completed_by text;
 ## V3.11.17 / 20260608_1226
 - Headeri VALVE pill kasutab nüüd valitud kalendri/tiimivaate perioodi, mitte ainult tänast kuupäeva.
 - Parandatud olukord, kus Tiimivaade näitas Jannot valves, aga päise VALVE pill näitas DEMO.
+
+
+## V3.11.18 / 20260608_1230
+- Tugevdatud sama brauseri kaartide/akende vahelist local sync kontrolli.
+- Kalender ja tehniku vaade kontrollivad localStorage muutusi ka siis, kui BroadcastChannel/storage event jääb vahele.
