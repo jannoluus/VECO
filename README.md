@@ -65,3 +65,10 @@ add column if not exists completed_by text;
 ## V3.11.18 / 20260608_1230
 - Tugevdatud sama brauseri kaartide/akende vahelist local sync kontrolli.
 - Kalender ja tehniku vaade kontrollivad localStorage muutusi ka siis, kui BroadcastChannel/storage event jääb vahele.
+
+
+## V3.11.19 / 20260608_1246
+- Tehniku vaates uue töö lisamisel objekt enam vaikimisi ei täitu.
+- Objektiväli on otsitav: saab valida olemasoleva objekti või kirjutada uue objekti nime.
+- Uue objektinime sisestamisel lisatakse objekt registrisse ja seotakse töökäsuga.
+- Sisaldab varasemat kuupäeva/Täna nupu ning sync paranduste baasi.

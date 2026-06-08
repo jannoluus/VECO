@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.18';
-const APP_BUILD='20260608_1230';
+const APP_VERSION='v3.11.19';
+const APP_BUILD='20260608_1246';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -916,14 +916,51 @@ function renderMobile(){
   $$('[data-mobile-action]').forEach(btn=>btn.addEventListener('click',()=>applyMobileWorkorderAction(btn.dataset.mobileAction,btn.dataset.workorderId)));
   $$('[data-mobile-edit]').forEach(btn=>btn.addEventListener('click',()=>openMobileWorkModal(btn.dataset.mobileEdit)));
 }
+function mobileObjectChoiceLabel(o){
+  const client=clientName(o.clientId);
+  return `${o.name}${client&&client!=='-'?' · '+client:''}`;
+}
+function resolveMobileObjectChoice(raw){
+  const value=String(raw||'').trim();
+  if(!value) return null;
+  const exact=state.objects.find(o=>mobileObjectChoiceLabel(o).toLowerCase()===value.toLowerCase()||String(o.name||'').toLowerCase()===value.toLowerCase());
+  if(exact) return exact;
+  const created={
+    id:uid('O'),
+    clientId:'',
+    name:value,
+    address:'',
+    mainContact:'',
+    responsibleTechId:'',
+    contract:'',
+    status:'active',
+    notes:'Lisatud tehniku vaatest töökäsu loomisel.',
+    contacts:[]
+  };
+  state.objects.push(created);
+  return created;
+}
 function openMobileAddWorkModal(personId){
   const today=dateKeyFromDate(new Date());
   const now=new Date();
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=now.getMinutes()<30?'00':'30';
-  openModal(`<form id="mobileAddWorkForm"><div class="dialog-head"><h2>Lisa töö</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid mobile-form-grid"><label class="full">Objekt<select class="select" name="objectId" required>${state.objects.map(o=>`<option value="${o.id}">${esc(o.name)} · ${esc(clientName(o.clientId))}</option>`).join('')}</select></label><label class="full">Töö lühikirjeldus<input class="field" name="title" required placeholder="nt Telefonitellimus / rike"></label><label>Kuupäev<input class="field" name="date" type="date" required value="${today}"></label><label>Kell<input class="field" name="time" type="time" value="${hh}:${mm}"></label><label>Prioriteet<select class="select" name="priority"><option>Tavaline</option><option>Kõrge</option><option>Madal</option></select></label><label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${st==='Planeeritud'?'selected':''}>${st}</option>`).join('')}</select></label><label class="full">Märkus<textarea name="description" placeholder="Kes helistas, mida paluti, mis objektil juhtus?"></textarea></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta töö</button></div></form>`);
+  const objectOptions=state.objects.map(o=>`<option value="${esc(mobileObjectChoiceLabel(o))}"></option>`).join('');
+  openModal(`<form id="mobileAddWorkForm"><div class="dialog-head"><h2>Lisa töö</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid mobile-form-grid"><label class="full">Objekt<input class="field" name="objectChoice" list="mobileObjectChoices" required autocomplete="off" placeholder="Vali objekt või kirjuta uus objekt..."><datalist id="mobileObjectChoices">${objectOptions}</datalist><span class="muted">Vali olemasolev objekt või kirjuta uue objekti nimi.</span></label><label class="full">Töö lühikirjeldus<input class="field" name="title" required placeholder="nt Telefonitellimus / rike"></label><label>Kuupäev<input class="field" name="date" type="date" required value="${today}"></label><label>Kell<input class="field" name="time" type="time" value="${hh}:${mm}"></label><label>Prioriteet<select class="select" name="priority"><option>Tavaline</option><option>Kõrge</option><option>Madal</option></select></label><label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${st==='Planeeritud'?'selected':''}>${st}</option>`).join('')}</select></label><label class="full">Märkus<textarea name="description" placeholder="Kes helistas, mida paluti, mis objektil juhtus?"></textarea></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta töö</button></div></form>`);
   bindClose();
-  $('#mobileAddWorkForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const objectId=f.objectId.value;const project=state.projects.find(p=>p.objectId===objectId);const next={id:uid('WO'),projectId:project?.id||'',objectId,title:f.title.value,date:f.date.value,time:f.time.value,technicianId:personId,status:f.status.value,priority:f.priority.value,description:f.description.value};state.workorders.push(next);selectedWorkorderId=next.id;save();closeModal();renderMobile();});
+  $('#mobileAddWorkForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    const f=e.currentTarget.elements;
+    const object=resolveMobileObjectChoice(f.objectChoice.value);
+    if(!object){f.objectChoice.focus();return;}
+    const project=state.projects.find(p=>p.objectId===object.id);
+    const next={id:uid('WO'),projectId:project?.id||'',objectId:object.id,title:f.title.value,date:f.date.value,time:f.time.value,technicianId:personId,status:f.status.value,priority:f.priority.value,description:f.description.value};
+    state.workorders.push(next);
+    selectedWorkorderId=next.id;
+    save();
+    closeModal();
+    renderMobile();
+  });
 }
 function openMobileWorkModal(id){
   const w=byId(state.workorders,id); if(!w) return;
