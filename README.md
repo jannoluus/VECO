@@ -126,6 +126,13 @@ add column if not exists completed_by text;
 - Allkirjaplokk kompaktsem.
 
 
+## V3.11.25 / Build 20260608_1504
+
+- Akti/PDF päisest eemaldatud suur pealkiri.
+- Üldandmetest eemaldatud dubleeriv tüüp.
+- Päises jäävad fookusesse akti nr, kuupäev, objekt, töökäsk ja logo.
+- Töö kirjelduse ala kompaktsem ning töö tulemuse ala säilitatud põhilise sisualana.
+
 ## V3.11.24 / Build 20260608_1522
 
 - Akti/PDF päis ümber kujundatud: akti nr ja kuupäev vasakul, objekt ja töökäsk paremal, logo keskel.
