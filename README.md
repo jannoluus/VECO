@@ -175,3 +175,9 @@ Muudatused:
 - Sama broneering kuvatakse nüüd igal kestuse päeval eraldi päevakaardina: 1/3, 2/3, 3/3.
 - Nihutamisel säilib mitmepäevase sündmuse kestus.
 - Kuuvaates arvestatakse samuti mitmepäevase sündmuse kõiki kuupäevi.
+
+## Build VECO_V3_20260609_0438
+- Kalendri mitmepäevane töö kuvatakse nädalavaates ühe laia ribana üle päevade.
+- Kestuse venitus kasutab endiselt ühte tööd ning muudab algus-/lõppkuupäeva.
+- Sama 09:00–13:00 töö 3 päeva ulatuses arvestub koormuses 4 h × 3 = 12 h.
+- Praeguse aja marker on tõstetud töökaartidest kõrgemale kihile.

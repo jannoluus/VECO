@@ -1405,3 +1405,28 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
   pointer-events:none;
 }
 .calendar-span-resize-active{cursor:ew-resize!important;}
+
+/* V3.14.0: mitmepäevane kalendritöö ühe laia ribana */
+.app.page-calendar .calendar-planner-grid{
+  position:relative!important;
+  --calendar-gap:8px;
+}
+.app.page-calendar .calendar-event.calendar-span-event{
+  position:absolute!important;
+  left:calc((var(--span-start) * ((100% - ((var(--calendar-day-count) - 1) * var(--calendar-gap))) / var(--calendar-day-count) + var(--calendar-gap))) + 8px)!important;
+  width:calc((var(--span-days) * ((100% - ((var(--calendar-day-count) - 1) * var(--calendar-gap))) / var(--calendar-day-count))) + ((var(--span-days) - 1) * var(--calendar-gap)) - 16px)!important;
+  right:auto!important;
+  z-index:30!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event:hover,
+.app.page-calendar .calendar-event.calendar-span-event.span-resizing,
+.app.page-calendar .calendar-event.calendar-span-event.dragging{
+  z-index:90!important;
+}
+.app.page-calendar .calendar-now-line{
+  z-index:120!important;
+  pointer-events:none!important;
+}
+.app.page-calendar .calendar-workday-line{
+  z-index:2!important;
+}

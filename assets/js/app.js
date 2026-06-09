@@ -1457,28 +1457,39 @@ function renderCalendar(){
 
   let body='';
   if(mode==='week'||mode==='day'){
+    const buildCalendarCard=(w,{date='',compactClass='',spanEvent=false,spanStartIndex=0,spanDays=1}={})=>{
+      const [hh,mm]=(w.time||'09:00').split(':').map(Number);
+      const start=((Number.isFinite(hh)?hh:9)+(Number.isFinite(mm)?mm:0)/60);
+      const topPct=Math.max(0,Math.min(96,((start-calendarStartHour)/calendarHoursTotal)*100));
+      const duration=workorderHours(w);
+      const minHeight=Math.max(compactClass?34:40,Math.min(60,duration*34));
+      const endTime=workorderEndTime(w,calendarEndHour);
+      const totalSpan=workorderDaySpan(w);
+      const currentDayIndex=date?Math.min(totalSpan,daysBetweenKeys(w.date,date)+1):1;
+      const dayLabel=totalSpan>1?(spanEvent?`Kestus: ${totalSpan} päeva`:`${currentDayIndex}/${totalSpan} päeva`):'1 päev';
+      const rangeLabel=totalSpan>1?` · ${fmtShortDate(w.date)}–${fmtShortDate(workorderEndDate(w))}`:'';
+      const style=spanEvent
+        ? `--span-start:${spanStartIndex};--span-days:${spanDays};top:calc(40px + (100% - 40px) * ${topPct/100});height:calc(((100% - 40px) / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px`
+        : `top:${topPct}%;height:calc((100% / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px`;
+      return `<button class="calendar-event calendar-status-${statusSlug(w.status)}${compactClass}${totalSpan>1?' multi-day':''}${spanEvent?' calendar-span-event':''}" style="${style}" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" data-calendar-start="${esc(w.date||'')}" data-calendar-end="${esc(workorderEndDate(w))}" type="button" title="Lohista töö teisele ajale või päevale. Venita külgedelt mitmepäevaseks."><span class="calendar-span-resize calendar-span-resize-left" data-calendar-span-resize="${w.id}" data-resize-side="left" title="Venita alguskuupäeva" aria-hidden="true"></span><span class="calendar-span-resize calendar-span-resize-right" data-calendar-span-resize="${w.id}" data-resize-side="right" title="Venita lõppkuupäeva" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-left" title="Lohista vasakule / eelmisele päevale" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-right" title="Lohista paremale / järgmisele päevale" aria-hidden="true"></span><span class="calendar-event-head"><strong><b class="calendar-start-time">${esc(w.time||'')}</b> · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small><span class="calendar-event-footer" aria-label="Töö lõpp ja kestus"><b class="calendar-duration">${duration} h · ${esc(dayLabel)}${esc(rangeLabel)}</b><b class="calendar-end-time">kuni ${esc(fmtShortDate(workorderEndDate(w)))} ${esc(endTime)}</b></span><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kellalist kestust" aria-hidden="true"></span></button>`;
+    };
+    const multiDayOverlay=filtered.filter(w=>workorderDaySpan(w)>1 && workorderIntersectsVisibleDays(w)).sort((a,b)=>(a.time||'').localeCompare(b.time||'')).map(w=>{
+      const startIdx=visibleDays.findIndex(date=>workorderOccursOnDate(w,date));
+      const endIdx=visibleDays.reduce((last,date,idx)=>workorderOccursOnDate(w,date)?idx:last,-1);
+      if(startIdx<0||endIdx<startIdx) return '';
+      return buildCalendarCard(w,{spanEvent:true,spanStartIndex:startIdx,spanDays:endIdx-startIdx+1});
+    }).join('');
     const columns=visibleDays.map(date=>{
       const d=parseDateKey(date);
-      const jobs=filtered.filter(w=>workorderOccursOnDate(w,date)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+      const jobs=filtered.filter(w=>workorderOccursOnDate(w,date) && workorderDaySpan(w)<=1).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
       const compactClass=jobs.length>=3?' compact':'';
-      const cards=jobs.map(w=>{
-        const [hh,mm]=(w.time||'09:00').split(':').map(Number);
-        const start=((Number.isFinite(hh)?hh:9)+(Number.isFinite(mm)?mm:0)/60);
-        const topPct=Math.max(0,Math.min(96,((start-calendarStartHour)/calendarHoursTotal)*100));
-        const duration=workorderHours(w);
-        const minHeight=Math.max(jobs.length>=3?34:40,Math.min(60,duration*34));
-        const endTime=workorderEndTime(w,calendarEndHour);
-        const totalSpan=workorderDaySpan(w);
-        const currentDayIndex=Math.min(totalSpan,daysBetweenKeys(w.date,date)+1);
-        const dayLabel=totalSpan>1?`${currentDayIndex}/${totalSpan} päeva`:'1 päev';
-        const rangeLabel=totalSpan>1?` · ${fmtShortDate(w.date)}–${fmtShortDate(workorderEndDate(w))}`:'';
-        return `<button class="calendar-event calendar-status-${statusSlug(w.status)}${compactClass}${totalSpan>1?' multi-day':''}" style="top:${topPct}%;height:calc((100% / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" type="button" title="Lohista töö teisele ajale või päevale. Venita külgedelt mitmepäevaseks."><span class="calendar-span-resize calendar-span-resize-left" data-calendar-span-resize="${w.id}" data-resize-side="left" title="Venita alguskuupäeva" aria-hidden="true"></span><span class="calendar-span-resize calendar-span-resize-right" data-calendar-span-resize="${w.id}" data-resize-side="right" title="Venita lõppkuupäeva" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-left" title="Lohista vasakule / eelmisele päevale" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-right" title="Lohista paremale / järgmisele päevale" aria-hidden="true"></span><span class="calendar-event-head"><strong><b class="calendar-start-time">${esc(w.time||'')}</b> · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small><span class="calendar-event-footer" aria-label="Töö lõpp ja kestus"><b class="calendar-end-time">${esc(endTime)}</b><b class="calendar-duration">${duration} h · ${esc(dayLabel)}${esc(rangeLabel)}</b></span><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kellalist kestust" aria-hidden="true"></span></button>`;
-      }).join('');
+      const cards=jobs.map(w=>buildCalendarCard(w,{date,compactClass})).join('');
       const slots=hours.map(h=>`<button class="calendar-slot" data-add-date="${date}" data-add-time="${String(h).padStart(2,'0')}:00" title="Lisa töö ${date} ${String(h).padStart(2,'0')}:00" type="button"></button>`).join('');
       const workdayMarkers=`<span class="calendar-workday-shade" style="top:${workdayStartPct}%;height:${workdayHeightPct}%" aria-hidden="true"></span><span class="calendar-workday-line calendar-workday-start" style="top:${workdayStartPct}%" aria-hidden="true"></span><span class="calendar-workday-line calendar-workday-end" style="top:${workdayEndPct}%" aria-hidden="true"></span>`;
-      return `<div class="calendar-planner-day ${date===today?'today':''}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(date)}</span></div><div class="calendar-planner-lane" data-calendar-lane="${date}">${workdayMarkers}${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTopPct}%"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || '<div class="calendar-empty-note">Töid ei ole</div>'}</div></div>`;
+      const hasJobs=cards || filtered.some(w=>workorderOccursOnDate(w,date));
+      return `<div class="calendar-planner-day ${date===today?'today':''}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(date)}</span></div><div class="calendar-planner-lane" data-calendar-lane="${date}">${workdayMarkers}${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTopPct}%"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || (!hasJobs?'<div class="calendar-empty-note">Töid ei ole</div>':'')}</div></div>`;
     }).join('');
-    body=`<div class="calendar-planner" style="--calendar-hours-count:${hours.length}"><div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}</div></div>`;
+    body=`<div class="calendar-planner" style="--calendar-hours-count:${hours.length}"><div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="--calendar-day-count:${visibleDays.length};grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}${multiDayOverlay}</div></div>`;
   }else if(mode==='month'){
     body=`<div class="calendar-month-grid">${visibleDays.map(date=>{const jobs=filtered.filter(w=>workorderOccursOnDate(w,date)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const d=parseDateKey(date);return `<div class="calendar-month-day ${date===today?'today':''}" data-add-date="${date}"><div class="calendar-month-head"><strong>${d.getDate()}</strong><span>${dayNames[d.getDay()]}</span></div>${jobs.slice(0,4).map(w=>`<button class="calendar-mini-event" data-calendar-edit="${w.id}" type="button">${esc(w.time||'')} · ${esc(objectName(w.objectId))}${workorderDaySpan(w)>1?' · '+esc(daysBetweenKeys(w.date,date)+1)+'/'+esc(workorderDaySpan(w)):''}</button>`).join('')}${jobs.length>4?`<span class="muted">+${jobs.length-4} veel</span>`:''}</div>`}).join('')}</div>`;
   }else{
@@ -1515,9 +1526,10 @@ function bindCalendarResize(startHour=6,endHour=22){
       e.preventDefault();
       e.stopPropagation();
       const card=handle.closest('[data-calendar-drag]');
-      const lane=handle.closest('[data-calendar-lane]');
+      let lane=handle.closest('[data-calendar-lane]');
       const workorderId=handle.dataset.calendarResize;
       const w=byId(state.workorders,workorderId);
+      if(!lane&&w?.date) lane=document.querySelector(`[data-calendar-lane="${w.date}"]`);
       if(!card||!lane||!w) return;
       const laneRect=lane.getBoundingClientRect();
       const hourHeight=laneRect.height/(endHour-startHour);
@@ -1574,7 +1586,13 @@ function bindCalendarResize(startHour=6,endHour=22){
 
 
 function bindCalendarSpanResize(){
-  const laneAtPoint=(x,y)=>document.elementFromPoint(x,y)?.closest?.('[data-calendar-lane]')||null;
+  const laneAtPoint=(x,y,ignoreEl)=>{
+    const oldPointer=ignoreEl?.style.pointerEvents;
+    if(ignoreEl) ignoreEl.style.pointerEvents='none';
+    const el=document.elementFromPoint(x,y);
+    if(ignoreEl) ignoreEl.style.pointerEvents=oldPointer||'';
+    return el?.closest?.('[data-calendar-lane]')||null;
+  };
   const dayShort=(date)=>{ const d=parseDateKey(date); return ['P','E','T','K','N','R','L'][d.getDay()]+' '+fmtShortDate(date); };
   const labelFor=(start,end)=> start===end ? `${dayShort(start)} · 1 päev` : `${dayShort(start)} – ${dayShort(end)} · ${daysBetweenKeys(start,end)+1} päeva`;
   $$('[data-calendar-span-resize]').forEach(handle=>{
@@ -1606,7 +1624,7 @@ function bindCalendarSpanResize(){
         card.removeAttribute('data-span-label');
       };
       const applyPoint=(clientX,clientY)=>{
-        const lane=laneAtPoint(clientX,clientY);
+        const lane=laneAtPoint(clientX,clientY,card);
         if(!lane?.dataset?.calendarLane) return;
         const target=lane.dataset.calendarLane;
         const currentStart=w.date;
