@@ -166,3 +166,12 @@ Muudatused:
 - Mitmepäevane sündmus kuvatakse nädalavaates laiema kaardina üle mitme päeva.
 - Sündmuse tavapärane lohistamine teisele päevale säilitab mitmepäevase kestuse.
 - Vertikaalne resize jäi alles kellalise kestuse muutmiseks.
+
+
+## Build VECO_V3_20260609_0420
+
+- Parandatud kalendri mitmepäevase sündmuse kuvamine.
+- Venitamisel ei kuvata sündmust enam ühe laia kaardina üle veergude, mis jäi päevaveergude taha peitu.
+- Sama broneering kuvatakse nüüd igal kestuse päeval eraldi päevakaardina: 1/3, 2/3, 3/3.
+- Nihutamisel säilib mitmepäevase sündmuse kestus.
+- Kuuvaates arvestatakse samuti mitmepäevase sündmuse kõiki kuupäevi.
