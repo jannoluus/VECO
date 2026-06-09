@@ -188,3 +188,8 @@ Muudatused:
 - ESC sulgeb modali.
 - Modal tõstetud kalendri ajamarkerist ja töökaartidest ettepoole.
 - Modali avamisel on kalendri drag/resize ja ajamarkeri kihid mitteaktiivsed.
+
+## Build VECO_V3_20260609_0831
+- Mitmepäevase töö vahepäevade tugev/tühi plokiefekt asendatud õrna päevapiiri joonega.
+- Lisatud läbipaistev jätkumise gradient, et pikk broneering sulanduks kalendriga paremini.
+- Päevavahetus jääb nähtavaks, kuid ei kata enam töö sisu ega domineeri vaates.
