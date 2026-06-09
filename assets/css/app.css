@@ -1167,7 +1167,7 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 .confirm-modal{
   position:fixed!important;
   inset:0!important;
-  z-index:220!important;
+  z-index:20000!important;
   display:none!important;
   align-items:center!important;
   justify-content:center!important;
@@ -1547,3 +1547,9 @@ body.modal-open .modal *{
 .theme-light .app.page-calendar .calendar-now-line span{
   background:rgba(22,134,217,.92)!important;
 }
+
+
+/* Build 20260609_0916 modal stacking fix */
+.modal{z-index:10000!important;}
+.confirm-modal{z-index:20000!important;}
+.confirm-dialog{position:relative;z-index:20001!important;}
