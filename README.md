@@ -181,3 +181,10 @@ Muudatused:
 - Kestuse venitus kasutab endiselt ühte tööd ning muudab algus-/lõppkuupäeva.
 - Sama 09:00–13:00 töö 3 päeva ulatuses arvestub koormuses 4 h × 3 = 12 h.
 - Praeguse aja marker on tõstetud töökaartidest kõrgemale kihile.
+
+
+## Build VECO_V3_20260609_0445
+- Parandatud modali taustale klikkimise sulgemine.
+- ESC sulgeb modali.
+- Modal tõstetud kalendri ajamarkerist ja töökaartidest ettepoole.
+- Modali avamisel on kalendri drag/resize ja ajamarkeri kihid mitteaktiivsed.

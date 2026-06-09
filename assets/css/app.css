@@ -1430,3 +1430,28 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 .app.page-calendar .calendar-workday-line{
   z-index:2!important;
 }
+
+
+/* V3.14.1: modal peab alati olema kalendri, ajajoone ja drag/resize kihtide peal */
+.modal{
+  z-index:20000!important;
+}
+.modal.open{
+  display:flex!important;
+}
+.dialog{
+  position:relative!important;
+  z-index:20001!important;
+}
+body.modal-open .calendar-now-line,
+body.modal-open .calendar-event,
+body.modal-open .calendar-workday-line,
+body.modal-open .calendar-slot,
+body.modal-open .calendar-planner-day,
+body.modal-open .calendar-planner-grid{
+  pointer-events:none!important;
+}
+body.modal-open .modal,
+body.modal-open .modal *{
+  pointer-events:auto!important;
+}

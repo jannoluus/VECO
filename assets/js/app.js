@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.11.27';
-const APP_BUILD='20260608_1742';
+const APP_VERSION='v3.14.1';
+const APP_BUILD='20260609_0445';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -265,11 +265,22 @@ function card(title,rows=[],status='',extra=''){
 function table(headers,rows){const body=Array.isArray(rows)?rows.join(''):(rows||'');return `<div class="table-wrap"><table class="data-table"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`}
 function summaryBox(label,value){return `<div class="summary-box"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`}
 function openModal(html){
-  $('#modal').innerHTML=`<div class="dialog">${html}</div>`;
-  $('#modal').classList.add('open');
+  const modal=$('#modal');
+  if(!modal) return;
+  modal.innerHTML=`<div class="dialog" role="dialog" aria-modal="true">${html}</div>`;
+  modal.classList.add('open');
+  document.body.classList.add('modal-open');
+
+  // Taustale klikk sulgeb akna, akna sees klikk ei sulge.
+  // Kasutame onclicki, et iga uue modali avamisel ei jääks vanu kuulareid külge.
+  modal.onclick=(e)=>{
+    if(e.target===modal) closeModal();
+  };
+  modal.querySelector('.dialog')?.addEventListener('click',e=>e.stopPropagation());
+
   if(modalEscHandler) document.removeEventListener('keydown',modalEscHandler);
   modalEscHandler=(e)=>{
-    if(e.key==='Escape' && $('#modal')?.classList.contains('open')){
+    if(e.key==='Escape' && modal.classList.contains('open')){
       e.preventDefault();
       closeModal();
     }
@@ -277,8 +288,13 @@ function openModal(html){
   document.addEventListener('keydown',modalEscHandler);
 }
 function closeModal(){
-  $('#modal')?.classList.remove('open');
-  $('#modal').innerHTML='';
+  const modal=$('#modal');
+  modal?.classList.remove('open');
+  if(modal){
+    modal.onclick=null;
+    modal.innerHTML='';
+  }
+  document.body.classList.remove('modal-open');
   if(modalEscHandler){
     document.removeEventListener('keydown',modalEscHandler);
     modalEscHandler=null;
