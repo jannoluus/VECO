@@ -1013,6 +1013,21 @@ function daysBetweenKeys(startKey,endKey){
   return Math.max(0,diff);
 }
 function workorderDaySpan(w){ return daysBetweenKeys(w.date,workorderEndDate(w))+1; }
+function workorderOccursOnDay(w,date){
+  const start=w?.date;
+  const end=workorderEndDate(w||{});
+  return !!start && !!date && date>=start && date<=end;
+}
+function workorderDaysInRange(w,days=[]){
+  return (days||[]).filter(date=>workorderOccursOnDay(w,date)).length;
+}
+function workorderHoursInRange(w,days=[]){
+  return workorderHours(w)*workorderDaysInRange(w,days);
+}
+function workorderDateRangeLabel(w){
+  const end=workorderEndDate(w);
+  return end&&end!==w.date?`${fmtActDate(w.date)}–${fmtActDate(end)}`:fmtActDate(w.date);
+}
 function setWorkorderDateRange(w,startKey,endKey){
   if(!w) return;
   const start=startKey||w.date;
@@ -1057,17 +1072,17 @@ function renderTeam(){
   localStorage.setItem('veco_team_scope',scope);
   localStorage.setItem('veco_team_day',selectedDay);
   const openStatuses=['Uus','Planeeritud','Töös','Ootel','Pausil'];
-  const inVisibleRange=w=>visibleDays.includes(w.date);
-  const inWeek=w=>weekDays.includes(w.date);
+  const inVisibleRange=w=>visibleDays.some(date=>workorderOccursOnDay(w,date));
+  const inWeek=w=>weekDays.some(date=>workorderOccursOnDay(w,date));
   const statusOk=w=>statusFilter==='all'||(statusFilter==='open'?openStatuses.includes(w.status):w.status===statusFilter);
   const searchable=w=>`${w.id} ${w.title} ${objectName(w.objectId)} ${clientName(objectClientId(w.objectId))} ${projectName(w.projectId)} ${techName(w.technicianId)}`.toLowerCase().includes(q);
   const weekWorkorders=state.workorders.filter(w=>inWeek(w)&&statusOk(w)&&searchable(w));
   const visibleWorkorders=weekWorkorders.filter(w=>inVisibleRange(w));
-  const dayWorkorders=state.workorders.filter(w=>w.date===selectedDay&&statusOk(w)&&searchable(w));
+  const dayWorkorders=state.workorders.filter(w=>workorderOccursOnDay(w,selectedDay)&&statusOk(w)&&searchable(w));
   if(selectedTeamPersonId && !state.people.some(p=>p.id===selectedTeamPersonId)) selectedTeamPersonId='';
 
-  const personJobs=(person,days=visibleDays)=>weekWorkorders.filter(w=>w.technicianId===person.id&&days.includes(w.date)).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
-  const personDayJobs=(person,date)=>weekWorkorders.filter(w=>w.technicianId===person.id&&w.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const personJobs=(person,days=visibleDays)=>weekWorkorders.filter(w=>w.technicianId===person.id&&days.some(date=>workorderOccursOnDay(w,date))).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+  const personDayJobs=(person,date)=>weekWorkorders.filter(w=>w.technicianId===person.id&&workorderOccursOnDay(w,date)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
   const dayNames=['E','T','K','N','R','L','P'];
   const weekDayOptions=weekDays.map((d,i)=>`<option value="${d}" ${selectedDay===d?'selected':''}>${dayNames[i]} ${d}</option>`).join('');
   const viewSwitch=`<select class="select" id="teamViewMode"><option value="cards" ${view==='cards'?'selected':''}>Kaardid</option><option value="matrix" ${view==='matrix'?'selected':''}>Nädalatabel</option><option value="day" ${view==='day'?'selected':''}>Päev</option></select><select class="select" id="teamWeekScope"><option value="workdays" ${scope==='workdays'?'selected':''}>E–R</option><option value="full" ${scope==='full'?'selected':''}>E–P</option></select>${view==='day'?`<select class="select" id="teamDaySelect">${weekDayOptions}</select>`:''}`;
@@ -1076,7 +1091,7 @@ function renderTeam(){
 
   const techCards=state.people.map(p=>{
     const jobs=personJobs(p);
-    const hours=jobs.reduce((sum,w)=>sum+workorderHours(w),0);
+    const hours=jobs.reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0);
     const abs=teamWeekAbsences(p.id,visibleDays);
     const oc=teamWeekOncall(p.id,visibleDays);
     const limit=scope==='full'?56:40;
@@ -1086,7 +1101,7 @@ function renderTeam(){
       abs.length?`Puudumine: ${abs.map(a=>`${a.type} ${a.start}–${a.end}`).join(', ')}`:'',
       oc.length?`Valve: ${oc.map(o=>`${o.start}–${o.end}`).join(', ')}`:''
     ].filter(Boolean);
-    const jobList=jobs.slice(0,5).map(w=>`<div class="team-job-line"><strong>${esc(fmtActDate(w.date))} ${esc(w.time)} · ${esc(objectName(w.objectId))}</strong><span>${esc(w.title)}</span></div>`).join('') || '<span class="muted">Selles vahemikus töid ei ole.</span>';
+    const jobList=jobs.slice(0,5).map(w=>`<div class="team-job-line"><strong>${esc(workorderDateRangeLabel(w))} ${esc(w.time)} · ${esc(objectName(w.objectId))}</strong><span>${esc(w.title)} · ${workorderHoursInRange(w,visibleDays)} h</span></div>`).join('') || '<span class="muted">Selles vahemikus töid ei ole.</span>';
     return `<div class="card clickable team-card ${p.id===selectedTeamPersonId?'selected':''}" data-team-person="${p.id}">
       <div class="card-top"><h3>${esc(p.name)}</h3><span class="status ${workloadClass(hours,abs,limit)}">${esc(workloadStatus(hours,abs,limit))}</span></div>
       <div class="team-load-row"><span>${jobs.length} tööd</span><strong>${hours} h</strong></div>
@@ -1104,13 +1119,13 @@ function renderTeam(){
       const abs=state.absences.filter(a=>a.personId===p.id&&a.start<=date&&a.end>=date);
       const oc=state.oncall.filter(o=>o.personId===p.id&&o.start<=date&&o.end>=date);
       const classes=['team-matrix-cell', h>=8?'busy':'', abs.length?'absent':'', oc.length?'oncall':''].filter(Boolean).join(' ');
-      const items=jobs.slice(0,2).map(w=>`<div class="team-matrix-job"><strong>${esc(w.time||'')}</strong><span>${esc(objectName(w.objectId))}</span><span>${workorderHours(w)} h</span></div>`).join('');
+      const items=jobs.slice(0,2).map(w=>`<div class="team-matrix-job"><strong>${esc(w.time||'')}</strong><span>${esc(objectName(w.objectId))}</span><span>${workorderHours(w)} h${workorderDaySpan(w)>1?' · '+esc(daysBetweenKeys(w.date,date)+1)+'/'+esc(workorderDaySpan(w)):''}</span></div>`).join('');
       const more=jobs.length>2?`<span class="team-more">+${jobs.length-2} veel</span>`:'';
       const workSummary=jobs.length?`<span class="team-day-count">${jobs.length} tööd</span>`:'<span class="muted">Vaba</span>';
       return `<td class="${classes}"><div class="team-cell-head"><strong>${h?h+' h':'-'}</strong>${abs.length?'<span class="status warn">Puudub</span>':''}${oc.length?'<span class="status warn">Valve</span>':''}</div>${workSummary}${items}${more}</td>`;
     }).join('');
     const jobs=personJobs(p);
-    const hours=jobs.reduce((sum,w)=>sum+workorderHours(w),0);
+    const hours=jobs.reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0);
     return `<tr data-team-person="${p.id}" class="${p.id===selectedTeamPersonId?'selected':''}"><th><strong>${esc(p.name)}</strong><span class="muted">${esc(p.role||'Tehnik')} · ${hours} h</span></th>${cells}</tr>`;
   }).join('');
   const matrixHtml=`<div class="team-matrix-wrap"><table class="team-matrix"><thead><tr><th>Tehnik</th>${visibleDays.map((d,i)=>`<th>${dayNames[weekDays.indexOf(d)]}<span>${esc(d)}</span></th>`).join('')}</tr></thead><tbody>${matrixRows}</tbody></table></div>`;
@@ -1119,13 +1134,13 @@ function renderTeam(){
     const jobs=dayWorkorders.filter(w=>w.technicianId===p.id).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
     const abs=state.absences.filter(a=>a.personId===p.id&&a.start<=selectedDay&&a.end>=selectedDay);
     const oc=state.oncall.filter(o=>o.personId===p.id&&o.start<=selectedDay&&o.end>=selectedDay);
-    const body=abs.length?`<div class="event-row"><strong>${esc(abs[0].type)}</strong><span class="muted">${esc(abs[0].note||'Puudumine')}</span></div>`:(jobs.map(w=>`<div class="team-job-line"><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><span>${esc(w.title)}</span><span class="muted">${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.status)}</span></div>`).join('')||'<span class="muted">Vaba</span>');
+    const body=abs.length?`<div class="event-row"><strong>${esc(abs[0].type)}</strong><span class="muted">${esc(abs[0].note||'Puudumine')}</span></div>`:(jobs.map(w=>`<div class="team-job-line"><strong>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</strong><span>${esc(w.title)}</span><span class="muted">${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.status)} · ${workorderHours(w)} h${workorderDaySpan(w)>1?' · '+esc(daysBetweenKeys(w.date,selectedDay)+1)+'/'+esc(workorderDaySpan(w)):''}</span></div>`).join('')||'<span class="muted">Vaba</span>');
     return `<div class="card clickable team-day-card ${p.id===selectedTeamPersonId?'selected':''}" data-team-person="${p.id}"><div class="card-top"><h3>${esc(p.name)}</h3>${oc.length?'<span class="status warn">Valves</span>':abs.length?'<span class="status warn">Puudub</span>':'<span class="status ok">Saadaval</span>'}</div><div class="team-job-list">${body}</div></div>`;
   }).join('')}</div>`;
 
-  const totalHours=visibleWorkorders.reduce((sum,w)=>sum+workorderHours(w),0);
+  const totalHours=visibleWorkorders.reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0);
   const absentCount=state.people.filter(p=>teamWeekAbsences(p.id,visibleDays).length).length;
-  const overloaded=state.people.filter(p=>personJobs(p).reduce((sum,w)=>sum+workorderHours(w),0)>=(scope==='full'?42:32)).length;
+  const overloaded=state.people.filter(p=>personJobs(p).reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0)>=(scope==='full'?42:32)).length;
   const content=view==='matrix'?matrixHtml:(view==='day'?dayHtml:`<div class="grid team-grid">${techCards}</div>`);
   const teamHeaderLabel=formatViewPeriod('Tiimivaade',view==='day'?'day':'week',view==='day'?[selectedDay]:visibleDays,currentWeek,{hideRange:view!=='day'});
   window.__VECO_ONCALL_CONTEXT_DAYS__ = view==='day' ? [selectedDay] : visibleDays;
@@ -1170,10 +1185,10 @@ function teamDetailHtml(weekDays,weekWorkorders){
   const p=byId(state.people,selectedTeamPersonId);
   if(!p) return '';
   const jobs=weekWorkorders.filter(w=>w.technicianId===p.id).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
-  const hours=jobs.reduce((sum,w)=>sum+workorderHours(w),0);
+  const hours=jobs.reduce((sum,w)=>sum+workorderHoursInRange(w,weekDays),0);
   const abs=teamWeekAbsences(p.id,weekDays);
   const oc=teamWeekOncall(p.id,weekDays);
-  const jobsHtml=jobs.map(w=>`<div class="event-row"><strong>${esc(fmtActDate(w.date))} ${esc(w.time)} · ${esc(w.title)}</strong><span class="muted">${esc(clientName(objectClientId(w.objectId)))} · ${esc(objectName(w.objectId))} · ${esc(projectName(w.projectId))}</span><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div>`).join('')||'<span class="muted">Sellel nädalal valitud filtriga töid ei ole.</span>';
+  const jobsHtml=jobs.map(w=>`<div class="event-row"><strong>${esc(workorderDateRangeLabel(w))} ${esc(w.time)} · ${esc(w.title)}</strong><span class="muted">${esc(clientName(objectClientId(w.objectId)))} · ${esc(objectName(w.objectId))} · ${esc(projectName(w.projectId))} · ${workorderHoursInRange(w,weekDays)} h</span><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div>`).join('')||'<span class="muted">Sellel nädalal valitud filtriga töid ei ole.</span>';
   const absHtml=abs.map(a=>`<div class="event-row"><strong>${esc(a.type)} ${esc(a.start)}–${esc(a.end)}</strong><span class="muted">${esc(a.note)}</span></div>`).join('')||'<span class="muted">Puudumisi ei ole.</span>';
   const ocHtml=oc.map(o=>`<div class="event-row"><strong>Valve ${esc(o.start)}–${esc(o.end)}</strong><span class="muted">${esc(o.note)}</span></div>`).join('')||'<span class="muted">Valvet ei ole.</span>';
   return detailHeader(`${p.name} · detail`,'<button class="btn ghost" id="teamDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Töid',jobs.length)}${summaryBox('Tunde',hours)}${summaryBox('Puudumisi',abs.length)}${summaryBox('Valveid',oc.length)}</div>${card(p.name,[['Roll',p.role],['Piirkond',p.region],['Telefon',p.phone],['E-post',p.email],['Oskused',p.skills]],workloadStatus(hours,abs))}<div class="section-title">Nädala tööd</div><div class="list">${jobsHtml}</div><div class="section-title">Puudumised</div><div class="list">${absHtml}</div><div class="section-title">Valve</div><div class="list">${ocHtml}</div></div>`;
