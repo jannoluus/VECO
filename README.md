@@ -208,3 +208,11 @@ Muudatused:
 
 ## Build VECO_V3_20260609_0915
 - Kalendri päevaveergude kuupäevad vormindatud Eesti formaati DD.MM.YYYY.
+
+
+## Build VECO_V3_20260609_2213
+
+- Lisatud cache-busting CSS/JS failidele.
+- Lisatud localStorage migratsioon, mis eemaldab vana DEMO-põhise mobiilivaate seisu.
+- DEMO kasutaja eemaldatud vaikimisi andmetest ja mobiili kasutajavalikust.
+- Kiire lähtestus: ava `mobile.html?fresh=1` või `mobile.html?resetLocal=1`.

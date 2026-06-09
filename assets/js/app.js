@@ -1494,11 +1494,13 @@ function openAbsenceModal(id=''){
   $('#absenceForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('EV'),personId:f.personId.value,type:f.type.value,start:f.start.value,end:f.end.value,note:f.note.value};if(next.end<next.start){alert('Lõpp ei saa olla enne algust.');return;}if(id){Object.assign(a,next)}else{state.absences.push(next)}save();closeModal();renderVacations();});
 }
 function activeMobilePeople(){
-  return state.people.filter(p=>p.active);
+  return state.people.filter(p=>p.active && p.id!=='U-DEMO' && String(p.role||'').toLowerCase()!=='demo');
 }
 function mobileCurrentUser(){
   const id=localStorage.getItem('veco_mobile_user_id')||'';
-  return activeMobilePeople().find(p=>p.id===id)||null;
+  const person=activeMobilePeople().find(p=>p.id===id)||null;
+  if(id && !person) localStorage.removeItem('veco_mobile_user_id');
+  return person;
 }
 function mobileWorkflowButtons(w){
   if(isCompletedStatus(w.status)){
