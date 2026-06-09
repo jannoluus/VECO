@@ -1355,3 +1355,53 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 .calendar-event:hover .calendar-move-edge,
 .calendar-event.dragging .calendar-move-edge{opacity:1!important;}
 .calendar-event.dragging[data-drag-label*="kellaaeg jääb"]{cursor:ew-resize!important;}
+
+/* V3.13.0: calendar event multi-day horizontal resize */
+.calendar-planner-day,
+.calendar-planner-lane{
+  overflow:visible!important;
+}
+.calendar-event.multi-day{
+  z-index:12!important;
+}
+.calendar-span-resize{
+  position:absolute!important;
+  top:0!important;
+  bottom:0!important;
+  width:11px!important;
+  z-index:18!important;
+  opacity:0!important;
+  cursor:ew-resize!important;
+  pointer-events:auto!important;
+  background:rgba(45,156,255,.22)!important;
+  transition:opacity .14s ease,background .14s ease!important;
+}
+.calendar-span-resize-left{left:0!important;border-radius:7px 0 0 7px!important;}
+.calendar-span-resize-right{right:0!important;border-radius:0 7px 7px 0!important;}
+.calendar-event:hover .calendar-span-resize,
+.calendar-event.span-resizing .calendar-span-resize{
+  opacity:1!important;
+  background:rgba(45,156,255,.58)!important;
+}
+.calendar-event.span-resizing{
+  z-index:80!important;
+  box-shadow:0 0 0 3px rgba(45,156,255,.26),0 18px 38px rgba(0,0,0,.30)!important;
+}
+.calendar-event.span-resizing::before{
+  content:attr(data-span-label);
+  position:absolute;
+  left:10px;
+  right:10px;
+  top:8px;
+  z-index:20;
+  border-radius:6px;
+  padding:5px 7px;
+  background:rgba(23,105,170,.96);
+  color:#fff;
+  font-size:11px;
+  font-weight:900;
+  text-align:center;
+  box-shadow:0 8px 18px rgba(0,0,0,.28);
+  pointer-events:none;
+}
+.calendar-span-resize-active{cursor:ew-resize!important;}

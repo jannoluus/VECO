@@ -1005,6 +1005,22 @@ function workorderEndTime(w,limitHour=22){
   const end=Math.max(start+1,Math.min(limitHour,start+duration));
   return timeLabelFromHour(end);
 }
+function workorderEndDate(w){ return w.endDate||w.end_date||w.date; }
+function daysBetweenKeys(startKey,endKey){
+  const start=parseDateKey(startKey);
+  const end=parseDateKey(endKey||startKey);
+  const diff=Math.round((end-start)/86400000);
+  return Math.max(0,diff);
+}
+function workorderDaySpan(w){ return daysBetweenKeys(w.date,workorderEndDate(w))+1; }
+function setWorkorderDateRange(w,startKey,endKey){
+  if(!w) return;
+  const start=startKey||w.date;
+  const end=endKey||start;
+  w.date=start;
+  if(end && end!==start) w.endDate=end; else delete w.endDate;
+  delete w.end_date;
+}
 function teamWeekAbsences(personId,weekDays){ const start=weekDays[0], end=weekDays[6]; return state.absences.filter(a=>a.personId===personId && a.start<=end && a.end>=start); }
 function teamWeekOncall(personId,weekDays){ const start=weekDays[0], end=weekDays[6]; return state.oncall.filter(o=>o.personId===personId && o.start<=end && o.end>=start); }
 function workloadStatus(hours,absences,limit=8){
@@ -1431,7 +1447,10 @@ function renderCalendar(){
         const duration=workorderHours(w);
         const minHeight=Math.max(jobs.length>=3?34:40,Math.min(60,duration*34));
         const endTime=workorderEndTime(w,calendarEndHour);
-        return `<button class="calendar-event calendar-status-${statusSlug(w.status)}${compactClass}" style="top:${topPct}%;height:calc((100% / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" type="button" title="Lohista töö teisele ajale või päevale"><span class="calendar-move-edge calendar-move-edge-left" title="Lohista vasakule / eelmisele päevale" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-right" title="Lohista paremale / järgmisele päevale" aria-hidden="true"></span><span class="calendar-event-head"><strong><b class="calendar-start-time">${esc(w.time||'')}</b> · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small><span class="calendar-event-footer" aria-label="Töö lõpp ja kestus"><b class="calendar-end-time">${esc(endTime)}</b><b class="calendar-duration">${duration} h</b></span><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kestust" aria-hidden="true"></span></button>`;
+        const span=Math.max(1,Math.min(workorderDaySpan(w),visibleDays.length-visibleDays.indexOf(date)));
+        const spanStyle=span>1?`;right:auto;width:calc(${span} * 100% + ${(span-1)*8}px - 16px)`:'';
+        const dayLabel=span>1?`${span} päeva`:'1 päev';
+        return `<button class="calendar-event calendar-status-${statusSlug(w.status)}${compactClass}${span>1?' multi-day':''}" style="top:${topPct}%;height:calc((100% / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px${spanStyle}" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" type="button" title="Lohista töö teisele ajale või päevale. Venita külgedelt mitmepäevaseks."><span class="calendar-span-resize calendar-span-resize-left" data-calendar-span-resize="${w.id}" data-resize-side="left" title="Venita alguskuupäeva" aria-hidden="true"></span><span class="calendar-span-resize calendar-span-resize-right" data-calendar-span-resize="${w.id}" data-resize-side="right" title="Venita lõppkuupäeva" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-left" title="Lohista vasakule / eelmisele päevale" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-right" title="Lohista paremale / järgmisele päevale" aria-hidden="true"></span><span class="calendar-event-head"><strong><b class="calendar-start-time">${esc(w.time||'')}</b> · ${esc(objectName(w.objectId))}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><small>${esc(clientName(objectClientId(w.objectId)))} · ${esc(w.title)}</small><small>${esc(techName(w.technicianId))} · ${esc(projectName(w.projectId))}</small><span class="calendar-event-footer" aria-label="Töö lõpp ja kestus"><b class="calendar-end-time">${esc(endTime)}</b><b class="calendar-duration">${duration} h · ${esc(dayLabel)}</b></span><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kellalist kestust" aria-hidden="true"></span></button>`;
       }).join('');
       const slots=hours.map(h=>`<button class="calendar-slot" data-add-date="${date}" data-add-time="${String(h).padStart(2,'0')}:00" title="Lisa töö ${date} ${String(h).padStart(2,'0')}:00" type="button"></button>`).join('');
       const workdayMarkers=`<span class="calendar-workday-shade" style="top:${workdayStartPct}%;height:${workdayHeightPct}%" aria-hidden="true"></span><span class="calendar-workday-line calendar-workday-start" style="top:${workdayStartPct}%" aria-hidden="true"></span><span class="calendar-workday-line calendar-workday-end" style="top:${workdayEndPct}%" aria-hidden="true"></span>`;
@@ -1455,6 +1474,7 @@ function renderCalendar(){
   $('#calendarImportWorkBtn')?.addEventListener('click',()=>openCalendarImportModal(currentDate));
   $$('[data-add-date]').forEach(el=>el.addEventListener('click',e=>{ if(e.target.closest('[data-calendar-edit]')) return; const date=el.dataset.addDate; const time=el.dataset.addTime||'09:00'; openCalendarWorkorderModal(date,time); }));
   bindCalendarResize(calendarStartHour,calendarEndHour);
+  bindCalendarSpanResize();
   bindCalendarDragDrop(calendarStartHour,calendarEndHour);
   $$('[data-calendar-edit]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation(); if(window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__){window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false; return;} openWorkorderModal(el.dataset.calendarEdit);}));
 }
@@ -1523,6 +1543,80 @@ function bindCalendarResize(startHour=6,endHour=22){
         setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;renderCalendar();},0);
       };
       const onCancel=()=>{ cleanup(); renderCalendar(); };
+      document.addEventListener('pointermove',onMove,true);
+      document.addEventListener('pointerup',onUp,true);
+      document.addEventListener('pointercancel',onCancel,true);
+    },true);
+  });
+}
+
+
+function bindCalendarSpanResize(){
+  const laneAtPoint=(x,y)=>document.elementFromPoint(x,y)?.closest?.('[data-calendar-lane]')||null;
+  const dayShort=(date)=>{ const d=parseDateKey(date); return ['P','E','T','K','N','R','L'][d.getDay()]+' '+fmtShortDate(date); };
+  const labelFor=(start,end)=> start===end ? `${dayShort(start)} · 1 päev` : `${dayShort(start)} – ${dayShort(end)} · ${daysBetweenKeys(start,end)+1} päeva`;
+  $$('[data-calendar-span-resize]').forEach(handle=>{
+    handle.addEventListener('pointerdown',e=>{
+      if(e.button!==0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const workorderId=handle.dataset.calendarSpanResize;
+      const side=handle.dataset.resizeSide||'right';
+      const card=handle.closest('[data-calendar-drag]');
+      const w=byId(state.workorders,workorderId);
+      if(!card||!w) return;
+      let nextStart=w.date;
+      let nextEnd=workorderEndDate(w);
+      let resizing=false;
+      const begin=()=>{
+        resizing=true;
+        window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=true;
+        document.body.classList.add('calendar-span-resize-active');
+        card.classList.add('span-resizing');
+        card.setAttribute('data-span-label',labelFor(nextStart,nextEnd));
+      };
+      const cleanup=()=>{
+        document.removeEventListener('pointermove',onMove,true);
+        document.removeEventListener('pointerup',onUp,true);
+        document.removeEventListener('pointercancel',onCancel,true);
+        document.body.classList.remove('calendar-span-resize-active');
+        card.classList.remove('span-resizing');
+        card.removeAttribute('data-span-label');
+      };
+      const applyPoint=(clientX,clientY)=>{
+        const lane=laneAtPoint(clientX,clientY);
+        if(!lane?.dataset?.calendarLane) return;
+        const target=lane.dataset.calendarLane;
+        const currentStart=w.date;
+        const currentEnd=workorderEndDate(w);
+        if(side==='right'){
+          nextStart=currentStart;
+          nextEnd=target<currentStart?currentStart:target;
+        }else{
+          nextEnd=currentEnd;
+          nextStart=target>currentEnd?currentEnd:target;
+        }
+        card.setAttribute('data-span-label',labelFor(nextStart,nextEnd));
+      };
+      const onMove=(ev)=>{
+        if(ev.pointerId!==e.pointerId) return;
+        if(!resizing) begin();
+        ev.preventDefault();
+        applyPoint(ev.clientX,ev.clientY);
+      };
+      const onUp=(ev)=>{
+        if(ev.pointerId!==e.pointerId) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        if(resizing){
+          applyPoint(ev.clientX,ev.clientY);
+          setWorkorderDateRange(w,nextStart,nextEnd);
+          save();
+        }
+        cleanup();
+        setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;renderCalendar();},0);
+      };
+      const onCancel=()=>{ cleanup(); setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;},120); };
       document.addEventListener('pointermove',onMove,true);
       document.addEventListener('pointerup',onUp,true);
       document.addEventListener('pointercancel',onCancel,true);
@@ -1642,7 +1736,10 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
           const lane=lastLane||laneAtPoint(lastX,lastY,ghost||card);
           const w=byId(state.workorders,workorderId);
           if(w && lane){
-            w.date=lane.dataset.calendarLane;
+            const spanDays=workorderDaySpan(w);
+            const newStart=lane.dataset.calendarLane;
+            const newEnd=dateKeyFromDate(addDateDays(parseDateKey(newStart),spanDays-1));
+            setWorkorderDateRange(w,newStart,newEnd);
             w.time=horizontalMove?originalTime:timeFromPoint(lane,lastY);
             save();
           }

@@ -156,3 +156,13 @@ add column if not exists completed_by text;
 - Kui liikumine on peamiselt horisontaalne, säilib algne kellaaeg.
 - Töökaardil on vasakul/paremal serval visuaalne riba, mis annab märku nihutamise võimalusest.
 - Vertikaalne lohistamine muudab jätkuvalt päeva sees kellaaega.
+
+## Build: VECO_V3_20260608_2157
+
+Muudatused:
+- Lisatud kalendrisündmuse/töökäsu horisontaalne venitamine vasakust ja paremast servast.
+- Paremast servast venitamine pikendab sündmuse lõppkuupäeva.
+- Vasakust servast venitamine muudab sündmuse alguskuupäeva.
+- Mitmepäevane sündmus kuvatakse nädalavaates laiema kaardina üle mitme päeva.
+- Sündmuse tavapärane lohistamine teisele päevale säilitab mitmepäevase kestuse.
+- Vertikaalne resize jäi alles kellalise kestuse muutmiseks.
