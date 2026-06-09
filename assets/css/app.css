@@ -1553,3 +1553,15 @@ body.modal-open .modal *{
 .modal{z-index:10000!important;}
 .confirm-modal{z-index:20000!important;}
 .confirm-dialog{position:relative;z-index:20001!important;}
+
+/* V3.15: valvegraafiku MVP */
+.oncall-layout{display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);gap:12px;align-items:start;}
+.oncall-sort-list{display:grid;gap:8px;margin:8px 0 10px;}
+.oncall-person{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:9px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.025);padding:9px 10px;cursor:grab;user-select:none;}
+.theme-light .oncall-person{background:#f8fafb;}
+.oncall-person.dragging{opacity:.55;cursor:grabbing;}
+.oncall-drag{color:var(--muted);font-weight:900;letter-spacing:.05em;}
+.oncall-conflict{margin-top:4px;color:#ffd48c;font-size:11px;font-weight:800;line-height:1.25;}
+.theme-light .oncall-conflict{color:#8b540c;}
+.data-table .status{border:0;cursor:pointer;}
+@media(max-width:900px){.oncall-layout{grid-template-columns:1fr;}}

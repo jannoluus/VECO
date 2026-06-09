@@ -1,8 +1,8 @@
 window.VECO_DATA={
   people:[
-    {id:'U-JANNO',name:'Janno',role:'Admin',phone:'',email:'janno@veco.ee',region:'Tallinn / Harjumaa',skills:'Hooldusjuht, planeerimine',active:true},
-    {id:'U-ALEKSEI',name:'Aleksei',role:'Tehnik',phone:'+372 5551 1001',email:'aleksei@veco.ee',region:'Tallinn',skills:'HVAC, automaatika',active:true},
-    {id:'U-DEMO',name:'DEMO',role:'Demo',phone:'',email:'demo@veco.ee',region:'Test',skills:'Demo kasutaja',active:true}
+    {id:'U-JANNO',name:'Janno',role:'Admin',phone:'',email:'janno@veco.ee',region:'Tallinn / Harjumaa',skills:'Hooldusjuht, planeerimine',active:true,onCallActive:true,onCallOrder:1},
+    {id:'U-ALEKSEI',name:'Aleksei',role:'Tehnik',phone:'+372 5551 1001',email:'aleksei@veco.ee',region:'Tallinn',skills:'HVAC, automaatika',active:true,onCallActive:false,onCallOrder:2},
+    {id:'U-DEMO',name:'DEMO',role:'Demo',phone:'',email:'demo@veco.ee',region:'Test',skills:'Demo kasutaja',active:true,onCallActive:true,onCallOrder:3}
   ],
   clients:[
     {id:'C-01',name:'OÜ Vamos Automaatika',regNo:'12345678',contact:'Aleksei',phone:'+372 5551 2211',email:'vamos@example.ee',invoiceEmail:'arved@vamos.ee',active:true,notes:'Peamine hooldusklient. Aiandi 13A objekt ja seotud hooldusprojektid.'},
