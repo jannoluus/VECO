@@ -1565,3 +1565,10 @@ body.modal-open .modal *{
 .theme-light .oncall-conflict{color:#8b540c;}
 .data-table .status{border:0;cursor:pointer;}
 @media(max-width:900px){.oncall-layout{grid-template-columns:1fr;}}
+.mobile-duty{margin:6px 0 4px;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:13px;font-weight:900;background:rgba(255,255,255,.04);color:var(--ink)}
+.mobile-duty.today{border-color:rgba(55,146,55,.45);background:rgba(55,146,55,.14)}
+.mobile-duty.next{border-color:rgba(23,105,170,.45);background:rgba(23,105,170,.14)}
+.mobile-duty.conflict{border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.16)}
+.mobile-future-group{display:grid;gap:10px;grid-column:1/-1;}
+.mobile-future-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 2px 0;color:var(--muted);font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;}
+.mobile-future-title span{letter-spacing:0;text-transform:none;font-weight:800;}

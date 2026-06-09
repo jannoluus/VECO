@@ -1345,10 +1345,31 @@ async function applyMobileWorkorderAction(action,workorderId){
 }
 function mobileUpcomingLimitKey(todayKey){
   const d=parseDateKey(todayKey);
-  const day=d.getDay();
-  const daysUntilNextSunday=(14-day)%7 || 7;
-  d.setDate(d.getDate()+daysUntilNextSunday);
+  const day=d.getDay()||7;
+  const daysUntilNextFriday=(12-day)%7 || 7;
+  d.setDate(d.getDate()+daysUntilNextFriday);
   return dateKeyFromDate(d);
+}
+function mobileWeekBucket(dateKey,todayKey){
+  const currentWeekStart=weekStartKeyFrom(todayKey);
+  const nextWeekStart=dateKeyFromDate(addDateDays(parseDateKey(currentWeekStart),7));
+  return dateKey<nextWeekStart?'this':'next';
+}
+function mobileJobPlannedHours(w){
+  const start=w.date||dateKeyFromDate(new Date());
+  const end=workorderEndDate(w)||start;
+  const days=Math.max(1,Math.round((parseDateKey(end)-parseDateKey(start))/(24*60*60*1000))+1);
+  return workorderHours(w)*days;
+}
+function mobileOncallForPerson(personId,todayKey){
+  const shifts=(state.oncall||[]).filter(o=>o.personId===personId).sort((a,b)=>String(a.start||'').localeCompare(String(b.start||'')));
+  const todayShift=shifts.find(o=>o.start<=todayKey&&o.end>=todayKey);
+  const nextShift=shifts.find(o=>o.start>todayKey);
+  const conflict=(todayShift?oncallConflicts(todayShift):[])[0];
+  if(conflict) return {type:'conflict',label:`⚠ Valve kattub puudumisega ${fmtActDate(conflict.start)}–${fmtActDate(conflict.end)}`};
+  if(todayShift) return {type:'today',label:`🟢 Täna valves`};
+  if(nextShift) return {type:'next',label:`🟦 Järgmine valve: ${fmtActDate(nextShift.start)}–${fmtActDate(nextShift.end)}`};
+  return {type:'none',label:'Valve puudub'};
 }
 function mobileNeedsAct(w){
   if(!w) return false;
@@ -1381,7 +1402,6 @@ function renderMobile(){
   }
   const today=dateKeyFromDate(new Date());
   const futureLimit=mobileUpcomingLimitKey(today);
-  const openStatuses=['Uus','Planeeritud','Töös','Ootel','Pausil'];
   const ownWorkorders=state.workorders.filter(w=>w.technicianId===current.id);
   const isOpen=w=>!isCompletedStatus(w.status);
   const byDateTime=(a,b)=>`${a.date} ${a.time||''}`.localeCompare(`${b.date} ${b.time||''}`);
@@ -1394,22 +1414,32 @@ function renderMobile(){
   const futureJobs=ownWorkorders.filter(w=>{
     if(!isOpen(w)) return false;
     const start=w.date||'';
-    const end=workorderEndDate(w);
-    return start>today && start<=futureLimit || (end>=today && start<=futureLimit && !workorderOccursOnDay(w,today));
+    const end=workorderEndDate(w)||start;
+    return (start>today && start<=futureLimit) || (end>today && start<=futureLimit && !workorderOccursOnDay(w,today));
   }).sort(byDateTime);
+  const futureThisWeek=futureJobs.filter(w=>mobileWeekBucket(w.date||today,today)==='this');
+  const futureNextWeek=futureJobs.filter(w=>mobileWeekBucket(w.date||today,today)==='next');
   const completedJobs=ownWorkorders
     .filter(w=>isCompletedStatus(w.status))
     .sort((a,b)=>`${b.date||''} ${b.time||''}`.localeCompare(`${a.date||''} ${a.time||''}`))
     .slice(0,12);
   const actions=`<button class="btn primary" id="mobileAddWorkBtn" type="button">＋ Lisa töö</button><button class="btn ghost" id="mobileSwitchUserBtn" type="button">⇄ Vaheta</button>`;
-  const section=(title,subtitle,jobs,empty)=>`<div class="section-title">${esc(title)}${subtitle?` <span class="muted">${esc(subtitle)}</span>`:''}</div><div class="grid mobile-work-grid">${jobs.map(w=>mobileWorkCard(w)).join('')||`<div class="card"><strong>${esc(empty)}</strong><span class="muted">Selles plokis töid ei ole.</span></div>`}</div>`;
+  const openState=(key,def)=>localStorage.getItem(`veco_mobile_section_${key}`) ?? (def?'true':'false');
+  const isOpenSection=(key,def)=>openState(key,def)==='true';
+  const toggleButton=(key,title,count,def)=>`<button class="mobile-section-toggle" data-mobile-section-toggle="${esc(key)}" data-mobile-section-default="${def?'true':'false'}" type="button">${isOpenSection(key,def)?'▼':'▶'} ${esc(title)} (${count})</button>`;
+  const section=(key,title,jobs,empty,def=true,bodyHtml='')=>`${toggleButton(key,title,jobs.length,def)}${isOpenSection(key,def)?`<div class="grid mobile-work-grid">${bodyHtml||jobs.map(w=>mobileWorkCard(w)).join('')||`<div class="card"><strong>${esc(empty)}</strong><span class="muted">Selles plokis töid ei ole.</span></div>`}</div>`:''}`;
+  const futureGroup=(title,jobs)=>{
+    if(!jobs.length) return '';
+    const hours=jobs.reduce((sum,w)=>sum+mobileJobPlannedHours(w),0);
+    return `<div class="mobile-future-group"><div class="mobile-future-title"><strong>${esc(title)}</strong><span>${jobs.length} tööd • ${hours} h</span></div>${jobs.map(w=>mobileWorkCard(w)).join('')}</div>`;
+  };
+  const futureBody=futureGroup('SEE NÄDAL',futureThisWeek)+futureGroup('JÄRGMINE NÄDAL',futureNextWeek);
   const completedRows=completedJobs.map(w=>{const comment=completionCommentText(w);return `<div class="card mobile-work-card mobile-completed-card"><div class="card-top"><h3>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</h3><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div><div class="kv"><span>Klient</span><strong>${esc(clientName(objectClientId(w.objectId)))}</strong></div><div class="kv"><span>Töö</span><strong>${esc(w.title)}</strong></div><div class="kv"><span>Kuupäev</span><strong>${esc(workorderDateRangeLabel(w))}</strong></div>${comment?`<div class="mobile-completion-comment"><strong>Töö tulemus</strong><span>${esc(comment)}</span></div>`:`<div class="muted">Töö tulemus puudub.</div>`}<div class="actions mobile-actions">${mobileWorkflowButtons(w)}</div></div>`}).join('')||'<div class="card"><strong>Lõpetatud töid ei ole</strong><span class="muted">Kui töö lõpetatakse, jääb see siia vajadusel uuesti avamiseks.</span></div>';
-  const completedOpen=localStorage.getItem('veco_mobile_completed_open')==='true';
-  const completedToggleLabel=`${completedOpen?'▼':'▶'} Lõpetatud tööd (${completedJobs.length})`;
-  shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2><span class="muted">${todayJobs.length} täna · ${unfinishedJobs.length} tegemata/akt · ${futureJobs.length} tulekul · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${actions}</div></div><div class="detail-body mobile-detail">${section('Täna','',todayJobs,'Tänaseid töid ei ole')}${section('Tegemata / vajab akti','',unfinishedJobs,'Tegemata või akti vajavaid töid ei ole')}${section('Tuleviku tööd',`kuni ${fmtActDate(futureLimit)}`,futureJobs,'Tuleviku töid ei ole')}<button class="mobile-section-toggle" id="mobileCompletedToggle" type="button">${esc(completedToggleLabel)}</button>${completedOpen?`<div class="grid mobile-work-grid mobile-completed-grid">${completedRows}</div>`:''}</div>`,'',{wide:true});
+  const oncallInfo=mobileOncallForPerson(current.id,today);
+  shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2><div class="mobile-duty ${esc(oncallInfo.type)}">${esc(oncallInfo.label)}</div><span class="muted">${todayJobs.length} täna · ${unfinishedJobs.length} tegemata · ${futureJobs.length} tulekul · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${actions}</div></div><div class="detail-body mobile-detail">${section('today','Täna',todayJobs,'Tänaseid töid ei ole',true)}${section('unfinished','Tegemata / vajab akti',unfinishedJobs,'Tegemata või akti vajavaid töid ei ole',true)}${section('future','Tuleviku tööd',futureJobs,'Tuleviku töid ei ole',false,futureBody||`<div class="card"><strong>Tuleviku töid ei ole</strong><span class="muted">Kuvatakse homsest järgmise nädala reedeni.</span></div>`)}${toggleButton('completed','Lõpetatud tööd',completedJobs.length,false)}${isOpenSection('completed',false)?`<div class="grid mobile-work-grid mobile-completed-grid">${completedRows}</div>`:''}</div>`,'',{wide:true});
   $('#mobileSwitchUserBtn')?.addEventListener('click',()=>{localStorage.removeItem(USER_KEY);renderMobile();});
   $('#mobileAddWorkBtn')?.addEventListener('click',()=>openMobileAddWorkModal(current.id));
-  $('#mobileCompletedToggle')?.addEventListener('click',()=>{localStorage.setItem('veco_mobile_completed_open',completedOpen?'false':'true');renderMobile();});
+  $$('[data-mobile-section-toggle]').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.dataset.mobileSectionToggle;const def=btn.dataset.mobileSectionDefault==='true';localStorage.setItem(`veco_mobile_section_${key}`,isOpenSection(key,def)?'false':'true');renderMobile();}));
   $$('[data-mobile-action]').forEach(btn=>btn.addEventListener('click',()=>applyMobileWorkorderAction(btn.dataset.mobileAction,btn.dataset.workorderId)));
   $$('[data-mobile-edit]').forEach(btn=>btn.addEventListener('click',()=>openMobileWorkModal(btn.dataset.mobileEdit)));
 }
