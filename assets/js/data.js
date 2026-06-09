@@ -29,10 +29,10 @@ window.VECO_DATA={
     {id:'PRJ-04',objectId:'O-03',name:'Jahutuse remont',responsibleTechId:'U-ALEKSEI',status:'Ootel',deadline:'2026-06-14',description:'Remonditöö ja hoolduste koondamine ühele päevale.'}
   ],
   workorders:[
-    {id:'WO-001',projectId:'PRJ-01',objectId:'O-01',title:'Ventilatsiooni poolaasta hooldus',date:'2026-06-03',time:'09:00',technicianId:'U-DEMO',status:'Planeeritud',description:'AHU seadmete hooldus ja filtrite kontroll.'},
-    {id:'WO-002',projectId:'PRJ-02',objectId:'O-01',title:'Isolatsiooni kahjustuste taastamine',date:'2026-06-03',time:'11:00',technicianId:'U-DEMO',status:'Töös',description:'Katuse torustike isolatsiooni taastamine.'},
-    {id:'WO-003',projectId:'PRJ-03',objectId:'O-02',title:'RVK kuu test ja turvavalgustus',date:'2026-06-04',time:'09:00',technicianId:'U-JANNO',status:'Planeeritud',description:'Elektrikäidu kuu kontroll.'},
-    {id:'WO-004',projectId:'PRJ-04',objectId:'O-03',title:'Jahutuse remont ja hooldus',date:'2026-06-05',time:'09:00',technicianId:'U-ALEKSEI',status:'Ootel',description:'Remont võtab ligikaudu terve päeva.'}
+    {id:'WO-001',projectId:'PRJ-01',objectId:'O-01',title:'Ventilatsiooni poolaasta hooldus',date:'2026-06-03',time:'09:00',technicianId:'U-DEMO',responsibleTechnicianId:'U-DEMO',participantTechnicianIds:['U-ALEKSEI'],status:'Planeeritud',description:'AHU seadmete hooldus ja filtrite kontroll.'},
+    {id:'WO-002',projectId:'PRJ-02',objectId:'O-01',title:'Isolatsiooni kahjustuste taastamine',date:'2026-06-03',time:'11:00',technicianId:'U-DEMO',responsibleTechnicianId:'U-DEMO',participantTechnicianIds:[],status:'Töös',description:'Katuse torustike isolatsiooni taastamine.'},
+    {id:'WO-003',projectId:'PRJ-03',objectId:'O-02',title:'RVK kuu test ja turvavalgustus',date:'2026-06-04',time:'09:00',technicianId:'U-JANNO',responsibleTechnicianId:'U-JANNO',participantTechnicianIds:[],status:'Planeeritud',description:'Elektrikäidu kuu kontroll.'},
+    {id:'WO-004',projectId:'PRJ-04',objectId:'O-03',title:'Jahutuse remont ja hooldus',date:'2026-06-05',time:'09:00',technicianId:'U-ALEKSEI',responsibleTechnicianId:'U-ALEKSEI',participantTechnicianIds:['U-DEMO'],status:'Ootel',description:'Remont võtab ligikaudu terve päeva.'}
   ],
   acts:[
     {id:'ACT-001',workorderId:'WO-001',objectId:'O-01',date:'2026-06-03',title:'Ventilatsiooni hooldusakt',status:'Mustand'},
