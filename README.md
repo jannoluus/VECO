@@ -193,3 +193,10 @@ Muudatused:
 - Mitmepäevase töö vahepäevade tugev/tühi plokiefekt asendatud õrna päevapiiri joonega.
 - Lisatud läbipaistev jätkumise gradient, et pikk broneering sulanduks kalendriga paremini.
 - Päevavahetus jääb nähtavaks, kuid ei kata enam töö sisu ega domineeri vaates.
+
+
+## Build VECO_V3_20260609_0901
+- Aktiivne päev kuvatakse kalendris ainult rohelise kontuuriga.
+- Eemaldatud aktiivse päeva tausta/viirutuse loogika; mitmepäevane töö jääb visuaalselt peamiseks elemendiks.
+- Aktiivse päeva kontuur renderdatakse töökaartide kohal mitteinteraktiivse kihina, et see jääks mitmepäevase töö korral nähtavaks.
+- Eemaldatud mitmepäevase töö päevapiiri joone küljes tekkinud katkendlikud täpimärgid.

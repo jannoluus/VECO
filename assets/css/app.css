@@ -460,7 +460,8 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 .calendar-hour-label{position:relative;min-height:48px;padding-top:0;opacity:.72;text-align:right;padding-right:6px;}
 .calendar-planner-grid{display:grid;gap:8px;min-width:0;overflow-x:auto;}
 .calendar-planner-day{border:1px solid var(--line);border-radius:var(--radius);background:rgba(255,255,255,.02);min-width:145px;overflow:hidden;display:grid;grid-template-rows:40px minmax(660px,1fr);}
-.calendar-planner-day.today{border-color:#3a9f63;box-shadow:inset 0 0 0 1px rgba(58,159,99,.5);}
+.calendar-planner-day.today{position:relative!important;border-color:rgba(58,159,99,.72)!important;box-shadow:none!important;background:rgba(255,255,255,.02)!important;}
+.calendar-planner-day.today::after{content:"";position:absolute;inset:0;border:2px solid rgba(58,159,99,.9);border-radius:var(--radius);pointer-events:none;z-index:70;}
 .calendar-planner-day-head{padding:10px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.04);font-size:13px;}
 .calendar-planner-lane{position:relative;min-height:660px;background:repeating-linear-gradient(to bottom,transparent 0,transparent 53px,rgba(255,255,255,.045) 54px);}
 .theme-light .calendar-planner-lane{background:repeating-linear-gradient(to bottom,transparent 0,transparent 53px,rgba(20,33,44,.06) 54px);}
@@ -478,7 +479,8 @@ body.theme-light{--ink:#172026;--muted:#61707c;--line:#dce3e8;--panel:#fff;--bg:
 .calendar-now-line span{position:absolute;left:-58px;top:-11px;background:#1686d9;color:#fff;border-radius:999px;padding:3px 6px;font-size:11px;font-weight:900;}
 .calendar-month-grid{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:8px;}
 .calendar-month-day{min-height:150px;border:1px solid var(--line);border-radius:var(--radius);padding:9px;display:grid;gap:6px;align-content:start;background:rgba(255,255,255,.02);cursor:pointer;}
-.calendar-month-day.today{border-color:#3a9f63;box-shadow:inset 0 0 0 1px rgba(58,159,99,.5);}
+.calendar-month-day.today{position:relative!important;border-color:rgba(58,159,99,.72)!important;box-shadow:none!important;background:rgba(255,255,255,.02)!important;}
+.calendar-month-day.today::after{content:"";position:absolute;inset:0;border:2px solid rgba(58,159,99,.9);border-radius:var(--radius);pointer-events:none;}
 .calendar-month-head{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:12px;}
 .calendar-mini-event{border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink);padding:6px;text-align:left;font-size:11px;cursor:pointer;}
 .calendar-mini-event:hover{border-color:var(--blue);}
@@ -1478,13 +1480,7 @@ body.modal-open .modal *{
   box-shadow:0 0 10px rgba(148,163,184,.12)!important;
 }
 .app.page-calendar .calendar-event.calendar-span-event .calendar-span-day-separator::after{
-  content:'';
-  position:absolute;
-  left:5px;
-  top:50%;
-  width:22px;
-  border-top:1px dashed rgba(148,163,184,.18);
-  transform:translateY(-50%);
+  content:none!important;
 }
 .app.page-calendar .calendar-event.calendar-span-event > :not(.calendar-span-continuation):not(.calendar-span-day-separator){
   position:relative;
@@ -1493,4 +1489,38 @@ body.modal-open .modal *{
 .app.page-calendar .calendar-event.calendar-span-event .calendar-span-resize,
 .app.page-calendar .calendar-event.calendar-span-event .calendar-resize-handle{
   z-index:18!important;
+}
+
+
+/* V3.14.2b: aktiivne päev ainult rohelise kontuuriga */
+.app.page-calendar .calendar-planner-day.today{
+  position:relative!important;
+  border-color:rgba(58,159,99,.72)!important;
+  box-shadow:none!important;
+}
+.app.page-calendar .calendar-planner-day.today::after{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  border:2px solid rgba(58,159,99,.92)!important;
+  border-radius:var(--radius)!important;
+  pointer-events:none!important;
+  z-index:70!important;
+}
+.app.page-calendar .calendar-month-day.today{
+  position:relative!important;
+  border-color:rgba(58,159,99,.72)!important;
+  box-shadow:none!important;
+}
+.app.page-calendar .calendar-month-day.today::after{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  border:2px solid rgba(58,159,99,.92)!important;
+  border-radius:var(--radius)!important;
+  pointer-events:none!important;
+  z-index:10!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event .calendar-span-day-separator::after{
+  content:none!important;
 }
