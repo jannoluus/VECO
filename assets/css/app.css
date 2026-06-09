@@ -1709,3 +1709,9 @@ body.modal-open .modal *{
 .app.page-calendar .calendar-month-day .calendar-day-note{margin:0;color:rgba(255,190,190,.88);}
 .theme-light .app.page-calendar{--calendar-offday-tint:rgba(255,107,107,.10);--calendar-offday-line:rgba(255,107,107,.24);}
 .theme-light .app.page-calendar .calendar-day-note{color:#b45353;}
+
+.confirm-kv{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:start;padding:6px 0;border-bottom:1px solid rgba(148,163,184,.12)}
+.confirm-kv:last-child{border-bottom:0}
+.confirm-kv span{color:var(--muted);font-size:12px}
+.confirm-kv strong{font-size:13px;color:var(--text)}
+.confirm-warning{margin-top:10px;padding:10px 12px;border:1px solid rgba(245,158,11,.32);background:rgba(245,158,11,.10);border-radius:10px;color:#f8d38b;font-size:13px;line-height:1.4}

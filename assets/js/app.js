@@ -1048,7 +1048,33 @@ function renderPeople(){
   $$('[data-toggle-oncall-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.toggleOncallPerson);if(p){p.onCallActive=!p.onCallActive;if(p.onCallActive&&!p.onCallOrder){p.onCallOrder=nextOncallOrder();}save();renderPeople();}}));
   $$('[data-edit-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openPersonModal(btn.dataset.editPerson);}))
   $$('[data-toggle-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.togglePerson);if(p){p.active=!p.active;save();renderPeople();}}));
-  $$('[data-delete-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const id=btn.dataset.deletePerson;const p=byId(state.people,id);if(!p)return;const used=state.workorders.some(w=>workorderMatchesPerson(w,id))||state.projects.some(pr=>pr.responsibleTechId===id)||state.objects.some(o=>o.responsibleTechId===id)||state.absences.some(a=>a.personId===id)||state.oncall.some(o=>o.personId===id);const msg=used?`Kasutaja ${p.name} on seotud tööde/objektidega. Kustutamine võib jätta viited tühjaks. Kas kustutada?`:`Kas kustutada kasutaja ${p.name}?`;if(confirm(msg)){state.people=state.people.filter(x=>x.id!==id);save();renderPeople();}}));
+  $$('[data-delete-person]').forEach(btn=>btn.addEventListener('click',async e=>{
+    e.stopPropagation();
+    const id=btn.dataset.deletePerson;
+    const p=byId(state.people,id);
+    if(!p) return;
+    const related={
+      works:state.workorders.filter(w=>workorderMatchesPerson(w,id)).length,
+      projects:state.projects.filter(pr=>pr.responsibleTechId===id).length,
+      objects:state.objects.filter(o=>o.responsibleTechId===id).length,
+      absences:state.absences.filter(a=>a.personId===id).length,
+      oncall:state.oncall.filter(o=>o.personId===id).length
+    };
+    const used=Object.values(related).some(Boolean);
+    const detailRows=`<div class="confirm-kv"><span>Kasutaja</span><strong>${esc(p.name)}</strong></div>`+(used?`<div class="confirm-warning">⚠ Kasutaja on seotud: ${related.works} tööd, ${related.projects} projekti, ${related.objects} objekti, ${related.absences} puudumist, ${related.oncall} valvet.</div>`:'');
+    const ok=await openVecoConfirm({
+      title:'Kustuta kasutaja?',
+      message:used?'Kasutaja on seotud teiste kirjetega. Kustutamine võib jätta viited tühjaks.':'Kas soovid selle kasutaja kustutada?',
+      details:detailRows,
+      confirmText:'Kustuta',
+      cancelText:'Loobu',
+      danger:true
+    });
+    if(!ok) return;
+    state.people=state.people.filter(x=>x.id!==id);
+    save();
+    renderPeople();
+  }));
 }
 function openPersonModal(id=''){
   const p=id?byId(state.people,id):{name:'',role:'Tehnik',phone:'',email:'',region:'',skills:'',active:true,onCallActive:false,onCallOrder:nextOncallOrder()};
@@ -1112,6 +1138,22 @@ function setWorkorderDateRange(w,startKey,endKey){
 }
 function teamWeekAbsences(personId,weekDays){ const start=weekDays[0], end=weekDays[6]; return state.absences.filter(a=>a.personId===personId && a.start<=end && a.end>=start); }
 function teamWeekOncall(personId,weekDays){ const start=weekDays[0], end=weekDays[6]; return state.oncall.filter(o=>o.personId===personId && o.start<=end && o.end>=start); }
+
+function teamWorkConflictsForPerson(personId,days){
+  return (state.workorders||[]).filter(w=>workorderMatchesPerson(w,personId)&&!isCompletedStatus(w.status)&&(days||[]).some(date=>workorderOccursOnDay(w,date))&&(state.absences||[]).some(a=>a.personId===personId&&a.start<=workorderEndDate(w)&&a.end>=w.date));
+}
+function teamOncallConflictsForPerson(personId,days){
+  return (state.oncall||[]).filter(o=>o.personId===personId&&(days||[]).some(date=>o.start<=date&&o.end>=date)&&(state.absences||[]).some(a=>a.personId===personId&&a.start<=o.end&&a.end>=o.start));
+}
+function teamWarningCount(days){
+  const people=(state.people||[]).filter(p=>p.active!==false);
+  const conflictPeople=people.filter(p=>teamWorkConflictsForPerson(p.id,days).length||teamOncallConflictsForPerson(p.id,days).length).length;
+  const overloaded=people.filter(p=>{
+    const jobs=(state.workorders||[]).filter(w=>workorderMatchesPerson(w,p.id)&&(days||[]).some(date=>workorderOccursOnDay(w,date))&&!isCompletedStatus(w.status));
+    return jobs.reduce((sum,w)=>sum+workorderHoursInRange(w,days),0)>=(days&&days.length>5?42:32);
+  }).length;
+  return conflictPeople+overloaded;
+}
 function workloadStatus(hours,absences,limit=8){
   if(absences.length) return 'Puudub';
   const h=Number(hours)||0;
@@ -1133,9 +1175,10 @@ function workloadClass(hours,absences,limit=8){
   return '';
 }
 function renderTeam(){
-  const currentWeek=$('#teamWeekStart')?.value||weekStartKeyFrom(localStorage.getItem('veco_team_week')||'');
+  const rawWeek=$('#teamWeekStart')?.value||localStorage.getItem('veco_team_week')||dateKeyFromDate(new Date());
+  const currentWeek=weekStartKeyFrom(rawWeek);
   const statusFilter=$('#teamStatusFilter')?.value||'open';
-  const q=($('#teamSearch')?.value||'').toLowerCase();
+  const q='';
   const view=$('#teamViewMode')?.value||localStorage.getItem('veco_team_view')||'cards';
   const scope=$('#teamWeekScope')?.value||localStorage.getItem('veco_team_scope')||'workdays';
   const selectedDay=$('#teamDaySelect')?.value||localStorage.getItem('veco_team_day')||dateKeyFromDate(new Date());
@@ -1160,7 +1203,7 @@ function renderTeam(){
   const dayNames=['E','T','K','N','R','L','P'];
   const weekDayOptions=weekDays.map((d,i)=>`<option value="${d}" ${selectedDay===d?'selected':''}>${dayNames[i]} ${d}</option>`).join('');
   const viewSwitch=`<select class="select" id="teamViewMode"><option value="cards" ${view==='cards'?'selected':''}>Kaardid</option><option value="matrix" ${view==='matrix'?'selected':''}>Nädalatabel</option><option value="day" ${view==='day'?'selected':''}>Päev</option></select><select class="select" id="teamWeekScope"><option value="workdays" ${scope==='workdays'?'selected':''}>E–R</option><option value="full" ${scope==='full'?'selected':''}>E–P</option></select>${view==='day'?`<select class="select" id="teamDaySelect">${weekDayOptions}</select>`:''}`;
-  const filters=`<input class="field" id="teamSearch" placeholder="Otsi tööd, objekti või tehnikut..." value="${esc(q)}"><input class="field" id="teamWeekStart" type="date" value="${esc(currentWeek)}"><select class="select" id="teamStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Avatud tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${workorderStatusOptions.map(s=>`<option value="${s}" ${statusFilter===s?'selected':''}>${s}</option>`).join('')}</select>${viewSwitch}`;
+  const filters=`<input class="field" id="teamWeekStart" type="date" value="${esc(currentWeek)}"><select class="select" id="teamStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Avatud tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${workorderStatusOptions.map(s=>`<option value="${s}" ${statusFilter===s?'selected':''}>${s}</option>`).join('')}</select>${viewSwitch}`;
   const actions=`<button class="btn ghost" id="teamPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="teamThisWeekBtn" type="button">↕ Täna</button><button class="btn ghost" id="teamNextWeekBtn" type="button">Järgmine ›</button>`;
 
   const techCards=state.people.map(p=>{
@@ -1202,7 +1245,7 @@ function renderTeam(){
     const hours=jobs.reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0);
     return `<tr data-team-person="${p.id}" class="${p.id===selectedTeamPersonId?'selected':''}"><th><strong>${esc(p.name)}</strong><span class="muted">${esc(p.role||'Tehnik')} · ${hours} h</span></th>${cells}</tr>`;
   }).join('');
-  const matrixHtml=`<div class="team-matrix-wrap"><table class="team-matrix"><thead><tr><th>Tehnik</th>${visibleDays.map((d,i)=>`<th>${dayNames[weekDays.indexOf(d)]}<span>${esc(d)}</span></th>`).join('')}</tr></thead><tbody>${matrixRows}</tbody></table></div>`;
+  const matrixHtml=`<div class="team-matrix-wrap"><table class="team-matrix"><thead><tr><th>Tehnik</th>${visibleDays.map((d,i)=>`<th>${dayNames[weekDays.indexOf(d)]}<span>${esc(fmtActDate(d))}</span></th>`).join('')}</tr></thead><tbody>${matrixRows}</tbody></table></div>`;
 
   const dayHtml=`<div class="team-day-view">${state.people.map(p=>{
     const jobs=dayWorkorders.filter(w=>workorderMatchesPerson(w,p.id)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
@@ -1213,7 +1256,7 @@ function renderTeam(){
   }).join('')}</div>`;
 
   const totalHours=visibleWorkorders.reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0);
-  const absentCount=state.people.filter(p=>teamWeekAbsences(p.id,visibleDays).length).length;
+  const absentCount=state.people.filter(p=>teamWorkConflictsForPerson(p.id,visibleDays).length||teamOncallConflictsForPerson(p.id,visibleDays).length).length;
   const overloaded=state.people.filter(p=>personJobs(p).reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0)>=(scope==='full'?42:32)).length;
   const content=view==='matrix'?matrixHtml:(view==='day'?dayHtml:`<div class="grid team-grid">${techCards}</div>`);
   const teamHeaderLabel=formatViewPeriod('Tiimivaade',view==='day'?'day':'week',view==='day'?[selectedDay]:visibleDays,currentWeek,{hideRange:view!=='day'});
@@ -1221,31 +1264,44 @@ function renderTeam(){
   const main=header('Tiimivaade',filters,actions,teamHeaderLabel)+`<div class="detail-body"><div class="summary-grid">${summaryBox('Tehnikuid',state.people.length)}${summaryBox(view==='day'?'Päeva töid':'Vahemiku töid',view==='day'?dayWorkorders.length:visibleWorkorders.length)}${summaryBox('Planeeritud h',view==='day'?dayWorkorders.reduce((sum,w)=>sum+workorderHours(w),0):totalHours)}${summaryBox('Hoiatusi',absentCount+overloaded)}</div><div class="team-view-hint">${view==='cards'?'Kaardivaade näitab tehniku koormust valitud nädalas.':view==='matrix'?'Nädalatabel näitab kogu tiimi päevade kaupa.':'Päevavaade sobib hommikuseks tööde jagamiseks.'}</div>${content}</div>`;
   const detail=selectedTeamPersonId?teamDetailHtml(visibleDays,view==='day'?dayWorkorders:visibleWorkorders):'';
   shell(main,detail);
-  $('#teamSearch')?.addEventListener('input',renderTeam); $('#teamWeekStart')?.addEventListener('change',renderTeam); $('#teamStatusFilter')?.addEventListener('change',renderTeam); $('#teamViewMode')?.addEventListener('change',renderTeam); $('#teamWeekScope')?.addEventListener('change',renderTeam); $('#teamDaySelect')?.addEventListener('change',renderTeam);
+  $('#teamWeekStart')?.addEventListener('change',()=>{const next=weekStartKeyFrom($('#teamWeekStart').value); localStorage.setItem('veco_team_week',next); $('#teamWeekStart').value=next; renderTeam();}); $('#teamStatusFilter')?.addEventListener('change',renderTeam); $('#teamViewMode')?.addEventListener('change',renderTeam); $('#teamWeekScope')?.addEventListener('change',renderTeam); $('#teamDaySelect')?.addEventListener('change',renderTeam);
   $('#teamPrevWeekBtn')?.addEventListener('click',()=>{
     if(view==='day'){
       const nextDay=dateKeyFromDate(addDateDays(parseDateKey(selectedDay),-1));
+      const nextWeek=weekStartKeyFrom(nextDay);
       localStorage.setItem('veco_team_day',nextDay);
-      localStorage.setItem('veco_team_week',weekStartKeyFrom(nextDay));
+      localStorage.setItem('veco_team_week',nextWeek);
+      const dayEl=$('#teamDaySelect'); if(dayEl) dayEl.value=nextDay;
+      const weekEl=$('#teamWeekStart'); if(weekEl) weekEl.value=nextWeek;
     }else{
-      localStorage.setItem('veco_team_week',dateKeyFromDate(addDateDays(parseDateKey(currentWeek),-7)));
+      const nextWeek=dateKeyFromDate(addDateDays(parseDateKey(currentWeek),-7));
+      localStorage.setItem('veco_team_week',nextWeek);
+      const weekEl=$('#teamWeekStart'); if(weekEl) weekEl.value=nextWeek;
     }
     renderTeam();
   });
   $('#teamNextWeekBtn')?.addEventListener('click',()=>{
     if(view==='day'){
       const nextDay=dateKeyFromDate(addDateDays(parseDateKey(selectedDay),1));
+      const nextWeek=weekStartKeyFrom(nextDay);
       localStorage.setItem('veco_team_day',nextDay);
-      localStorage.setItem('veco_team_week',weekStartKeyFrom(nextDay));
+      localStorage.setItem('veco_team_week',nextWeek);
+      const dayEl=$('#teamDaySelect'); if(dayEl) dayEl.value=nextDay;
+      const weekEl=$('#teamWeekStart'); if(weekEl) weekEl.value=nextWeek;
     }else{
-      localStorage.setItem('veco_team_week',dateKeyFromDate(addDateDays(parseDateKey(currentWeek),7)));
+      const nextWeek=dateKeyFromDate(addDateDays(parseDateKey(currentWeek),7));
+      localStorage.setItem('veco_team_week',nextWeek);
+      const weekEl=$('#teamWeekStart'); if(weekEl) weekEl.value=nextWeek;
     }
     renderTeam();
   });
   $('#teamThisWeekBtn')?.addEventListener('click',()=>{
     const todayKey=dateKeyFromDate(new Date());
-    localStorage.setItem('veco_team_week',weekStartKeyFrom(todayKey));
+    const thisWeek=weekStartKeyFrom(todayKey);
+    localStorage.setItem('veco_team_week',thisWeek);
     localStorage.setItem('veco_team_day',todayKey);
+    const weekEl=$('#teamWeekStart'); if(weekEl) weekEl.value=thisWeek;
+    const dayEl=$('#teamDaySelect'); if(dayEl) dayEl.value=todayKey;
     renderTeam();
   });
   $$('[data-team-person]').forEach(el=>el.addEventListener('click',()=>{
@@ -1305,7 +1361,23 @@ function bindOncallView(){
   $('#newOncallBtn')?.addEventListener('click',()=>openOncallModal());
   $('#generateOncallBtn')?.addEventListener('click',generateOncallRotation);
   $$('[data-edit-oncall]').forEach(btn=>btn.addEventListener('click',()=>openOncallModal(btn.dataset.editOncall)));
-  $$('[data-delete-oncall]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteOncall;const o=byId(state.oncall,id);if(o&&confirm(`Kas kustutada valve ${techName(o.personId)} ${o.start}–${o.end}?`)){state.oncall=state.oncall.filter(x=>x.id!==id);save();renderOncall();}}));
+  $$('[data-delete-oncall]').forEach(btn=>btn.addEventListener('click',async()=>{
+    const id=btn.dataset.deleteOncall;
+    const o=byId(state.oncall,id);
+    if(!o) return;
+    const ok=await openVecoConfirm({
+      title:'Kustuta valve?',
+      message:'Kas soovid selle valveperioodi kustutada?',
+      details:`<div class="confirm-kv"><span>Tehnik</span><strong>${esc(techName(o.personId))}</strong></div><div class="confirm-kv"><span>Periood</span><strong>${esc(fmtActDate(o.start))} – ${esc(fmtActDate(o.end))}</strong></div>${o.note?`<div class="confirm-kv"><span>Märkus</span><strong>${esc(o.note)}</strong></div>`:''}`,
+      confirmText:'Kustuta',
+      cancelText:'Loobu',
+      danger:true
+    });
+    if(!ok) return;
+    state.oncall=state.oncall.filter(x=>x.id!==id);
+    save();
+    renderOncall();
+  }));
   let draggedId='';
   $$('#oncallSortList .oncall-person').forEach(item=>{
     item.addEventListener('dragstart',()=>{draggedId=item.dataset.oncallPerson;item.classList.add('dragging');});
@@ -1322,10 +1394,10 @@ function openOncallModal(id=''){
   bindClose();
   $('#oncallForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('OC'),personId:f.personId.value,start:f.start.value,end:f.end.value,note:f.note.value,manualOverride:true};if(next.end<next.start){alert('Lõpp ei saa olla enne algust.');return;}if(id){Object.assign(o,next)}else{state.oncall.push(next)}save();closeModal();renderOncall();});
 }
-function generateOncallRotation(){
+async function generateOncallRotation(){
   const active=activeOncallPeople();
   if(!active.length){alert('Valvegraafikus pole aktiivseid tehnikuid.');return;}
-  if(!confirm('Genereerin 12 nädalat rotatsiooni alates käesolevast nädalast. Olemasolevad käsitsi muudetud valved jäävad alles.')) return;
+  const generateOk=await openVecoConfirm({title:'Genereeri valvegraafik?',message:'Genereerin 12 nädalat rotatsiooni alates käesolevast nädalast.',details:'<div class="muted">Olemasolevad käsitsi muudetud valved jäävad alles.</div>',confirmText:'Genereeri',cancelText:'Loobu'}); if(!generateOk) return;
   const first=weekStartKeyFrom(dateKeyFromDate(new Date()));
   for(let i=0;i<12;i++){
     const [start,end]=weekRangeFrom(dateKeyFromDate(addDateDays(parseDateKey(first),i*7)),7);
@@ -1385,7 +1457,26 @@ function renderVacations(){
 function bindVacations(){
   $('#newAbsenceBtn')?.addEventListener('click',()=>openAbsenceModal());
   $$('[data-edit-absence]').forEach(btn=>btn.addEventListener('click',()=>openAbsenceModal(btn.dataset.editAbsence)));
-  $$('[data-delete-absence]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteAbsence;const a=byId(state.absences,id);if(a&&confirm(`Kas kustutada puudumine ${techName(a.personId)} ${a.type} ${a.start}–${a.end}?`)){state.absences=state.absences.filter(x=>x.id!==id);save();renderVacations();}}));
+  $$('[data-delete-absence]').forEach(btn=>btn.addEventListener('click',async()=>{
+    const id=btn.dataset.deleteAbsence;
+    const a=byId(state.absences,id);
+    if(!a) return;
+    const workConflicts=absenceWorkConflicts(a);
+    const oncallConflicts=absenceOncallConflicts(a);
+    const conflictHtml=(workConflicts.length||oncallConflicts.length)?`<div class="confirm-warning">⚠ Selle puudumisega on seotud ${workConflicts.length} tööd ja ${oncallConflicts.length} valvet.</div>`:'';
+    const ok=await openVecoConfirm({
+      title:'Kustuta puudumine?',
+      message:'Kas soovid selle puudumise kustutada?',
+      details:`<div class="confirm-kv"><span>Töötaja</span><strong>${esc(techName(a.personId))}</strong></div><div class="confirm-kv"><span>Tüüp</span><strong>${esc(a.type||'Puudumine')}</strong></div><div class="confirm-kv"><span>Periood</span><strong>${esc(fmtActDate(a.start))} – ${esc(fmtActDate(a.end))}</strong></div>${a.note?`<div class="confirm-kv"><span>Märkus</span><strong>${esc(a.note)}</strong></div>`:''}${conflictHtml}`,
+      confirmText:'Kustuta',
+      cancelText:'Loobu',
+      danger:true
+    });
+    if(!ok) return;
+    state.absences=state.absences.filter(x=>x.id!==id);
+    save();
+    renderVacations();
+  }));
 }
 function openAbsenceModal(id=''){
   const today=dateKeyFromDate(new Date());
