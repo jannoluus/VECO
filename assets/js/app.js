@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.15.0';
-const APP_BUILD='20260609_2025';
+const APP_BUILD='20260609_2256';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 normalizeOncallPeople();
@@ -629,14 +629,15 @@ function openWorkorderModal(id='',defaults={}){
   const projectOptions=state.projects.map(p=>`<option value="${esc(p.name)}" label="${esc(objectName(p.objectId))}"></option>`).join('');
   const responsibleId=workorderResponsibleId(w);
   const participantIds=workorderParticipantIds(w);
-  const participantOptions=state.people.map(p=>`<option value="${p.id}" ${participantIds.includes(p.id)?'selected':''}>${esc(p.name)}</option>`).join('');
+  const participantJson=esc(JSON.stringify(participantIds));
   const title=isEdit?`Töökäsk ${esc(w.id)}`:'Lisa töökäsk';
   openModal(`<form id="workorderForm"><div class="dialog-head"><h2>${title}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid">
     <label class="full">Töö nimetus<input class="field" name="title" required placeholder="Kirjuta töö nimetus..." value="${esc(w.title)}"></label>
     <label>Klient<input class="field" name="clientName" list="clientOptions" placeholder="Vali või otsi klient..." value="${isEdit?esc(currentClient?.name||''):''}"><datalist id="clientOptions">${clientOptions}</datalist></label>
     <label>Objekt<input class="field" name="objectName" list="objectOptions" placeholder="Vali või otsi objekt..." value="${isEdit?esc(currentObject?.name||''):''}" required><datalist id="objectOptions">${objectOptions}</datalist></label>
     <label>Projekt<input class="field" name="projectName" list="projectOptions" placeholder="Vali projekt või jäta tühjaks..." value="${isEdit?esc(currentProject?.name||''):''}"><datalist id="projectOptions">${projectOptions}</datalist></label>
-    <label>Vastutaja<select class="select" name="responsibleTechnicianId"><option value="">Vali vastutaja...</option>${state.people.map(p=>`<option value="${p.id}" ${responsibleId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><label>Osalejad<select class="select" name="participantTechnicianIds" multiple size="4">${participantOptions}</select><span class="muted">Ctrl/⌘ + klikk mitme osaleja valimiseks.</span></label>
+    <label>Vastutaja<select class="select" name="responsibleTechnicianId"><option value="">Vali vastutaja...</option>${state.people.map(p=>`<option value="${p.id}" ${responsibleId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+    <label>Osalejad<div class="participant-picker" id="workorderParticipantPicker" data-selected="${participantJson}"><div class="participant-chips" id="participantChips"></div><div class="participant-add-row"><button type="button" class="btn small" id="addParticipantBtn">＋ Lisa osaleja</button><input class="field participant-search hidden" id="participantSearch" type="search" placeholder="Otsi tehnikut..." autocomplete="off"></div><div class="participant-dropdown hidden" id="participantDropdown"></div><input type="hidden" name="participantTechnicianIds" value="${participantIds.join(',')}"></div><span class="muted">Valitud osalejad kuvatakse loendina. Vastutajat osalejaks ei lisata.</span></label>
     <label>Staatus<select class="select" name="status">${workorderStatusOptions.map(s=>`<option ${w.status===s?'selected':''}>${s}</option>`).join('')}</select></label>
     <label>Kuupäev<input class="field" name="date" type="date" value="${esc(w.date)}"></label>
     <label>Algusaeg<input class="field" name="time" type="time" value="${esc(w.time)}"></label>
@@ -646,6 +647,50 @@ function openWorkorderModal(id='',defaults={}){
   </div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Sulge</button>${isEdit?'<button type="button" class="btn danger" id="deleteWorkorderBtn">Kustuta</button>':''}<button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
   const form=$('#workorderForm');
+  const participantPicker=$('#workorderParticipantPicker');
+  let selectedParticipants=[];
+  try{ selectedParticipants=JSON.parse(participantPicker?.dataset.selected||'[]'); }catch(_){ selectedParticipants=[]; }
+  const syncParticipants=()=>{
+    const resp=form.elements.responsibleTechnicianId?.value||'';
+    selectedParticipants=Array.from(new Set(selectedParticipants.filter(id=>id&&id!==resp)));
+    form.elements.participantTechnicianIds.value=selectedParticipants.join(',');
+  };
+  const renderParticipantPicker=()=>{
+    if(!participantPicker) return;
+    syncParticipants();
+    const chips=$('#participantChips');
+    const dropdown=$('#participantDropdown');
+    const search=$('#participantSearch');
+    if(chips){
+      chips.innerHTML=selectedParticipants.map(id=>`<span class="participant-chip">${esc(techName(id))}<button type="button" data-remove-participant="${esc(id)}" title="Eemalda">×</button></span>`).join('')||'<span class="muted">Osalejaid pole lisatud.</span>';
+    }
+    const q=(search?.value||'').trim().toLowerCase();
+    const resp=form.elements.responsibleTechnicianId?.value||'';
+    const candidates=state.people.filter(p=>p.id!==resp&&!selectedParticipants.includes(p.id)).filter(p=>!q||p.name.toLowerCase().includes(q)||String(p.role||'').toLowerCase().includes(q));
+    if(dropdown){
+      dropdown.innerHTML=candidates.length?candidates.map(p=>`<button type="button" class="participant-option" data-add-participant="${esc(p.id)}"><strong>${esc(p.name)}</strong><span>${esc(p.role||'Tehnik')}</span></button>`).join(''):'<div class="participant-empty">Sobivaid tehnikuid ei ole.</div>';
+    }
+  };
+  const openParticipantSearch=()=>{
+    $('#participantSearch')?.classList.remove('hidden');
+    $('#participantDropdown')?.classList.remove('hidden');
+    $('#participantSearch')?.focus();
+    renderParticipantPicker();
+  };
+  $('#addParticipantBtn')?.addEventListener('click',openParticipantSearch);
+  $('#participantSearch')?.addEventListener('input',renderParticipantPicker);
+  form.elements.responsibleTechnicianId?.addEventListener('change',renderParticipantPicker);
+  participantPicker?.addEventListener('click',e=>{
+    const add=e.target.closest('[data-add-participant]');
+    const remove=e.target.closest('[data-remove-participant]');
+    if(add){ selectedParticipants.push(add.dataset.addParticipant); $('#participantSearch').value=''; renderParticipantPicker(); openParticipantSearch(); }
+    if(remove){ selectedParticipants=selectedParticipants.filter(id=>id!==remove.dataset.removeParticipant); renderParticipantPicker(); }
+  });
+  document.addEventListener('click',function participantOutsideHandler(e){
+    if(!document.body.contains(participantPicker)){ document.removeEventListener('click',participantOutsideHandler); return; }
+    if(participantPicker&&!participantPicker.contains(e.target)){ $('#participantDropdown')?.classList.add('hidden'); $('#participantSearch')?.classList.add('hidden'); }
+  });
+  renderParticipantPicker();
   const resolveObject=()=>{
     const rawObject=form.elements.objectName.value.trim();
     const objectText=rawObject.toLowerCase();
@@ -727,7 +772,7 @@ function openWorkorderModal(id='',defaults={}){
       time:f.time.value,
       technicianId:f.responsibleTechnicianId.value,
       responsibleTechnicianId:f.responsibleTechnicianId.value,
-      participantTechnicianIds:Array.from(f.participantTechnicianIds?.selectedOptions||[]).map(o=>o.value).filter(id=>id&&id!==f.responsibleTechnicianId.value),
+      participantTechnicianIds:String(f.participantTechnicianIds?.value||'').split(',').map(x=>x.trim()).filter(id=>id&&id!==f.responsibleTechnicianId.value),
       status:nextStatus,
       description:f.description.value,
       plannedHours:hours,
