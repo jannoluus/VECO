@@ -1524,3 +1524,26 @@ body.modal-open .modal *{
 .app.page-calendar .calendar-event.calendar-span-event .calendar-span-day-separator::after{
   content:none!important;
 }
+
+/* V3.14.5: ajajoone juures kuvatakse hetke kellaaeg väikese märgisena */
+.app.page-calendar .calendar-now-line span{
+  left:6px!important;
+  top:-18px!important;
+  z-index:1!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  height:16px!important;
+  padding:1px 6px!important;
+  border-radius:999px!important;
+  background:rgba(22,134,217,.82)!important;
+  color:#fff!important;
+  font-size:10px!important;
+  line-height:1!important;
+  font-weight:800!important;
+  letter-spacing:.01em!important;
+  box-shadow:0 2px 8px rgba(0,0,0,.18)!important;
+  pointer-events:none!important;
+}
+.theme-light .app.page-calendar .calendar-now-line span{
+  background:rgba(22,134,217,.92)!important;
+}

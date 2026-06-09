@@ -200,3 +200,7 @@ Muudatused:
 - Eemaldatud aktiivse päeva tausta/viirutuse loogika; mitmepäevane töö jääb visuaalselt peamiseks elemendiks.
 - Aktiivse päeva kontuur renderdatakse töökaartide kohal mitteinteraktiivse kihina, et see jääks mitmepäevase töö korral nähtavaks.
 - Eemaldatud mitmepäevase töö päevapiiri joone küljes tekkinud katkendlikud täpimärgid.
+
+## Build VECO_V3_20260609_0905
+- Ajamarkeri juurde lisatud väike hetke kellaaega näitav märgis.
+- Kellaaeg liigub koos ajajoonega ja ei jää enam kalendri vasakusse serva peitu.
