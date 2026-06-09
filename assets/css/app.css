@@ -1737,3 +1737,28 @@ body.modal-open .modal *{
 .participant-empty{padding:10px;color:var(--muted);font-size:13px;}
 .hidden{display:none!important;}
 @media(max-width:720px){.participant-add-row{flex-direction:column;align-items:stretch}.participant-search{width:100%;}.participant-dropdown{max-height:260px;}}
+
+/* V3.17: puhtam kalendrikaart ja parem osalejate kuvamine */
+.calendar-people{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:2px!important;
+  margin-top:2px!important;
+  color:var(--muted)!important;
+  font-size:12px!important;
+  line-height:1.15!important;
+  font-weight:800!important;
+  min-width:0!important;
+}
+.calendar-person-resp,
+.calendar-person-participants{
+  display:block!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+  text-overflow:ellipsis!important;
+}
+.calendar-person-participants{color:#c7d6e2!important;}
+.calendar-event.compact .calendar-people{font-size:10.5px!important;gap:1px!important;}
+.calendar-event.compact .calendar-person-participants{display:none!important;}
+.calendar-end-time{text-align:right!important;white-space:nowrap!important;}
+.calendar-event-footer{align-items:flex-end!important;}
