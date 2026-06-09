@@ -204,3 +204,7 @@ Muudatused:
 ## Build VECO_V3_20260609_0905
 - Ajamarkeri juurde lisatud väike hetke kellaaega näitav märgis.
 - Kellaaeg liigub koos ajajoonega ja ei jää enam kalendri vasakusse serva peitu.
+
+
+## Build VECO_V3_20260609_0915
+- Kalendri päevaveergude kuupäevad vormindatud Eesti formaati DD.MM.YYYY.
