@@ -1667,3 +1667,45 @@ body.modal-open .modal *{
 .theme-light .mobile-tab-card.active{background:#eef6ff;}
 .theme-light .mobile-tab-card.warn{background:#fff7ed;}
 @media(max-width:520px){.mobile-tab-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mobile-tab-card{min-height:70px;border-radius:14px;padding:10px}.mobile-tab-card strong{font-size:24px}.mobile-active-title{align-items:flex-start;flex-direction:column;gap:2px}}
+
+/* V3.17: Eesti riigipühad, nädalavahetused ja lühendatud tööpäevad */
+:root{--calendar-offday-tint:rgba(255,107,107,.08);--calendar-offday-line:rgba(255,107,107,.18);}
+.app.page-calendar .calendar-planner-day.weekend,
+.app.page-calendar .calendar-planner-day.holiday,
+.app.page-calendar .calendar-month-day.weekend,
+.app.page-calendar .calendar-month-day.holiday{
+  background:linear-gradient(0deg,var(--calendar-offday-tint),var(--calendar-offday-tint)),rgba(255,255,255,.02)!important;
+  border-color:var(--calendar-offday-line)!important;
+}
+.app.page-calendar .calendar-planner-day.short-day,
+.app.page-calendar .calendar-month-day.short-day{
+  border-color:var(--calendar-offday-line)!important;
+}
+.app.page-calendar .calendar-special-day-shade{
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  display:block!important;
+  pointer-events:none!important;
+  z-index:0!important;
+  background:var(--calendar-offday-tint)!important;
+}
+.app.page-calendar .calendar-special-day-shade.full{top:0!important;bottom:0!important;height:auto!important;}
+.app.page-calendar .calendar-special-day-shade.partial{border-top:1px solid var(--calendar-offday-line)!important;}
+.app.page-calendar .calendar-day-note{
+  grid-column:1/-1;
+  display:block;
+  margin-top:-5px;
+  color:rgba(255,190,190,.88);
+  font-size:10px;
+  font-weight:800;
+  line-height:1.1;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+.app.page-calendar .calendar-planner-day-head{display:grid!important;grid-template-columns:auto auto;gap:2px 8px;align-items:center;}
+.app.page-calendar .calendar-planner-day-head span{justify-self:end;}
+.app.page-calendar .calendar-month-day .calendar-day-note{margin:0;color:rgba(255,190,190,.88);}
+.theme-light .app.page-calendar{--calendar-offday-tint:rgba(255,107,107,.10);--calendar-offday-line:rgba(255,107,107,.24);}
+.theme-light .app.page-calendar .calendar-day-note{color:#b45353;}

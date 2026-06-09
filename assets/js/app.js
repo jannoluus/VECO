@@ -1567,6 +1567,80 @@ function fmtShortDate(dateKey,withYear=false){
   const mm=String(d.getMonth()+1).padStart(2,'0');
   return withYear?`${dd}.${mm}.${d.getFullYear()}`:`${dd}.${mm}`;
 }
+
+function estonianEasterDate(year){
+  const a=year%19;
+  const b=Math.floor(year/100);
+  const c=year%100;
+  const d=Math.floor(b/4);
+  const e=b%4;
+  const f=Math.floor((b+8)/25);
+  const g=Math.floor((b-f+1)/3);
+  const h=(19*a+b-d-g+15)%30;
+  const i=Math.floor(c/4);
+  const k=c%4;
+  const l=(32+2*e+2*i-h-k)%7;
+  const m=Math.floor((a+11*h+22*l)/451);
+  const month=Math.floor((h+l-7*m+114)/31)-1;
+  const day=((h+l-7*m+114)%31)+1;
+  return new Date(year,month,day,12,0,0);
+}
+function estonianHolidayMapForYear(year){
+  const map=new Map();
+  const add=(key,name,type='holiday')=>map.set(key,{name,type});
+  add(`${year}-01-01`,'Uusaasta');
+  add(`${year}-02-24`,'Eesti Vabariigi aastapäev');
+  const easter=estonianEasterDate(year);
+  add(dateKeyFromDate(addDateDays(easter,-2)),'Suur reede');
+  add(dateKeyFromDate(easter),'Ülestõusmispühade 1. püha');
+  add(`${year}-05-01`,'Kevadpüha');
+  add(dateKeyFromDate(addDateDays(easter,49)),'Nelipühade 1. püha');
+  add(`${year}-06-23`,'Võidupüha');
+  add(`${year}-06-24`,'Jaanipäev');
+  add(`${year}-08-20`,'Taasiseseisvumispäev');
+  add(`${year}-12-24`,'Jõululaupäev');
+  add(`${year}-12-25`,'Esimene jõulupüha');
+  add(`${year}-12-26`,'Teine jõulupüha');
+  return map;
+}
+function previousWorkdayKey(date){
+  let d=addDateDays(date,-1);
+  while(d.getDay()===0 || d.getDay()===6) d=addDateDays(d,-1);
+  return dateKeyFromDate(d);
+}
+function estonianShortDayMapForYear(year){
+  const map=new Map();
+  const add=(date,name)=>map.set(previousWorkdayKey(date),{name,type:'short'});
+  add(new Date(year,0,1,12,0,0),'Uusaastale eelnev lühendatud tööpäev');
+  add(new Date(year,1,24,12,0,0),'Eesti Vabariigi aastapäevale eelnev lühendatud tööpäev');
+  add(new Date(year,5,23,12,0,0),'Võidupühale eelnev lühendatud tööpäev');
+  add(new Date(year,11,24,12,0,0),'Jõululaupäevale eelnev lühendatud tööpäev');
+  add(new Date(year+1,0,1,12,0,0),'Uusaastale eelnev lühendatud tööpäev');
+  return map;
+}
+function estonianCalendarDayInfo(dateKey){
+  const d=parseDateKey(dateKey);
+  const year=d.getFullYear();
+  const holidayMaps=[estonianHolidayMapForYear(year-1),estonianHolidayMapForYear(year),estonianHolidayMapForYear(year+1)];
+  for(const m of holidayMaps){ if(m.has(dateKey)) return {...m.get(dateKey),isHoliday:true,isShort:false,isWeekend:d.getDay()===0||d.getDay()===6}; }
+  const shortMaps=[estonianShortDayMapForYear(year-1),estonianShortDayMapForYear(year),estonianShortDayMapForYear(year+1)];
+  for(const m of shortMaps){ if(m.has(dateKey)) return {...m.get(dateKey),isHoliday:false,isShort:true,isWeekend:d.getDay()===0||d.getDay()===6}; }
+  return {name:'',type:'normal',isHoliday:false,isShort:false,isWeekend:d.getDay()===0||d.getDay()===6};
+}
+function calendarDayClass(dateKey){
+  const info=estonianCalendarDayInfo(dateKey);
+  const classes=[];
+  if(info.isWeekend) classes.push('weekend');
+  if(info.isHoliday) classes.push('holiday');
+  if(info.isShort) classes.push('short-day');
+  return classes.join(' ');
+}
+function calendarDayMarker(dateKey){
+  const info=estonianCalendarDayInfo(dateKey);
+  if(info.isHoliday) return `<small class="calendar-day-note" title="${esc(info.name)}">${esc(info.name)}</small>`;
+  if(info.isShort) return `<small class="calendar-day-note" title="${esc(info.name)}">Lühendatud tööpäev</small>`;
+  return '';
+}
 const EST_MONTHS=['JAANUAR','VEEBRUAR','MÄRTS','APRILL','MAI','JUUNI','JUULI','AUGUST','SEPTEMBER','OKTOOBER','NOVEMBER','DETSEMBER'];
 function monthYearLabel(dateKey){
   const d=parseDateKey(dateKey||dateKeyFromDate(new Date()));
@@ -1635,6 +1709,9 @@ function renderCalendar(){
   const workdayStartPct=Math.max(0,Math.min(100,((workdayStartHour-calendarStartHour)/calendarHoursTotal)*100));
   const workdayEndPct=Math.max(0,Math.min(100,((workdayEndHour-calendarStartHour)/calendarHoursTotal)*100));
   const workdayHeightPct=Math.max(0,workdayEndPct-workdayStartPct);
+  const shortDayStartHour=workdayEndHour-3;
+  const shortDayStartPct=Math.max(0,Math.min(100,((shortDayStartHour-calendarStartHour)/calendarHoursTotal)*100));
+  const shortDayHeightPct=Math.max(0,100-shortDayStartPct);
   const hours=Array.from({length:calendarHoursTotal},(_,i)=>calendarStartHour+i);
   const dayNames=['P','E','T','K','N','R','L'];
   const today=dateKeyFromDate(new Date());
@@ -1674,13 +1751,16 @@ function renderCalendar(){
       const compactClass=jobs.length>=3?' compact':'';
       const cards=jobs.map(w=>buildCalendarCard(w,{date,compactClass})).join('');
       const slots=hours.map(h=>`<button class="calendar-slot" data-add-date="${date}" data-add-time="${String(h).padStart(2,'0')}:00" title="Lisa töö ${date} ${String(h).padStart(2,'0')}:00" type="button"></button>`).join('');
-      const workdayMarkers=`<span class="calendar-workday-shade" style="top:${workdayStartPct}%;height:${workdayHeightPct}%" aria-hidden="true"></span><span class="calendar-workday-line calendar-workday-start" style="top:${workdayStartPct}%" aria-hidden="true"></span><span class="calendar-workday-line calendar-workday-end" style="top:${workdayEndPct}%" aria-hidden="true"></span>`;
+      const dayInfo=estonianCalendarDayInfo(date);
+      const specialShade=dayInfo.isHoliday||dayInfo.isWeekend?'<span class="calendar-special-day-shade full" aria-hidden="true"></span>':(dayInfo.isShort?`<span class="calendar-special-day-shade partial" style="top:${shortDayStartPct}%;height:${shortDayHeightPct}%" aria-hidden="true"></span>`:'');
+      const workdayMarkers=`${specialShade}<span class="calendar-workday-shade" style="top:${workdayStartPct}%;height:${workdayHeightPct}%" aria-hidden="true"></span><span class="calendar-workday-line calendar-workday-start" style="top:${workdayStartPct}%" aria-hidden="true"></span><span class="calendar-workday-line calendar-workday-end" style="top:${workdayEndPct}%" aria-hidden="true"></span>`;
       const hasJobs=cards || filtered.some(w=>workorderOccursOnDate(w,date));
-      return `<div class="calendar-planner-day ${date===today?'today':''}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(fmtShortDate(date,true))}</span></div><div class="calendar-planner-lane" data-calendar-lane="${date}">${workdayMarkers}${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTopPct}%"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || (!hasJobs?'<div class="calendar-empty-note">Töid ei ole</div>':'')}</div></div>`;
+      const dayNote=calendarDayMarker(date);
+      return `<div class="calendar-planner-day ${date===today?'today':''} ${calendarDayClass(date)}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(fmtShortDate(date,true))}</span>${dayNote}</div><div class="calendar-planner-lane" data-calendar-lane="${date}">${workdayMarkers}${slots}${date===today&&showNowLine?`<div class="calendar-now-line" style="top:${nowTopPct}%"><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span></div>`:''}${cards || (!hasJobs?'<div class="calendar-empty-note">Töid ei ole</div>':'')}</div></div>`;
     }).join('');
     body=`<div class="calendar-planner" style="--calendar-hours-count:${hours.length}"><div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="--calendar-day-count:${visibleDays.length};grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}${multiDayOverlay}</div></div>`;
   }else if(mode==='month'){
-    body=`<div class="calendar-month-grid">${visibleDays.map(date=>{const jobs=filtered.filter(w=>workorderOccursOnDate(w,date)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const d=parseDateKey(date);return `<div class="calendar-month-day ${date===today?'today':''}" data-add-date="${date}"><div class="calendar-month-head"><strong>${d.getDate()}</strong><span>${dayNames[d.getDay()]}</span></div>${jobs.slice(0,4).map(w=>`<button class="calendar-mini-event" data-calendar-edit="${w.id}" type="button">${esc(w.time||'')} · ${esc(objectName(w.objectId))}${workorderDaySpan(w)>1?' · '+esc(daysBetweenKeys(w.date,date)+1)+'/'+esc(workorderDaySpan(w)):''}</button>`).join('')}${jobs.length>4?`<span class="muted">+${jobs.length-4} veel</span>`:''}</div>`}).join('')}</div>`;
+    body=`<div class="calendar-month-grid">${visibleDays.map(date=>{const jobs=filtered.filter(w=>workorderOccursOnDate(w,date)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const d=parseDateKey(date);const dayNote=calendarDayMarker(date);return `<div class="calendar-month-day ${date===today?'today':''} ${calendarDayClass(date)}" data-add-date="${date}"><div class="calendar-month-head"><strong>${d.getDate()}</strong><span>${dayNames[d.getDay()]}</span></div>${dayNote}${jobs.slice(0,4).map(w=>`<button class="calendar-mini-event" data-calendar-edit="${w.id}" type="button">${esc(w.time||'')} · ${esc(objectName(w.objectId))}${workorderDaySpan(w)>1?' · '+esc(daysBetweenKeys(w.date,date)+1)+'/'+esc(workorderDaySpan(w)):''}</button>`).join('')}${jobs.length>4?`<span class="muted">+${jobs.length-4} veel</span>`:''}</div>`}).join('')}</div>`;
   }else{
     body=`<div class="calendar-year-grid">${visibleDays.map(month=>{const jobs=filtered.filter(w=>w.date&&w.date.startsWith(month));const label=parseDateKey(month+'-01').toLocaleDateString('et-EE',{month:'long',year:'numeric'});return `<div class="calendar-year-month"><strong>${esc(label)}</strong><span class="muted">${jobs.length} tööd</span>${jobs.slice(0,5).map(w=>`<button class="calendar-mini-event" data-calendar-edit="${w.id}" type="button">${esc(fmtActDate(w.date))} · ${esc(objectName(w.objectId))}</button>`).join('')}</div>`}).join('')}</div>`;
   }
