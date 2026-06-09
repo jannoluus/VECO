@@ -1343,17 +1343,33 @@ async function applyMobileWorkorderAction(action,workorderId){
   state=window.VECO_STORAGE.load();
   renderMobile();
 }
-function mobileUpcomingLimitKey(todayKey){
-  const d=parseDateKey(todayKey);
-  const day=d.getDay()||7;
-  const daysUntilNextFriday=(12-day)%7 || 7;
-  d.setDate(d.getDate()+daysUntilNextFriday);
-  return dateKeyFromDate(d);
+function mobileTomorrowKey(todayKey){
+  return dateKeyFromDate(addDateDays(parseDateKey(todayKey),1));
 }
-function mobileWeekBucket(dateKey,todayKey){
-  const currentWeekStart=weekStartKeyFrom(todayKey);
-  const nextWeekStart=dateKeyFromDate(addDateDays(parseDateKey(currentWeekStart),7));
-  return dateKey<nextWeekStart?'this':'next';
+function mobileCurrentWeekEndKey(todayKey){
+  const start=weekStartKeyFrom(todayKey);
+  return dateKeyFromDate(addDateDays(parseDateKey(start),6));
+}
+function mobileNextWeekStartKey(todayKey){
+  return dateKeyFromDate(addDateDays(parseDateKey(weekStartKeyFrom(todayKey)),7));
+}
+function mobileNextWeekEndKey(todayKey){
+  return dateKeyFromDate(addDateDays(parseDateKey(weekStartKeyFrom(todayKey)),13));
+}
+function mobileRangeOverlaps(w,rangeStart,rangeEnd){
+  const start=w.date||'';
+  const end=workorderEndDate(w)||start;
+  if(!start) return false;
+  return start<=rangeEnd && end>=rangeStart;
+}
+function mobileJobPlannedHoursInRange(w,rangeStart,rangeEnd){
+  const start=w.date||rangeStart;
+  const end=workorderEndDate(w)||start;
+  const from=start>rangeStart?start:rangeStart;
+  const to=end<rangeEnd?end:rangeEnd;
+  if(to<from) return 0;
+  const days=Math.max(1,Math.round((parseDateKey(to)-parseDateKey(from))/(24*60*60*1000))+1);
+  return workorderHours(w)*days;
 }
 function mobileJobPlannedHours(w){
   const start=w.date||dateKeyFromDate(new Date());
@@ -1401,24 +1417,25 @@ function renderMobile(){
     return;
   }
   const today=dateKeyFromDate(new Date());
-  const futureLimit=mobileUpcomingLimitKey(today);
+  const tomorrow=mobileTomorrowKey(today);
+  const thisWeekStart=dateKeyFromDate(addDateDays(parseDateKey(today),2));
+  const thisWeekEnd=mobileCurrentWeekEndKey(today);
+  const nextWeekStart=mobileNextWeekStartKey(today);
+  const nextWeekEnd=mobileNextWeekEndKey(today);
   const ownWorkorders=state.workorders.filter(w=>w.technicianId===current.id);
   const isOpen=w=>!isCompletedStatus(w.status);
   const byDateTime=(a,b)=>`${a.date} ${a.time||''}`.localeCompare(`${b.date} ${b.time||''}`);
   const todayJobs=ownWorkorders.filter(w=>isOpen(w)&&workorderOccursOnDay(w,today)).sort(byDateTime);
+  const tomorrowJobs=ownWorkorders.filter(w=>isOpen(w)&&workorderOccursOnDay(w,tomorrow)).sort(byDateTime);
+  const thisWeekJobs=thisWeekStart<=thisWeekEnd
+    ? ownWorkorders.filter(w=>isOpen(w)&&mobileRangeOverlaps(w,thisWeekStart,thisWeekEnd)&&!workorderOccursOnDay(w,today)&&!workorderOccursOnDay(w,tomorrow)).sort(byDateTime)
+    : [];
+  const nextWeekJobs=ownWorkorders.filter(w=>isOpen(w)&&mobileRangeOverlaps(w,nextWeekStart,nextWeekEnd)).sort(byDateTime);
   const unfinishedJobs=ownWorkorders.filter(w=>{
     if(!isOpen(w)) return false;
     const end=workorderEndDate(w);
     return (end && end<today) || mobileNeedsAct(w);
   }).sort(byDateTime);
-  const futureJobs=ownWorkorders.filter(w=>{
-    if(!isOpen(w)) return false;
-    const start=w.date||'';
-    const end=workorderEndDate(w)||start;
-    return (start>today && start<=futureLimit) || (end>today && start<=futureLimit && !workorderOccursOnDay(w,today));
-  }).sort(byDateTime);
-  const futureThisWeek=futureJobs.filter(w=>mobileWeekBucket(w.date||today,today)==='this');
-  const futureNextWeek=futureJobs.filter(w=>mobileWeekBucket(w.date||today,today)==='next');
   const completedJobs=ownWorkorders
     .filter(w=>isCompletedStatus(w.status))
     .sort((a,b)=>`${b.date||''} ${b.time||''}`.localeCompare(`${a.date||''} ${a.time||''}`))
@@ -1428,15 +1445,17 @@ function renderMobile(){
   const isOpenSection=(key,def)=>openState(key,def)==='true';
   const toggleButton=(key,title,count,def)=>`<button class="mobile-section-toggle" data-mobile-section-toggle="${esc(key)}" data-mobile-section-default="${def?'true':'false'}" type="button">${isOpenSection(key,def)?'▼':'▶'} ${esc(title)} (${count})</button>`;
   const section=(key,title,jobs,empty,def=true,bodyHtml='')=>`${toggleButton(key,title,jobs.length,def)}${isOpenSection(key,def)?`<div class="grid mobile-work-grid">${bodyHtml||jobs.map(w=>mobileWorkCard(w)).join('')||`<div class="card"><strong>${esc(empty)}</strong><span class="muted">Selles plokis töid ei ole.</span></div>`}</div>`:''}`;
-  const futureGroup=(title,jobs)=>{
-    if(!jobs.length) return '';
-    const hours=jobs.reduce((sum,w)=>sum+mobileJobPlannedHours(w),0);
-    return `<div class="mobile-future-group"><div class="mobile-future-title"><strong>${esc(title)}</strong><span>${jobs.length} tööd • ${hours} h</span></div>${jobs.map(w=>mobileWorkCard(w)).join('')}</div>`;
+  const sectionSummary=(jobs,rangeStart,rangeEnd)=>{
+    const hours=jobs.reduce((sum,w)=>sum+mobileJobPlannedHoursInRange(w,rangeStart,rangeEnd),0);
+    return `<div class="mobile-future-title mobile-period-summary"><strong>${jobs.length} tööd</strong><span>${hours} h</span></div>`;
   };
-  const futureBody=futureGroup('SEE NÄDAL',futureThisWeek)+futureGroup('JÄRGMINE NÄDAL',futureNextWeek);
+  const tomorrowBody=tomorrowJobs.length?`${sectionSummary(tomorrowJobs,tomorrow,tomorrow)}${tomorrowJobs.map(w=>mobileWorkCard(w)).join('')}`:'';
+  const thisWeekBody=thisWeekJobs.length?`${sectionSummary(thisWeekJobs,thisWeekStart,thisWeekEnd)}${thisWeekJobs.map(w=>mobileWorkCard(w)).join('')}`:'';
+  const nextWeekBody=nextWeekJobs.length?`${sectionSummary(nextWeekJobs,nextWeekStart,nextWeekEnd)}${nextWeekJobs.map(w=>mobileWorkCard(w)).join('')}`:'';
+  const headerStats=`${todayJobs.length} täna • ${tomorrowJobs.length} homme • ${thisWeekJobs.length} see nädal • ${nextWeekJobs.length} järgmine nädal • ${unfinishedJobs.length} tegemata`;
   const completedRows=completedJobs.map(w=>{const comment=completionCommentText(w);return `<div class="card mobile-work-card mobile-completed-card"><div class="card-top"><h3>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</h3><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div><div class="kv"><span>Klient</span><strong>${esc(clientName(objectClientId(w.objectId)))}</strong></div><div class="kv"><span>Töö</span><strong>${esc(w.title)}</strong></div><div class="kv"><span>Kuupäev</span><strong>${esc(workorderDateRangeLabel(w))}</strong></div>${comment?`<div class="mobile-completion-comment"><strong>Töö tulemus</strong><span>${esc(comment)}</span></div>`:`<div class="muted">Töö tulemus puudub.</div>`}<div class="actions mobile-actions">${mobileWorkflowButtons(w)}</div></div>`}).join('')||'<div class="card"><strong>Lõpetatud töid ei ole</strong><span class="muted">Kui töö lõpetatakse, jääb see siia vajadusel uuesti avamiseks.</span></div>';
   const oncallInfo=mobileOncallForPerson(current.id,today);
-  shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2><div class="mobile-duty ${esc(oncallInfo.type)}">${esc(oncallInfo.label)}</div><span class="muted">${todayJobs.length} täna · ${unfinishedJobs.length} tegemata · ${futureJobs.length} tulekul · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${actions}</div></div><div class="detail-body mobile-detail">${section('today','Täna',todayJobs,'Tänaseid töid ei ole',true)}${section('unfinished','Tegemata / vajab akti',unfinishedJobs,'Tegemata või akti vajavaid töid ei ole',true)}${section('future','Tuleviku tööd',futureJobs,'Tuleviku töid ei ole',false,futureBody||`<div class="card"><strong>Tuleviku töid ei ole</strong><span class="muted">Kuvatakse homsest järgmise nädala reedeni.</span></div>`)}${toggleButton('completed','Lõpetatud tööd',completedJobs.length,false)}${isOpenSection('completed',false)?`<div class="grid mobile-work-grid mobile-completed-grid">${completedRows}</div>`:''}</div>`,'',{wide:true});
+  shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2><div class="mobile-duty ${esc(oncallInfo.type)}">${esc(oncallInfo.label)}</div><span class="muted">${esc(headerStats)} · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${actions}</div></div><div class="detail-body mobile-detail">${section('today','Täna',todayJobs,'Tänaseid töid ei ole',true)}${section('tomorrow','Homme',tomorrowJobs,'Homseid töid ei ole',true,tomorrowBody)}${section('thisweek','See nädal',thisWeekJobs,'Selle nädala ülejäänud töid ei ole',false,thisWeekBody)}${section('nextweek','Järgmine nädal',nextWeekJobs,'Järgmise nädala töid ei ole',false,nextWeekBody)}${section('unfinished','Tegemata / vajab akti',unfinishedJobs,'Tegemata või akti vajavaid töid ei ole',false)}${toggleButton('completed','Lõpetatud tööd',completedJobs.length,false)}${isOpenSection('completed',false)?`<div class="grid mobile-work-grid mobile-completed-grid">${completedRows}</div>`:''}</div>`,'',{wide:true});
   $('#mobileSwitchUserBtn')?.addEventListener('click',()=>{localStorage.removeItem(USER_KEY);renderMobile();});
   $('#mobileAddWorkBtn')?.addEventListener('click',()=>openMobileAddWorkModal(current.id));
   $$('[data-mobile-section-toggle]').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.dataset.mobileSectionToggle;const def=btn.dataset.mobileSectionDefault==='true';localStorage.setItem(`veco_mobile_section_${key}`,isOpenSection(key,def)?'false':'true');renderMobile();}));
