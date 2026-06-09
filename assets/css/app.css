@@ -1572,3 +1572,80 @@ body.modal-open .modal *{
 .mobile-future-group{display:grid;gap:10px;grid-column:1/-1;}
 .mobile-future-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 2px 0;color:var(--muted);font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;}
 .mobile-future-title span{letter-spacing:0;text-transform:none;font-weight:800;}
+
+/* V3.16: stabiilsed kalendri resize-käepidemed */
+.app.page-calendar .calendar-event{
+  overflow:hidden!important;
+}
+.app.page-calendar .calendar-span-resize,
+.app.page-calendar .calendar-resize-handle,
+.app.page-calendar .calendar-time-resize{
+  opacity:.42!important;
+  transition:none!important;
+  pointer-events:auto!important;
+}
+.app.page-calendar .calendar-event:hover .calendar-span-resize,
+.app.page-calendar .calendar-event:hover .calendar-resize-handle,
+.app.page-calendar .calendar-event:hover .calendar-time-resize,
+.app.page-calendar .calendar-event.resizing .calendar-resize-handle,
+.app.page-calendar .calendar-event.resizing .calendar-time-resize,
+.app.page-calendar .calendar-event.span-resizing .calendar-span-resize{
+  opacity:.9!important;
+}
+.app.page-calendar .calendar-span-resize{
+  top:0!important;
+  bottom:0!important;
+  width:18px!important;
+  background:transparent!important;
+}
+.app.page-calendar .calendar-span-resize::after{
+  content:"║"!important;
+  position:absolute!important;
+  top:50%!important;
+  transform:translateY(-50%)!important;
+  color:rgba(135,205,255,.78)!important;
+  font-size:14px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  text-shadow:0 0 8px rgba(45,156,255,.28)!important;
+  pointer-events:none!important;
+}
+.app.page-calendar .calendar-span-resize-left::after{left:5px!important;}
+.app.page-calendar .calendar-span-resize-right::after{right:5px!important;}
+.app.page-calendar .calendar-resize-handle,
+.app.page-calendar .calendar-time-resize{
+  left:16px!important;
+  right:16px!important;
+  height:18px!important;
+  border:0!important;
+  background:transparent!important;
+  border-radius:0!important;
+  z-index:22!important;
+  cursor:ns-resize!important;
+}
+.app.page-calendar .calendar-resize-handle{bottom:-5px!important;}
+.app.page-calendar .calendar-time-resize-top{position:absolute!important;top:-5px!important;}
+.app.page-calendar .calendar-resize-handle::after,
+.app.page-calendar .calendar-time-resize::after{
+  content:"════"!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  transform:translate(-50%,-50%)!important;
+  color:rgba(135,205,255,.78)!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  letter-spacing:-1px!important;
+  line-height:1!important;
+  text-shadow:0 0 8px rgba(45,156,255,.28)!important;
+  pointer-events:none!important;
+}
+.app.page-calendar .calendar-event.resizing,
+.app.page-calendar .calendar-event.span-resizing{
+  z-index:120!important;
+}
+.app.page-calendar .calendar-event.resizing .calendar-resize-handle::after,
+.app.page-calendar .calendar-event.resizing .calendar-time-resize::after,
+.app.page-calendar .calendar-event.span-resizing .calendar-span-resize::after{
+  color:rgba(230,247,255,.98)!important;
+}
