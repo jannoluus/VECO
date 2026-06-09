@@ -1441,27 +1441,41 @@ function renderMobile(){
     .sort((a,b)=>`${b.date||''} ${b.time||''}`.localeCompare(`${a.date||''} ${a.time||''}`))
     .slice(0,12);
   const actions=`<button class="btn primary" id="mobileAddWorkBtn" type="button">＋ Lisa töö</button><button class="btn ghost" id="mobileSwitchUserBtn" type="button">⇄ Vaheta</button>`;
-  const openState=(key,def)=>localStorage.getItem(`veco_mobile_section_${key}`) ?? (def?'true':'false');
-  const isOpenSection=(key,def)=>openState(key,def)==='true';
-  const toggleButton=(key,title,count,def)=>`<button class="mobile-section-toggle" data-mobile-section-toggle="${esc(key)}" data-mobile-section-default="${def?'true':'false'}" type="button">${isOpenSection(key,def)?'▼':'▶'} ${esc(title)} (${count})</button>`;
-  const section=(key,title,jobs,empty,def=true,bodyHtml='')=>`${toggleButton(key,title,jobs.length,def)}${isOpenSection(key,def)?`<div class="grid mobile-work-grid">${bodyHtml||jobs.map(w=>mobileWorkCard(w)).join('')||`<div class="card"><strong>${esc(empty)}</strong><span class="muted">Selles plokis töid ei ole.</span></div>`}</div>`:''}`;
   const sectionSummary=(jobs,rangeStart,rangeEnd)=>{
     const hours=jobs.reduce((sum,w)=>sum+mobileJobPlannedHoursInRange(w,rangeStart,rangeEnd),0);
     return `<div class="mobile-future-title mobile-period-summary"><strong>${jobs.length} tööd</strong><span>${hours} h</span></div>`;
   };
-  const tomorrowBody=tomorrowJobs.length?`${sectionSummary(tomorrowJobs,tomorrow,tomorrow)}${tomorrowJobs.map(w=>mobileWorkCard(w)).join('')}`:'';
-  const thisWeekBody=thisWeekJobs.length?`${sectionSummary(thisWeekJobs,thisWeekStart,thisWeekEnd)}${thisWeekJobs.map(w=>mobileWorkCard(w)).join('')}`:'';
-  const nextWeekBody=nextWeekJobs.length?`${sectionSummary(nextWeekJobs,nextWeekStart,nextWeekEnd)}${nextWeekJobs.map(w=>mobileWorkCard(w)).join('')}`:'';
-  const headerStats=`${todayJobs.length} täna • ${tomorrowJobs.length} homme • ${thisWeekJobs.length} see nädal • ${nextWeekJobs.length} järgmine nädal • ${unfinishedJobs.length} tegemata`;
   const completedRows=completedJobs.map(w=>{const comment=completionCommentText(w);return `<div class="card mobile-work-card mobile-completed-card"><div class="card-top"><h3>${esc(w.time||'')} · ${esc(objectName(w.objectId))}</h3><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div><div class="kv"><span>Klient</span><strong>${esc(clientName(objectClientId(w.objectId)))}</strong></div><div class="kv"><span>Töö</span><strong>${esc(w.title)}</strong></div><div class="kv"><span>Kuupäev</span><strong>${esc(workorderDateRangeLabel(w))}</strong></div>${comment?`<div class="mobile-completion-comment"><strong>Töö tulemus</strong><span>${esc(comment)}</span></div>`:`<div class="muted">Töö tulemus puudub.</div>`}<div class="actions mobile-actions">${mobileWorkflowButtons(w)}</div></div>`}).join('')||'<div class="card"><strong>Lõpetatud töid ei ole</strong><span class="muted">Kui töö lõpetatakse, jääb see siia vajadusel uuesti avamiseks.</span></div>';
+  const groups={
+    today:{label:'Täna',short:'Täna',count:todayJobs.length,jobs:todayJobs,empty:'Tänaseid töid ei ole',body:todayJobs.map(w=>mobileWorkCard(w)).join('')},
+    tomorrow:{label:'Homme',short:'Homme',count:tomorrowJobs.length,jobs:tomorrowJobs,empty:'Homseid töid ei ole',body:tomorrowJobs.length?`${sectionSummary(tomorrowJobs,tomorrow,tomorrow)}${tomorrowJobs.map(w=>mobileWorkCard(w)).join('')}`:''},
+    thisweek:{label:'See nädal',short:'See nädal',count:thisWeekJobs.length,jobs:thisWeekJobs,empty:'Selle nädala ülejäänud töid ei ole',body:thisWeekJobs.length?`${sectionSummary(thisWeekJobs,thisWeekStart,thisWeekEnd)}${thisWeekJobs.map(w=>mobileWorkCard(w)).join('')}`:''},
+    nextweek:{label:'Järgmine nädal',short:'Järgmine',count:nextWeekJobs.length,jobs:nextWeekJobs,empty:'Järgmise nädala töid ei ole',body:nextWeekJobs.length?`${sectionSummary(nextWeekJobs,nextWeekStart,nextWeekEnd)}${nextWeekJobs.map(w=>mobileWorkCard(w)).join('')}`:''},
+    unfinished:{label:'Tegemata / vajab akti',short:'Tegemata',count:unfinishedJobs.length,jobs:unfinishedJobs,empty:'Tegemata või akti vajavaid töid ei ole',body:unfinishedJobs.map(w=>mobileWorkCard(w,{extraClass:'mobile-warning-card'})).join('')},
+    completed:{label:'Lõpetatud tööd',short:'Lõpetatud',count:completedJobs.length,jobs:completedJobs,empty:'Lõpetatud töid ei ole',body:completedRows}
+  };
+  const order=['today','tomorrow','thisweek','nextweek','unfinished','completed'];
+  const storedTab=localStorage.getItem('veco_mobile_active_tab')||'';
+  const fallback=order.find(k=>groups[k].count>0&&k!=='completed')||'today';
+  const activeTab=groups[storedTab]?storedTab:fallback;
+  const activeGroup=groups[activeTab];
+  const headerStats=`${todayJobs.length} täna • ${tomorrowJobs.length} homme • ${thisWeekJobs.length} see nädal • ${nextWeekJobs.length} järgmine nädal • ${unfinishedJobs.length} tegemata`;
   const oncallInfo=mobileOncallForPerson(current.id,today);
-  shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2><div class="mobile-duty ${esc(oncallInfo.type)}">${esc(oncallInfo.label)}</div><span class="muted">${esc(headerStats)} · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${actions}</div></div><div class="detail-body mobile-detail">${section('today','Täna',todayJobs,'Tänaseid töid ei ole',true)}${section('tomorrow','Homme',tomorrowJobs,'Homseid töid ei ole',true,tomorrowBody)}${section('thisweek','See nädal',thisWeekJobs,'Selle nädala ülejäänud töid ei ole',false,thisWeekBody)}${section('nextweek','Järgmine nädal',nextWeekJobs,'Järgmise nädala töid ei ole',false,nextWeekBody)}${section('unfinished','Tegemata / vajab akti',unfinishedJobs,'Tegemata või akti vajavaid töid ei ole',false)}${toggleButton('completed','Lõpetatud tööd',completedJobs.length,false)}${isOpenSection('completed',false)?`<div class="grid mobile-work-grid mobile-completed-grid">${completedRows}</div>`:''}</div>`,'',{wide:true});
+  const tabCards=order.map(key=>{
+    const g=groups[key];
+    const warn=key==='unfinished'&&g.count>0?' warn':'';
+    const active=key===activeTab?' active':'';
+    return `<button class="mobile-tab-card${active}${warn}" data-mobile-tab="${key}" type="button"><span>${esc(g.short)}</span><strong>${g.count}</strong></button>`;
+  }).join('');
+  const activeBody=activeGroup.body||`<div class="card"><strong>${esc(activeGroup.empty)}</strong><span class="muted">Vali ülevalt teine kaart või lisa uus töö.</span></div>`;
+  shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2><div class="mobile-duty ${esc(oncallInfo.type)}">${esc(oncallInfo.label)}</div><span class="muted">${esc(headerStats)} · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${actions}</div></div><div class="detail-body mobile-detail"><div class="mobile-tab-grid">${tabCards}</div><div class="mobile-active-section"><div class="mobile-active-title"><h3>${esc(activeGroup.label)} (${activeGroup.count})</h3><span class="muted">Kaardivalik</span></div><div class="grid mobile-work-grid">${activeBody}</div></div></div>`,'',{wide:true});
   $('#mobileSwitchUserBtn')?.addEventListener('click',()=>{localStorage.removeItem(USER_KEY);renderMobile();});
   $('#mobileAddWorkBtn')?.addEventListener('click',()=>openMobileAddWorkModal(current.id));
-  $$('[data-mobile-section-toggle]').forEach(btn=>btn.addEventListener('click',()=>{const key=btn.dataset.mobileSectionToggle;const def=btn.dataset.mobileSectionDefault==='true';localStorage.setItem(`veco_mobile_section_${key}`,isOpenSection(key,def)?'false':'true');renderMobile();}));
+  $$('[data-mobile-tab]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_mobile_active_tab',btn.dataset.mobileTab);renderMobile();}));
   $$('[data-mobile-action]').forEach(btn=>btn.addEventListener('click',()=>applyMobileWorkorderAction(btn.dataset.mobileAction,btn.dataset.workorderId)));
   $$('[data-mobile-edit]').forEach(btn=>btn.addEventListener('click',()=>openMobileWorkModal(btn.dataset.mobileEdit)));
 }
+
 function mobileObjectChoiceLabel(o){
   const client=clientName(o.clientId);
   return `${o.name}${client&&client!=='-'?' · '+client:''}`;
