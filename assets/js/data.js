@@ -70,5 +70,19 @@ window.VECO_DATA={
     {id:'MP-004',deviceId:'D-04',type:'Elektrikäit',level:'Kontroll',frequency:'Kuu',hoursOverride:0,active:true,notes:'Demo: RVK kuu kontroll'},
     {id:'MP-005',deviceId:'D-05',type:'Elektrikäit',level:'Kontroll',frequency:'Kuu',hoursOverride:0,active:true,notes:'Demo: turvavalgustuse kontroll'},
     {id:'MP-006',deviceId:'D-06',type:'Jahutus TH',level:'Hooldus',frequency:'Aasta',hoursOverride:0,active:true,notes:'Demo: split süsteemi hooldus'}
+  ],
+  granlundClassifiers:[
+    {id:'GCL-001',pattern:'PA hooldus',type:'Vent TH',level:'Hooldus',exclude:false,active:true,notes:'Ventilatsiooniseadme poolaasta hooldus'},
+    {id:'GCL-002',pattern:'filtrite vahetus',type:'Vent TH',level:'Hooldus',exclude:false,active:true,notes:'Filtrivahetus käsitletakse esialgu hooldusena'},
+    {id:'GCL-003',pattern:'Ventilatsioonisüsteemi aastahooldus',type:'Vent TH',level:'Aastahooldus',exclude:false,active:true,notes:'Objekti ventilatsiooni aastahooldus'},
+    {id:'GCL-004',pattern:'Jahutussüsteemi aasta hooldus',type:'Jahutus TH',level:'Aastahooldus',exclude:false,active:true,notes:'Jahutuse aastahooldus'},
+    {id:'GCL-005',pattern:'Veesõlme',type:'VK',level:'Hooldus',exclude:false,active:true,notes:'VK hooldus'},
+    {id:'GCL-006',pattern:'Kaevude',type:'VK',level:'Hooldus',exclude:false,active:true,notes:'VK välisvõrk'},
+    {id:'GCL-007',pattern:'Liiva-, mudapüüdurite',type:'VK',level:'Hooldus',exclude:false,active:true,notes:'VK püüdurid'},
+    {id:'GCL-008',pattern:'Sadevee',type:'VK',level:'Hooldus',exclude:false,active:true,notes:'Sadevee hooldus'},
+    {id:'GCL-009',pattern:'RVK kuu test',type:'Elektrikäit',level:'Kontroll',exclude:false,active:true,notes:'Elektrikäidu kuu kontroll'},
+    {id:'GCL-010',pattern:'Hädavalgustuse kuu',type:'Elektrikäit',level:'Kontroll',exclude:false,active:true,notes:'Turvavalgustuse kuu kontroll'},
+    {id:'GCL-011',pattern:'ATS',type:'Muu',level:'Kontroll',exclude:true,active:true,notes:'Välistatav allhankija / Firetek'},
+    {id:'GCL-012',pattern:'Firetek',type:'Muu',level:'Kontroll',exclude:true,active:true,notes:'Välistatav allhankija'}
   ]
 };

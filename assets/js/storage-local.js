@@ -45,10 +45,10 @@ window.VECO_STORAGE={
         try{ if(localStorage.getItem('veco_mobile_user_id')==='U-DEMO') localStorage.removeItem('veco_mobile_user_id'); }catch(e){}
       }
     }
-    ['people','clients','objects','devices','projects','workorders','acts','absences','oncall','maintenanceNorms'].forEach(key=>{
+    ['people','clients','objects','devices','projects','workorders','acts','absences','oncall','maintenanceNorms','maintenanceProfiles','granlundClassifiers'].forEach(key=>{
       result[key]=Array.isArray(result[key])?result[key]:[];
     });
-    result._meta={...(result._meta||{}),version:this.version,updatedAt:new Date().toISOString(),build:'VECO_V3_20260610_2004'};
+    result._meta={...(result._meta||{}),version:this.version,updatedAt:new Date().toISOString(),build:'VECO_V3_20260610_2016'};
     return result;
   },
   load(){

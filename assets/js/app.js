@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.17.0';
-const APP_BUILD='20260610_2004';
+const APP_BUILD='20260610_2016';
 
 // Build 20260610_1328: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -24,7 +24,7 @@ document.addEventListener('click',e=>{
   }
 },true);
 let state=window.VECO_STORAGE.load();
-state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[]; state.maintenanceNorms=state.maintenanceNorms||[]; state.maintenanceProfiles=state.maintenanceProfiles||[];
+state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[]; state.maintenanceNorms=state.maintenanceNorms||[]; state.maintenanceProfiles=state.maintenanceProfiles||[]; state.granlundClassifiers=state.granlundClassifiers||[];
 normalizeOncallPeople();
 
 
@@ -101,8 +101,8 @@ let selectedTeamPersonId='';
 const detailOpen={objects:false,projects:false,workorders:false,acts:false};
 let modalEscHandler=null;
 
-const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',maintenanceProfiles:'Hooldusprofiil',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
-const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',maintenanceProfiles:'maintenance-profiles.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
+const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',maintenanceProfiles:'Hooldusprofiil',granlundClassifier:'Granlund klassifikaator',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
+const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',maintenanceProfiles:'maintenance-profiles.html',granlundClassifier:'granlund-classifier.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
 
 const byId=(arr,id)=>arr.find(x=>x.id===id)||null;
 const clientName=(id)=>byId(state.clients,id)?.name||'-';
@@ -223,7 +223,7 @@ function nav(){
   const groups=[
     ['Töö',[['calendar','▦'],['team','◫'],['mobile','▤']]],
     ['Haldus',[['workorders','☑'],['acts','▧'],['oncall','☎'],['vacations','▤'],['people','☷'],['objects','⌂'],['clients','▥'],['projects','▣'],['ticker','▭']]],
-    ['Seaded',[['maintenanceNorms','≡'],['devices','▤'],['maintenanceProfiles','☑']]],
+    ['Seaded',[['maintenanceNorms','≡'],['devices','▤'],['maintenanceProfiles','☑'],['granlundClassifier','⌁']]],
     ['Süsteem',[['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
     ['Arendus',[['mobilePreview','▧'],['demo','↺'],['diagnostics','◎']]]
   ];
@@ -2964,6 +2964,70 @@ function openMaintenanceProfileModal(id=''){
   });
 }
 
+function normalizeGranlundClassifiers(){
+  normalizeMaintenanceNorms();
+  state.granlundClassifiers=Array.isArray(state.granlundClassifiers)?state.granlundClassifiers:[];
+  state.granlundClassifiers.forEach(c=>{
+    c.id=c.id||uid('GCL');
+    c.pattern=c.pattern||'';
+    c.type=c.type||'Muu';
+    c.level=c.level||'Hooldus';
+    c.active=c.active!==false;
+    c.exclude=c.exclude===true;
+    c.notes=c.notes||'';
+  });
+}
+function classifierNormHours(c){
+  const n=normByTypeLevel(c.type,c.level);
+  return Number(n?.hours||0);
+}
+function renderGranlundClassifier(){
+  normalizeGranlundClassifiers();
+  const q=($('#granlundClassifierSearch')?.value||'').toLowerCase();
+  const typeFilter=$('#granlundClassifierTypeFilter')?.value||'all';
+  const activeFilter=$('#granlundClassifierActiveFilter')?.value||'active';
+  const includeFilter=$('#granlundClassifierIncludeFilter')?.value||'all';
+  const list=state.granlundClassifiers.filter(c=>{
+    const hay=[c.pattern,c.type,c.level,c.notes,c.exclude?'välista':'arvesta'].join(' ').toLowerCase();
+    return (!q||hay.includes(q)) && (typeFilter==='all'||c.type===typeFilter) && (activeFilter==='all'||(activeFilter==='active'?c.active!==false:c.active===false)) && (includeFilter==='all'||(includeFilter==='include'?!c.exclude:c.exclude));
+  }).sort((a,b)=>String(a.pattern).localeCompare(String(b.pattern),'et'));
+  const types=Array.from(new Set([...(state.maintenanceNorms||[]).map(n=>n.type).filter(Boolean),...maintenanceNormTypes]));
+  const activeCount=state.granlundClassifiers.filter(c=>c.active!==false).length;
+  const includedCount=state.granlundClassifiers.filter(c=>c.active!==false&&!c.exclude).length;
+  const excludedCount=state.granlundClassifiers.filter(c=>c.active!==false&&c.exclude).length;
+  const filters=`<input class="field" id="granlundClassifierSearch" placeholder="Otsi Granlundi teksti, liiki või märkust..." value="${esc(q)}"><select class="select" id="granlundClassifierTypeFilter"><option value="all">Kõik hooldusliigid</option>${types.map(t=>`<option value="${esc(t)}" ${typeFilter===t?'selected':''}>${esc(t)}</option>`).join('')}</select><select class="select" id="granlundClassifierIncludeFilter"><option value="all" ${includeFilter==='all'?'selected':''}>Kõik reeglid</option><option value="include" ${includeFilter==='include'?'selected':''}>Arvesse</option><option value="exclude" ${includeFilter==='exclude'?'selected':''}>Välista</option></select><select class="select" id="granlundClassifierActiveFilter"><option value="active" ${activeFilter==='active'?'selected':''}>Aktiivsed</option><option value="inactive" ${activeFilter==='inactive'?'selected':''}>Peidetud</option><option value="all" ${activeFilter==='all'?'selected':''}>Kõik</option></select>`;
+  const actions=`<button class="btn ghost" id="resetDataBtn" type="button">Taasta demo</button><button class="btn primary" id="newGranlundClassifierBtn" type="button">+ Uus reegel</button>`;
+  const rows=list.map(c=>{const h=classifierNormHours(c); return `<tr><td><strong>${esc(c.pattern)}</strong></td><td>${esc(c.type)}</td><td>${esc(c.level)}</td><td><strong>${h.toFixed(1)} h</strong><div class="muted">normist</div></td><td><span class="status ${c.exclude?'red':'ok'}">${c.exclude?'Välista':'Arvesse'}</span></td><td><span class="status ${c.active!==false?'ok':'red'}">${c.active!==false?'Aktiivne':'Peidetud'}</span></td><td>${esc(c.notes||'')}</td><td class="nowrap"><button class="btn small ghost" data-edit-granlund-classifier="${esc(c.id)}" type="button">Muuda</button> <button class="btn small ghost" data-toggle-granlund-classifier="${esc(c.id)}" type="button">${c.active!==false?'Peida':'Aktiveeri'}</button> <button class="btn small danger" data-delete-granlund-classifier="${esc(c.id)}" type="button">Kustuta</button></td></tr>`}).join('')||'<tr><td colspan="8" class="muted">Granlundi klassifikaatori reegleid ei leitud.</td></tr>';
+  const intro=`<div class="card"><div class="card-top"><h3>Granlund → VECO hooldusnorm</h3><span class="status ok">MVP</span></div><span class="muted">Klassifikaator seob Granlundi raporti töö nimetuse VECO hooldusliigi ja tasemega. Järgmises etapis saab import kasutada neid reegleid töömahu arvutamiseks.</span></div>`;
+  const main=header('Granlund klassifikaator',filters,actions,'SEADED')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Reegleid',state.granlundClassifiers.length)}${summaryBox('Aktiivseid',activeCount)}${summaryBox('Arvesse',includedCount)}${summaryBox('Välistatud',excludedCount)}</div>${intro}<div class="section-title">Klassifikaatori reeglid</div>${table(['Granlundi tekst','VECO liik','Tase','Norm','Kasutus','Staatus','Märkus','Tegevused'],rows)}<div class="muted">Näide: "PA hooldus" → Vent TH / Hooldus / 2 h. "ATS" või "Firetek" võib märkida välistatuks, kui need tööd ei kuulu sinu planeeritava ressursi hulka.</div></div>`;
+  shell(main,'',{wide:true});
+  $('#granlundClassifierSearch')?.addEventListener('input',renderGranlundClassifier);
+  $('#granlundClassifierTypeFilter')?.addEventListener('change',renderGranlundClassifier);
+  $('#granlundClassifierIncludeFilter')?.addEventListener('change',renderGranlundClassifier);
+  $('#granlundClassifierActiveFilter')?.addEventListener('change',renderGranlundClassifier);
+  $('#newGranlundClassifierBtn')?.addEventListener('click',()=>openGranlundClassifierModal());
+  $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();normalizeGranlundClassifiers();save();renderGranlundClassifier();});
+  $$('[data-edit-granlund-classifier]').forEach(btn=>btn.addEventListener('click',()=>openGranlundClassifierModal(btn.dataset.editGranlundClassifier)));
+  $$('[data-toggle-granlund-classifier]').forEach(btn=>btn.addEventListener('click',()=>{const c=byId(state.granlundClassifiers,btn.dataset.toggleGranlundClassifier); if(c){c.active=c.active===false; save(); renderGranlundClassifier();}}));
+  $$('[data-delete-granlund-classifier]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteGranlundClassifier; const c=byId(state.granlundClassifiers,id); if(!c)return; openConfirm({title:'Kustuta Granlundi reegel?',message:`${c.pattern} → ${c.exclude?'välista':c.type+' / '+c.level}`,details:'<div class="muted">Kustutamine eemaldab klassifikaatori reegli. Raporti import ei kasuta seda vastet enam töömahu arvutamisel.</div>',confirmText:'Kustuta',onConfirm:()=>{state.granlundClassifiers=state.granlundClassifiers.filter(x=>x.id!==id); save(); renderGranlundClassifier();}})}));
+}
+function openGranlundClassifierModal(id=''){
+  normalizeGranlundClassifiers();
+  const c=id?byId(state.granlundClassifiers,id):{pattern:'',type:'',level:'Hooldus',exclude:false,active:true,notes:''};
+  const typeOptions=Array.from(new Set([...(state.maintenanceNorms||[]).map(n=>n.type).filter(Boolean),...maintenanceNormTypes])).map(t=>`<option value="${esc(t)}" ${c.type===t?'selected':''}>${esc(t)}</option>`).join('');
+  const levelOptions=maintenanceNormLevels.map(l=>`<option value="${esc(l)}" ${c.level===l?'selected':''}>${esc(l)}</option>`).join('');
+  openModal(`<form id="granlundClassifierForm"><div class="dialog-head"><h2>${id?'Muuda Granlundi reeglit':'Lisa Granlundi reegel'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label class="full">Granlundi tekst / otsingusõna<input class="field" name="pattern" required placeholder="Näiteks PA hooldus, filtrite vahetus, RVK kuu test..." value="${esc(c.pattern||'')}"></label><label>VECO hooldusliik<select class="select" name="type"><option value="">Vali liik...</option>${typeOptions}</select></label><label>Tase<select class="select" name="level">${levelOptions}</select></label><label>Kasutus<select class="select" name="exclude"><option value="false" ${!c.exclude?'selected':''}>Arvesse</option><option value="true" ${c.exclude?'selected':''}>Välista</option></select></label><label>Staatus<select class="select" name="active"><option value="true" ${c.active!==false?'selected':''}>Aktiivne</option><option value="false" ${c.active===false?'selected':''}>Peidetud</option></select></label><label class="full">Märkus<textarea name="notes" placeholder="Näiteks allhankija töö, Firetek, käsitsi kontrollitav...">${esc(c.notes||'')}</textarea></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  bindClose();
+  $('#granlundClassifierForm')?.addEventListener('submit',e=>{
+    e.preventDefault();
+    const f=e.currentTarget.elements;
+    const exclude=f.exclude.value==='true';
+    const next={id:id||uid('GCL'),pattern:f.pattern.value.trim(),type:exclude?'Muu':f.type.value,level:exclude?'Kontroll':f.level.value,exclude,active:f.active.value==='true',notes:f.notes.value||''};
+    if(id){Object.assign(c,next)}else{state.granlundClassifiers.push(next)}
+    save(); closeModal(); renderGranlundClassifier();
+  });
+}
+
 function renderDiagnostics(){
   const rows=[
     ['Versioon',APP_VERSION],
@@ -2977,14 +3041,15 @@ function renderDiagnostics(){
     ['Valvekirjeid',state.oncall.length],
     ['Hooldusnorme',state.maintenanceNorms.length],
     ['Seadmeid',state.devices.length],
-    ['Hooldusprofiile',(state.maintenanceProfiles||[]).length]
+    ['Hooldusprofiile',(state.maintenanceProfiles||[]).length],
+    ['Granlundi klassifikaatoreid',(state.granlundClassifiers||[]).length]
   ].map(([k,v])=>`<tr><td><strong>${esc(k)}</strong></td><td>${esc(v)}</td></tr>`).join('');
   const main=header('Diagnostika','','','ARENDUS')+`<div class="detail-body">${table(['Parameeter','Väärtus'],rows)}</div>`;
   shell(main,'',{wide:true});
 }
 
 function renderCurrentPage(){
-  ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
+  ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
 }
 async function bootstrapApp(){
   bindLocalPeerSync();
