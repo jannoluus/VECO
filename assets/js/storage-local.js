@@ -48,7 +48,7 @@ window.VECO_STORAGE={
     ['people','clients','objects','devices','projects','workorders','acts','absences','oncall','maintenanceNorms'].forEach(key=>{
       result[key]=Array.isArray(result[key])?result[key]:[];
     });
-    result._meta={...(result._meta||{}),version:this.version,updatedAt:new Date().toISOString(),build:'VECO_V3_20260610_1923'};
+    result._meta={...(result._meta||{}),version:this.version,updatedAt:new Date().toISOString(),build:'VECO_V3_20260610_1936'};
     return result;
   },
   load(){

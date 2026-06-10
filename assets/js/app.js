@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.15.6';
-const APP_BUILD='20260610_1923';
+const APP_VERSION='v3.16.0';
+const APP_BUILD='20260610_1936';
 
 // Build 20260610_1328: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -101,8 +101,8 @@ let selectedTeamPersonId='';
 const detailOpen={objects:false,projects:false,workorders:false,acts:false};
 let modalEscHandler=null;
 
-const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
-const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
+const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
+const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
 
 const byId=(arr,id)=>arr.find(x=>x.id===id)||null;
 const clientName=(id)=>byId(state.clients,id)?.name||'-';
@@ -222,7 +222,7 @@ function nav(){
   const groups=[
     ['Töö',[['calendar','▦'],['team','◫'],['mobile','▤']]],
     ['Haldus',[['workorders','☑'],['acts','▧'],['oncall','☎'],['vacations','▤'],['people','☷'],['objects','⌂'],['clients','▥'],['projects','▣'],['ticker','▭']]],
-    ['Seaded',[['maintenanceNorms','≡']]],
+    ['Seaded',[['maintenanceNorms','≡'],['devices','▤']]],
     ['Süsteem',[['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
     ['Arendus',[['mobilePreview','▧'],['demo','↺'],['diagnostics','◎']]]
   ];
@@ -560,6 +560,7 @@ function fmtActDateTime(dateKey,time){
   return `${d}${time?' '+time:''}`.trim();
 }
 function renderObjects(){
+  normalizeDevices();
   const clientFilter=$('#objectClientFilter')?.value||'all';
   const techFilter=$('#objectTechFilter')?.value||'all';
   const q=($('#objectSearch')?.value||'').toLowerCase();
@@ -580,7 +581,7 @@ function objectDetailHtml(){
   const tabs=[['overview','Üldinfo'],['devices','Seadmed'],['projects','Projektid'],['workorders','Töökäsud'],['acts','Aktid']];
   let body='';
   if(objectTab==='overview') body=`<div class="summary-grid">${summaryBox('Seadmeid',objectDevices(o.id).length)}${summaryBox('Projekte',objectProjects(o.id).length)}${summaryBox('Töökäske',objectWorkorders(o.id).length)}${summaryBox('Akte',objectActs(o.id).length)}</div>${card(o.name,[['Klient',clientName(o.clientId)],['Aadress',o.address],['Vastutaja',techName(o.responsibleTechId)],['Hooldusleping',o.contract],['Kontakt',o.mainContact]],o.status==='active'?'Aktiivne':'Peatatud',`<div class="section-title">Märkused</div><div class="muted">${esc(o.notes)}</div>`)}<div class="section-title">Kontaktid</div><div class="list">${(o.contacts||[]).map(c=>`<div class="event-row"><strong>${esc(c.name)} · ${esc(c.role)}</strong><span class="muted">${esc(c.phone)} · ${esc(c.email)}</span></div>`).join('')||'<span class="muted">Kontaktid puuduvad.</span>'}</div>`;
-  if(objectTab==='devices') body=`<div class="list">${objectDevices(o.id).map(d=>`<div class="event-row"><strong>${esc(d.name)} · ${esc(d.type)}</strong><span class="muted">${esc(d.location)} · hooldus: ${esc(d.serviceInterval)}</span><span class="status ${d.status==='ok'?'ok':'warn'}">${d.status==='ok'?'Korras':'Tähelepanu'}</span></div>`).join('')||'<span class="muted">Seadmeid pole.</span>'}</div>`;
+  if(objectTab==='devices') body=`<div class="list">${objectDevices(o.id).map(d=>`<div class="event-row"><strong>${esc(d.code||d.name)} · ${esc(d.type)}</strong><span class="muted">${esc(d.name||'')} ${d.location?'· '+esc(d.location):''}</span><span class="status ${d.status==='Aktiivne'?'ok':(d.status==='Reserv'?'warn':'red')}">${esc(d.status||'')}</span></div>`).join('')||'<span class="muted">Seadmeid pole.</span>'}</div>`;
   if(objectTab==='projects') body=`<div class="list">${objectProjects(o.id).map(p=>`<div class="event-row"><strong>${esc(p.name)}</strong><span class="muted">Vastutaja: ${esc(techName(p.responsibleTechId))} · tähtaeg ${esc(fmtActDate(p.deadline))}</span><span class="status ${statusClass(p.status)}">${esc(p.status)}</span></div>`).join('')||'<span class="muted">Projekte pole.</span>'}</div>`;
   if(objectTab==='workorders') body=`<div class="list">${objectWorkorders(o.id).map(w=>`<div class="event-row"><strong>${esc(fmtActDate(w.date))} ${esc(w.time)} · ${esc(w.title)}</strong><span class="muted">${esc(workorderAssigneeLabel(w))} · ${esc(w.description)}</span><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div>`).join('')||'<span class="muted">Töökäske pole.</span>'}</div>`;
   if(objectTab==='acts') body=`<div class="list">${objectActs(o.id).map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="muted">Seotud töökäsk: ${esc(a.workorderId)}</span><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
@@ -2735,6 +2736,90 @@ function renderDemo(){
   }));
 }
 
+
+const deviceTypes=['Vent','Jahutus','Küte','Elektrikäit','VK','Automaatika','Muu'];
+const deviceStatuses=['Aktiivne','Reserv','Mahakantud','Peidetud'];
+function normalizeDevices(){
+  state.devices=Array.isArray(state.devices)?state.devices:[];
+  state.devices.forEach(d=>{
+    d.id=d.id||uid('D');
+    d.objectId=d.objectId||'';
+    d.code=d.code||d.tag||d.designation||d.name||'';
+    d.name=d.title||d.deviceName||d.model||d.label||d.name||'';
+    if(d.name===d.code) d.name=d.title||d.model||'';
+    const rawType=String(d.type||'').trim();
+    const lower=rawType.toLowerCase();
+    if(['ventilatsiooniseade','ventilatsioon','ahu'].includes(lower)) d.type='Vent';
+    else if(['jahutusmasin','jahutus','chiller','split'].includes(lower)) d.type='Jahutus';
+    else if(['soojussõlm','küte','kute'].includes(lower)) d.type='Küte';
+    else if(lower.includes('elektr')) d.type='Elektrikäit';
+    else if(['vesi','kanalisatsioon','vk'].includes(lower)) d.type='VK';
+    else d.type=deviceTypes.includes(rawType)?rawType:(rawType||'Muu');
+    d.location=d.location||'';
+    const rawStatus=String(d.status||'').trim();
+    const statusLower=rawStatus.toLowerCase();
+    if(['ok','attention','active','aktiivne',''].includes(statusLower)) d.status='Aktiivne';
+    else if(['reserve','reserv'].includes(statusLower)) d.status='Reserv';
+    else if(['retired','mahakantud'].includes(statusLower)) d.status='Mahakantud';
+    else if(['hidden','peidetud','archived','arhiveeritud'].includes(statusLower)) d.status='Peidetud';
+    else d.status=deviceStatuses.includes(rawStatus)?rawStatus:'Aktiivne';
+    d.notes=d.notes||d.note||'';
+    d.maintenanceNormId=d.maintenanceNormId||d.hooldusMallId||'';
+    d.maintenanceLevel=d.maintenanceLevel||d.hooldusTase||'';
+    d.lastService=d.lastService||d.viimaneHooldus||'';
+    d.nextService=d.nextService||d.järgmineHooldus||d.jargmineHooldus||'';
+  });
+}
+function renderDevices(){
+  normalizeDevices();
+  const q=($('#deviceSearch')?.value||'').toLowerCase();
+  const objectFilter=$('#deviceObjectFilter')?.value||'all';
+  const typeFilter=$('#deviceTypeFilter')?.value||'all';
+  const statusFilter=$('#deviceStatusFilter')?.value||'active';
+  const list=state.devices.filter(d=>{
+    const hay=[d.code,d.name,d.type,d.location,d.notes,objectName(d.objectId),clientName(objectClientId(d.objectId))].join(' ').toLowerCase();
+    const okQ=!q||hay.includes(q);
+    const okObject=objectFilter==='all'||d.objectId===objectFilter;
+    const okType=typeFilter==='all'||d.type===typeFilter;
+    const okStatus=statusFilter==='all'||(statusFilter==='active'?d.status!=='Peidetud'&&d.status!=='Mahakantud':d.status===statusFilter);
+    return okQ&&okObject&&okType&&okStatus;
+  }).sort((a,b)=>objectName(a.objectId).localeCompare(objectName(b.objectId),'et')||String(a.code).localeCompare(String(b.code),'et'));
+  const types=Array.from(new Set([...(state.devices||[]).map(d=>d.type).filter(Boolean),...deviceTypes]));
+  const filters=`<input class="field" id="deviceSearch" placeholder="Otsi seadet, objekti või asukohta..." value="${esc(q)}"><select class="select" id="deviceObjectFilter"><option value="all">Kõik objektid</option>${state.objects.map(o=>`<option value="${esc(o.id)}" ${objectFilter===o.id?'selected':''}>${esc(o.name)}</option>`).join('')}</select><select class="select" id="deviceTypeFilter"><option value="all">Kõik liigid</option>${types.map(t=>`<option value="${esc(t)}" ${typeFilter===t?'selected':''}>${esc(t)}</option>`).join('')}</select><select class="select" id="deviceStatusFilter"><option value="active" ${statusFilter==='active'?'selected':''}>Aktiivsed</option>${deviceStatuses.map(st=>`<option value="${esc(st)}" ${statusFilter===st?'selected':''}>${esc(st)}</option>`).join('')}<option value="all" ${statusFilter==='all'?'selected':''}>Kõik</option></select>`;
+  const actions=`<button class="btn ghost" id="resetDataBtn" type="button">Taasta demo</button><button class="btn primary" id="newDeviceBtn" type="button">+ Uus seade</button>`;
+  const rows=list.map(d=>`<tr><td><strong>${esc(objectName(d.objectId))}</strong><div class="muted">${esc(clientName(objectClientId(d.objectId)))}</div></td><td><strong>${esc(d.code||'-')}</strong></td><td>${esc(d.name||'')}</td><td>${esc(d.type||'')}</td><td>${esc(d.location||'')}</td><td><span class="status ${d.status==='Aktiivne'?'ok':(d.status==='Reserv'?'warn':'red')}">${esc(d.status||'')}</span></td><td class="nowrap"><button class="btn small ghost" data-edit-device="${esc(d.id)}" type="button">Muuda</button> <button class="btn small ghost" data-toggle-device="${esc(d.id)}" type="button">${d.status==='Peidetud'?'Aktiveeri':'Peida'}</button> <button class="btn small danger" data-delete-device="${esc(d.id)}" type="button">Kustuta</button></td></tr>`).join('')||`<tr><td colspan="7" class="muted">Seadmeid ei leitud.</td></tr>`;
+  const intro=`<div class="card"><div class="card-top"><h3>Seadmete register</h3><span class="status ok">MVP</span></div><span class="muted">Seadmed on järgmine aluskiht hooldusprofiilide, tähelepanekute ja hooldusmahu arvutuse jaoks. Esialgu on see admin-vaade seadmete korrastamiseks.</span></div>`;
+  const activeCount=state.devices.filter(d=>d.status!=='Peidetud'&&d.status!=='Mahakantud').length;
+  const objectCount=new Set(state.devices.map(d=>d.objectId).filter(Boolean)).size;
+  const main=header('Seadmed',filters,actions,'SEADED')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Seadmeid',state.devices.length)}${summaryBox('Aktiivseid',activeCount)}${summaryBox('Objekte',objectCount)}${summaryBox('Liike',new Set(state.devices.map(d=>d.type).filter(Boolean)).size)}</div>${intro}<div class="section-title">Seadmete register</div>${table(['Objekt','Tähis','Nimetus','Liik','Asukoht','Staatus','Tegevused'],rows)}<div class="muted">Järgmises etapis seome seadmed hooldusnormidega: seade → hooldusliik/tase → prognoositav hooldusaeg.</div></div>`;
+  shell(main,'',{wide:true});
+  $('#deviceSearch')?.addEventListener('input',renderDevices);
+  $('#deviceObjectFilter')?.addEventListener('change',renderDevices);
+  $('#deviceTypeFilter')?.addEventListener('change',renderDevices);
+  $('#deviceStatusFilter')?.addEventListener('change',renderDevices);
+  $('#newDeviceBtn')?.addEventListener('click',()=>openDeviceModal());
+  $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();normalizeDevices();save();renderDevices();});
+  $$('[data-edit-device]').forEach(btn=>btn.addEventListener('click',()=>openDeviceModal(btn.dataset.editDevice)));
+  $$('[data-toggle-device]').forEach(btn=>btn.addEventListener('click',()=>{const d=byId(state.devices,btn.dataset.toggleDevice);if(d){d.status=d.status==='Peidetud'?'Aktiivne':'Peidetud';save();renderDevices();}}));
+  $$('[data-delete-device]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteDevice;const d=byId(state.devices,id);if(!d)return;openConfirm({title:'Kustuta seade?',message:`${d.code||d.name} · ${objectName(d.objectId)}`,details:'<div class="muted">Kustutamine eemaldab seadme registrist. Kui seade on päriselt kasutusest väljas, kasuta pigem staatust Peidetud või Mahakantud.</div>',confirmText:'Kustuta',onConfirm:()=>{state.devices=state.devices.filter(x=>x.id!==id);save();renderDevices();}});}))
+}
+function openDeviceModal(id=''){
+  normalizeDevices();
+  const d=id?byId(state.devices,id):{objectId:'',code:'',name:'',type:'',location:'',status:'Aktiivne',notes:''};
+  const objectOptions=state.objects.map(o=>`<option value="${esc(o.id)}" ${d.objectId===o.id?'selected':''}>${esc(o.name)} · ${esc(clientName(o.clientId))}</option>`).join('');
+  const typeOptions=deviceTypes.map(t=>`<option value="${esc(t)}" ${d.type===t?'selected':''}>${esc(t)}</option>`).join('');
+  const statusOptions=deviceStatuses.map(st=>`<option value="${esc(st)}" ${d.status===st?'selected':''}>${esc(st)}</option>`).join('');
+  openModal(`<form id="deviceForm"><div class="dialog-head"><h2>${id?'Muuda seadet':'Lisa seade'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Objekt<select class="select" name="objectId" required><option value="">Vali objekt...</option>${objectOptions}</select></label><label>Tähis<input class="field" name="code" required placeholder="Nt AHU-01" value="${esc(d.code||'')}"></label><label>Nimetus<input class="field" name="name" placeholder="Nt Komfovent Verso" value="${esc(d.name||'')}"></label><label>Liik<select class="select" name="type" required><option value="">Vali liik...</option>${typeOptions}</select></label><label>Asukoht<input class="field" name="location" placeholder="Nt katus / tehnoruum" value="${esc(d.location||'')}"></label><label>Staatus<select class="select" name="status" required>${statusOptions}</select></label><label class="full">Märkus<textarea name="notes" placeholder="Lisa vajadusel täpsustus, ligipääsu info või märkused...">${esc(d.notes||'')}</textarea></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  bindClose();
+  $('#deviceForm')?.addEventListener('submit',e=>{
+    e.preventDefault();
+    const f=e.currentTarget.elements;
+    const next={id:id||uid('D'),objectId:f.objectId.value,code:f.code.value.trim(),name:f.name.value.trim(),type:f.type.value,location:f.location.value.trim(),status:f.status.value,notes:f.notes.value||'',maintenanceNormId:d.maintenanceNormId||'',maintenanceLevel:d.maintenanceLevel||'',lastService:d.lastService||'',nextService:d.nextService||''};
+    if(id){Object.assign(d,next)}else{state.devices.push(next)}
+    save();closeModal();renderDevices();
+  });
+}
+
 const maintenanceNormTypes=['Vent TH','Jahutus TH','Elektrikäit','VK','Automaatika','Gaas','Muu'];
 const maintenanceNormLevels=['Kontroll','Hooldus','Aastahooldus'];
 function normalizeMaintenanceNorms(){
@@ -2807,14 +2892,15 @@ function renderDiagnostics(){
     ['Tehnikuid',state.people.length],
     ['Puudumisi',state.absences.length],
     ['Valvekirjeid',state.oncall.length],
-    ['Hooldusnorme',state.maintenanceNorms.length]
+    ['Hooldusnorme',state.maintenanceNorms.length],
+    ['Seadmeid',state.devices.length]
   ].map(([k,v])=>`<tr><td><strong>${esc(k)}</strong></td><td>${esc(v)}</td></tr>`).join('');
   const main=header('Diagnostika','','','ARENDUS')+`<div class="detail-body">${table(['Parameeter','Väärtus'],rows)}</div>`;
   shell(main,'',{wide:true});
 }
 
 function renderCurrentPage(){
-  ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
+  ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
 }
 async function bootstrapApp(){
   bindLocalPeerSync();
