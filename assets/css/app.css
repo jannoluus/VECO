@@ -2195,3 +2195,49 @@ body.modal-open .modal *{
 .team-people-option input{accent-color:var(--blue);}
 .team-people-option span{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .team-people-option small{color:var(--muted);font-weight:650;}
+
+/* Build 20260610_1231: cleaner calendar horizontal resize handles
+   - keep wide left/right hitbox for resizing
+   - hide heavy vertical hover bars
+   - show only a subtle 1px guide while actively resizing */
+.app.page-calendar .calendar-event:hover .calendar-span-resize{
+  opacity:0!important;
+  background:transparent!important;
+}
+.app.page-calendar .calendar-event:not(.span-resizing) .calendar-span-resize::after{
+  content:""!important;
+  opacity:0!important;
+  background:transparent!important;
+  text-shadow:none!important;
+}
+.app.page-calendar .calendar-event.span-resizing .calendar-span-resize{
+  opacity:1!important;
+  background:transparent!important;
+}
+.app.page-calendar .calendar-event.span-resizing .calendar-span-resize::after{
+  content:""!important;
+  position:absolute!important;
+  top:8px!important;
+  bottom:8px!important;
+  width:1px!important;
+  height:auto!important;
+  transform:none!important;
+  background:rgba(45,156,255,.55)!important;
+  box-shadow:0 0 8px rgba(45,156,255,.24)!important;
+  border-radius:999px!important;
+  pointer-events:none!important;
+}
+.app.page-calendar .calendar-event.span-resizing .calendar-span-resize-left::after{
+  left:8px!important;
+  right:auto!important;
+}
+.app.page-calendar .calendar-event.span-resizing .calendar-span-resize-right::after{
+  right:8px!important;
+  left:auto!important;
+}
+.app.page-calendar .calendar-event:hover .calendar-resize-handle::after,
+.app.page-calendar .calendar-event:hover .calendar-time-resize::after{
+  color:rgba(135,205,255,.58)!important;
+  text-shadow:0 0 6px rgba(45,156,255,.16)!important;
+}
+

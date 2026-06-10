@@ -222,3 +222,10 @@ Muudatused:
 - Koopia avaneb uue töökäsu vormina, vaikimisi järgmisel päeval.
 - Kopeeritakse objekt, projekt, pealkiri, kirjeldus, vastutaja, osalejad, kellaaeg ja kestus.
 - Ei kopeerita staatust, lõpetamise infot, akti ega PDF-i.
+
+
+## Build VECO_V3_20260610_1231
+- Kalendri töökäsu kaardi vasaku/parema serva paksud sinised resize-jooned peidetud.
+- Horisontaalse venitamise funktsionaalsus säilib: lai hitbox ja ew-resize kursor.
+- Aktiivse venitamise ajal kuvatakse ainult õrn 1px orientiir.
+- Ülemine/alumine kestuse muutmise käepide jäi alles, kuid hoveril tagasihoidlikum.
