@@ -1,7 +1,8 @@
+Build: 20260610_2202
+
 # VECO V3
 
 Versioon: v3.16.0
-Build: 20260610_2016
 
 Muudatused:
 - Lisatud Seaded → Seadmed admin-vaade.
@@ -13,5 +14,4 @@ Muudatused:
 ## V3.16.0 / 20260610_2016
 - Seaded → Seadmed admin-vaade seadmeregistri korrastamiseks.
 - CRUD, filtrid ja tulevase hooldusprofiili alusväljad.
-
 

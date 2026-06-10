@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.17.0';
-const APP_BUILD='20260610_2016';
+const APP_BUILD='20260610_2202';
 
 // Build 20260610_1328: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -101,8 +101,8 @@ let selectedTeamPersonId='';
 const detailOpen={objects:false,projects:false,workorders:false,acts:false};
 let modalEscHandler=null;
 
-const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',maintenanceProfiles:'Hooldusprofiil',granlundClassifier:'Granlund klassifikaator',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
-const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',maintenanceProfiles:'maintenance-profiles.html',granlundClassifier:'granlund-classifier.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
+const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',maintenanceProfiles:'Hooldusprofiil',granlundClassifier:'Granlund klassifikaator',unplannedMaintenance:'Planeerimata hooldused',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
+const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',maintenanceProfiles:'maintenance-profiles.html',granlundClassifier:'granlund-classifier.html',unplannedMaintenance:'unplanned-maintenance.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
 
 const byId=(arr,id)=>arr.find(x=>x.id===id)||null;
 const clientName=(id)=>byId(state.clients,id)?.name||'-';
@@ -221,7 +221,7 @@ function uid(prefix){return `${prefix}-${String(Date.now()).slice(-6)}`}
 function icon(i){return `<span class="icon">${i}</span>`}
 function nav(){
   const groups=[
-    ['Töö',[['calendar','▦'],['team','◫'],['mobile','▤']]],
+    ['Töölaud',[['unplannedMaintenance','⚠'],['calendar','▦'],['team','◫'],['mobile','▤']]],
     ['Haldus',[['workorders','☑'],['acts','▧'],['oncall','☎'],['vacations','▤'],['people','☷'],['objects','⌂'],['clients','▥'],['projects','▣'],['ticker','▭']]],
     ['Seaded',[['maintenanceNorms','≡'],['devices','▤'],['maintenanceProfiles','☑'],['granlundClassifier','⌁']]],
     ['Süsteem',[['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
@@ -230,7 +230,7 @@ function nav(){
   const activeGroupTitle=(groups.find(([_,items])=>items.some(([key])=>key===page))||groups[0])[0];
   const openGroups=(()=>{
     try{ return JSON.parse(localStorage.getItem('veco_nav_open_groups')||'null')||null; }catch(_){ return null; }
-  })() || {'Töö':true};
+  })() || {'Töölaud':true};
   openGroups[activeGroupTitle]=true;
   const navItem=([key,ic])=>{
     if(key==='system-database') return `<button type="button" id="databaseBtn">${icon(ic)}Andmebaas: ${window.VECO_API?.modeLabel?.()||'lokaalne'}</button>`;
