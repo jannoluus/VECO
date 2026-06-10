@@ -673,7 +673,7 @@ function openWorkorderModal(id='',defaults={}){
   const existing=isEdit?byId(state.workorders,id):null;
   const w=existing||{
     projectId:defaults.projectId||'',objectId:defaults.objectId||'',title:defaults.title||'',
-    date:defaults.date||'',time:defaults.time||'09:00',
+    date:defaults.date||'',time:defaults.time||'',
     technicianId:defaults.technicianId||defaults.responsibleTechnicianId||'',responsibleTechnicianId:defaults.responsibleTechnicianId||defaults.technicianId||'',participantTechnicianIds:defaults.participantTechnicianIds||[],status:defaults.status||'Planeeritud',description:defaults.description||'',
     plannedHours:defaults.plannedHours||2,durationHours:defaults.durationHours||2,hours:defaults.hours||2
   };
@@ -793,15 +793,40 @@ function openWorkorderModal(id='',defaults={}){
     if(!text) return null;
     return state.projects.find(p=>p.name.toLowerCase()===text)||state.projects.find(p=>p.name.toLowerCase().includes(text)&&(!obj||p.objectId===obj.id))||null;
   };
-  form.elements.clientName?.addEventListener('input',()=>{
+  const refreshObjectOptionsForClient=(opts={})=>{
     const clientText=form.elements.clientName.value.trim().toLowerCase();
     const client=state.clients.find(c=>c.name.toLowerCase()===clientText);
+    const dl=document.getElementById('objectOptions');
+    if(!dl) return;
     if(client){
-      const opts=state.objects.filter(o=>o.clientId===client.id).map(o=>`<option value="${esc(o.name)}" label="${esc(o.address||'')}"></option>`).join('');
-      const dl=document.getElementById('objectOptions');
-      if(dl) dl.innerHTML=opts||objectOptions;
+      const filteredObjects=state.objects.filter(o=>o.clientId===client.id);
+      dl.innerHTML=filteredObjects.map(o=>`<option value="${esc(o.name)}" label="${esc(o.address||'')}"></option>`).join('');
+      const objectText=form.elements.objectName.value.trim().toLowerCase();
+      const selectedObject=state.objects.find(o=>o.name.toLowerCase()===objectText);
+      if(!opts.keepObject && selectedObject && selectedObject.clientId!==client.id){
+        form.elements.objectName.value='';
+        if(form.elements.projectName) form.elements.projectName.value='';
+      }
+    }else{
+      dl.innerHTML=objectOptions;
     }
-  });
+  };
+  const syncClientFromObject=()=>{
+    const objectText=form.elements.objectName.value.trim().toLowerCase();
+    if(!objectText) return;
+    const obj=state.objects.find(o=>o.name.toLowerCase()===objectText)||state.objects.find(o=>o.name.toLowerCase().includes(objectText));
+    if(!obj) return;
+    const client=byId(state.clients,obj.clientId);
+    if(client){
+      form.elements.clientName.value=client.name;
+      refreshObjectOptionsForClient({keepObject:true});
+    }
+  };
+  form.elements.clientName?.addEventListener('input',()=>refreshObjectOptionsForClient());
+  form.elements.clientName?.addEventListener('change',()=>refreshObjectOptionsForClient());
+  form.elements.objectName?.addEventListener('input',syncClientFromObject);
+  form.elements.objectName?.addEventListener('change',syncClientFromObject);
+  refreshObjectOptionsForClient({keepObject:true});
   $('#copyWorkorderBtn')?.addEventListener('click',()=>{
     if(!existing) return;
     openWorkorderCopyModal(existing.id);
@@ -2508,13 +2533,7 @@ function openCalendarImportModal(defaultDate){
 }
 
 function openCalendarWorkorderModal(date,time){
-  const obj=state.objects[0]?.id||'';
-  openWorkorderModal('',{objectId:obj});
-  const form=$('#workorderForm');
-  if(form){
-    form.elements.date.value=date||'';
-    form.elements.time.value=time||'09:00';
-  }
+  openWorkorderModal('',{date:date||'',time:time||''});
 }
 function calendarDetailHtml(){ return ''; }
 

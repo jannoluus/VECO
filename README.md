@@ -233,3 +233,10 @@ Muudatused:
 ## Build 20260610_1254
 - Kalendri töökäsu kaardilt eemaldatud hoveril/lohistamisel ilmuvad laiad sinised vertikaalsed küljeribad.
 - Horisontaalne lohistamine ja venitamine jäävad alles; eemaldatud on ainult häiriv visuaalne indikaator.
+
+## Build 20260610_1300
+- Parandatud uue töökäsu vorm: `+ Lisa töökäsk` avab kliendi, objekti, projekti, vastutaja ja osalejate osas tühja vormi.
+- Kalendri tühjale ajale klikkides eeltäidetakse ainult kuupäev ja kellaaeg, mitte klienti ega objekti.
+- Objekti valimisel täidetakse klient automaatselt.
+- Kliendi muutmisel filtreeritakse objektide valik ümber ning vale kliendi objekt puhastatakse vormilt.
+- Kopeerimisel ja objekti vaatest töökäsu loomisel säilib lubatud eeltäitmise loogika.
