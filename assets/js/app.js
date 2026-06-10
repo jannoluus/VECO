@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.15.5';
-const APP_BUILD='20260610_1447';
+const APP_BUILD='20260610_1450';
 
 // Build 20260610_1328: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -245,6 +245,10 @@ function nav(){
 function themeLogo(){
   return `<button class="brand-badge brand-theme-toggle" type="button" data-theme-toggle title="Vaheta hele/tume režiim" aria-label="Vaheta hele/tume režiim"><span class="brand-wordmark">VECO</span></button>`;
 }
+function mobileThemeButton(){
+  const light=(localStorage.getItem('veco_mobile_theme')||'dark')==='light';
+  return `<button class="btn ghost mobile-theme-toggle" type="button" data-mobile-theme-toggle title="Vaheta tehniku vaate hele/tume režiim" aria-label="Vaheta tehniku vaate hele/tume režiim">${light?'☀ Hele':'☾ Tume'}</button>`;
+}
 function currentOncallLabel(days=null){
   const contextDays=Array.isArray(days)&&days.length ? days : (Array.isArray(window.__VECO_ONCALL_CONTEXT_DAYS__)&&window.__VECO_ONCALL_CONTEXT_DAYS__.length ? window.__VECO_ONCALL_CONTEXT_DAYS__ : [dateKeyFromDate(new Date())]);
   const start=contextDays[0];
@@ -316,16 +320,22 @@ function shell(main,aside='',opts={}){
   document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${collapsed?'sidebar-collapsed':''}">${page==='mobile'?'':nav()}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();
 }
+function activeThemeKey(){
+  return page==='mobile' ? 'veco_mobile_theme' : 'veco_theme';
+}
 function applyTheme(){
-  document.body.classList.toggle('theme-light',localStorage.getItem('veco_theme')==='light');
+  const key=activeThemeKey();
+  document.body.classList.toggle('theme-light',(localStorage.getItem(key)||'dark')==='light');
 }
 function toggleTheme(){
+  const key=activeThemeKey();
   const light=!document.body.classList.contains('theme-light');
-  localStorage.setItem('veco_theme',light?'light':'dark');
+  localStorage.setItem(key,light?'light':'dark');
   document.body.classList.toggle('theme-light',light);
 }
 function bindGlobal(){
   $$('[data-theme-toggle]').forEach(btn=>btn.addEventListener('click',toggleTheme));
+  $$('[data-mobile-theme-toggle]').forEach(btn=>btn.addEventListener('click',()=>{toggleTheme();renderMobile();}));
   $('#sidebarToggleBtn')?.addEventListener('click',()=>{
     const app=$('.app');
     const collapsed=!app.classList.contains('sidebar-collapsed');
@@ -1881,7 +1891,7 @@ function renderMobile(){
   if(!current){
     const today=dateKeyFromDate(new Date());
     const cards=activePeople.map(p=>`<button class="card clickable mobile-user-choice" data-mobile-user="${p.id}" type="button"><div class="card-top"><h3>${esc(p.name)}</h3><span class="status ${p.role==='Admin'?'ok':p.role==='Demo'?'warn':''}">${esc(p.role||'Tehnik')}</span></div>${availabilityBadgesHtml(p.id,today,{empty:true})}<span class="muted">${esc(p.region||'')} ${p.skills?`· ${esc(p.skills)}`:''}</span></button>`).join('')||'<span class="muted">Aktiivseid kasutajaid ei ole. Lisa kasutaja admin vaates.</span>';
-    shell(`<div class="panel-head mobile-head"><div><h2>VECO TEHNIKU VAADE</h2><span class="muted">Vali kasutaja piloodi testimiseks.</span></div></div><div class="detail-body mobile-detail"><div class="grid mobile-user-grid">${cards}</div></div>`,'',{wide:true});
+    shell(`<div class="panel-head mobile-head mobile-head-split"><div><h2>VECO TEHNIKU VAADE</h2><span class="muted">Vali kasutaja piloodi testimiseks.</span></div><div class="filters mobile-head-actions">${mobileThemeButton()}</div></div><div class="detail-body mobile-detail"><div class="grid mobile-user-grid">${cards}</div></div>`,'',{wide:true});
     $$('[data-mobile-user]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem(USER_KEY,btn.dataset.mobileUser);renderMobile();}));
     return;
   }
@@ -1909,7 +1919,7 @@ function renderMobile(){
     .filter(w=>isCompletedStatus(w.status))
     .sort((a,b)=>`${b.date||''} ${b.time||''}`.localeCompare(`${a.date||''} ${a.time||''}`))
     .slice(0,12);
-  const actions=`<button class="btn primary" id="mobileAddWorkBtn" type="button">＋ Lisa töö</button><button class="btn ghost" id="mobileSwitchUserBtn" type="button">⇄ Vaheta</button>`;
+  const actions=`${mobileThemeButton()}<button class="btn primary" id="mobileAddWorkBtn" type="button">＋ Lisa töö</button><button class="btn ghost" id="mobileSwitchUserBtn" type="button">⇄ Vaheta</button>`;
   const sectionSummary=(jobs,rangeStart,rangeEnd)=>{
     const hours=jobs.reduce((sum,w)=>sum+mobileJobPlannedHoursInRange(w,rangeStart,rangeEnd),0);
     return `<div class="mobile-future-title mobile-period-summary"><strong>${jobs.length} tööd</strong><span>${hours} h</span></div>`;

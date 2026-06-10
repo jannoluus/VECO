@@ -2388,3 +2388,9 @@ body.modal-open .modal *{
 .mobile-user-choice .availability-strip{margin:10px 0 6px;}
 .mobile-head .availability-strip{margin:7px 0 4px;}
 .table .availability-strip{margin:0;}
+
+/* V3.22: Tehniku vaate sõltumatu hele/tume režiim */
+.mobile-head-split{align-items:flex-start!important;justify-content:space-between!important;gap:12px!important;}
+.mobile-theme-toggle{min-width:96px;}
+.app-mobile .mobile-head-actions{justify-content:flex-end;}
+@media(max-width:560px){.mobile-head-split{display:grid!important;grid-template-columns:1fr!important}.app-mobile .mobile-head-actions{justify-content:flex-start;width:100%;}.mobile-theme-toggle{width:100%;}}
