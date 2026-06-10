@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.15.5';
-const APP_BUILD='20260610_1404';
+const APP_BUILD='20260610_1420';
 
 // Build 20260610_1328: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -101,7 +101,7 @@ let selectedTeamPersonId='';
 const detailOpen={objects:false,projects:false,workorders:false,acts:false};
 let modalEscHandler=null;
 
-const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Puhkused',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
+const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
 const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
 
 const byId=(arr,id)=>arr.find(x=>x.id===id)||null;
@@ -1204,8 +1204,9 @@ function renderPeople(){
   });
   const filters=`<input class="field" id="peopleSearch" placeholder="Otsi kasutajat..." value="${esc(q)}"><select class="select" id="peopleStatusFilter"><option value="active" ${status==='active'?'selected':''}>Aktiivsed</option><option value="inactive" ${status==='inactive'?'selected':''}>Deaktiveeritud</option><option value="all" ${status==='all'?'selected':''}>Kõik kasutajad</option></select>`;
   const actions=`<button class="btn primary" id="newPersonBtn">${icon('＋')}Lisa kasutaja</button>`;
-  const rows=list.map(p=>`<tr data-person-id="${p.id}"><td><strong>${esc(p.name)}</strong><div class="muted">${esc(p.id)}</div></td><td>${esc(p.role||'-')}</td><td>${esc(p.phone||'-')}</td><td>${esc(p.email||'-')}</td><td>${esc(p.region||'-')}</td><td><button class="status ${p.onCallActive?'ok':'red'}" data-toggle-oncall-person="${p.id}" type="button" title="Lisa/eemalda valvegraafikust">${p.onCallActive?'Aktiivne':'Ei osale'}</button><div class="muted">Jrk ${Number(p.onCallOrder||0)||'-'}</div></td><td><span class="status ${p.active?'ok':'red'}">${p.active?'Aktiivne':'Deaktiveeritud'}</span></td><td><button class="btn small" data-edit-person="${p.id}" type="button">Muuda</button> <button class="btn small ${p.active?'danger':'primary'}" data-toggle-person="${p.id}" type="button">${p.active?'Deaktiveeri':'Aktiveeri'}</button> <button class="btn small danger" data-delete-person="${p.id}" type="button">Kustuta</button></td></tr>`).join('');
-  const main=header('Tehnikute administreerimine',filters,actions,'TEHNIKUD')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Kasutajaid',state.people.length)}${summaryBox('Aktiivseid',state.people.filter(p=>p.active).length)}${summaryBox('Tehnikuid',state.people.filter(p=>p.role==='Tehnik').length)}${summaryBox('Valve aktiivsed',state.people.filter(p=>p.onCallActive).length)}</div>${table(['Nimi','Roll','Telefon','E-post','Piirkond','Valvegraafik','Staatus','Tegevused'],rows)}</div>`;
+  const today=dateKeyFromDate(new Date());
+  const rows=list.map(p=>`<tr data-person-id="${p.id}"><td><strong>${esc(p.name)}</strong><div class="muted">${esc(p.id)}</div></td><td>${esc(p.role||'-')}</td><td>${availabilityBadgesHtml(p.id,today,{empty:true})}</td><td>${esc(p.phone||'-')}</td><td>${esc(p.email||'-')}</td><td>${esc(p.region||'-')}</td><td><button class="status ${p.onCallActive?'ok':'red'}" data-toggle-oncall-person="${p.id}" type="button" title="Lisa/eemalda valvegraafikust">${p.onCallActive?'Aktiivne':'Ei osale'}</button><div class="muted">Jrk ${Number(p.onCallOrder||0)||'-'}</div></td><td><span class="status ${p.active?'ok':'red'}">${p.active?'Aktiivne':'Deaktiveeritud'}</span></td><td><button class="btn small" data-edit-person="${p.id}" type="button">Muuda</button> <button class="btn small ${p.active?'danger':'primary'}" data-toggle-person="${p.id}" type="button">${p.active?'Deaktiveeri':'Aktiveeri'}</button> <button class="btn small danger" data-delete-person="${p.id}" type="button">Kustuta</button></td></tr>`).join('');
+  const main=header('Tehnikute administreerimine',filters,actions,'TEHNIKUD')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Kasutajaid',state.people.length)}${summaryBox('Aktiivseid',state.people.filter(p=>p.active).length)}${summaryBox('Tehnikuid',state.people.filter(p=>p.role==='Tehnik').length)}${summaryBox('Valve aktiivsed',state.people.filter(p=>p.onCallActive).length)}</div>${table(['Nimi','Roll','Saadavus täna','Telefon','E-post','Piirkond','Valvegraafik','Staatus','Tegevused'],rows)}</div>`;
   shell(main,'',{wide:true});
   $('#peopleSearch')?.addEventListener('input',renderPeople);
   $('#peopleStatusFilter')?.addEventListener('change',renderPeople);
@@ -1556,7 +1557,7 @@ function teamDetailHtml(weekDays,weekWorkorders){
   const jobsHtml=jobs.map(w=>`<div class="event-row"><strong>${esc(workorderDateRangeLabel(w))} ${esc(w.time)} · ${esc(w.title)}</strong><span class="muted">${esc(clientName(objectClientId(w.objectId)))} · ${esc(objectName(w.objectId))} · ${esc(projectName(w.projectId))} · ${workorderHoursInRange(w,weekDays)} h · ${esc(workorderRoleLabel(w,p.id))}</span><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div>`).join('')||'<span class="muted">Sellel nädalal valitud filtriga töid ei ole.</span>';
   const absHtml=abs.map(a=>`<div class="event-row"><strong>${esc(a.type)} ${esc(a.start)}–${esc(a.end)}</strong><span class="muted">${esc(a.note)}</span></div>`).join('')||'<span class="muted">Puudumisi ei ole.</span>';
   const ocHtml=oc.map(o=>`<div class="event-row"><strong>Valve ${esc(o.start)}–${esc(o.end)}</strong><span class="muted">${esc(o.note)}</span></div>`).join('')||'<span class="muted">Valvet ei ole.</span>';
-  return detailHeader(`${p.name} · detail`,'<button class="btn ghost" id="teamDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Töid',jobs.length)}${summaryBox('Tunde',hours)}${summaryBox('Puudumisi',abs.length)}${summaryBox('Valveid',oc.length)}</div>${card(p.name,[['Roll',p.role],['Piirkond',p.region],['Telefon',p.phone],['E-post',p.email],['Oskused',p.skills]],workloadStatus(hours,abs))}<div class="section-title">Nädala tööd</div><div class="list">${jobsHtml}</div><div class="section-title">Puudumised</div><div class="list">${absHtml}</div><div class="section-title">Valve</div><div class="list">${ocHtml}</div></div>`;
+  return detailHeader(`${p.name} · detail`,'<button class="btn ghost" id="teamDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Töid',jobs.length)}${summaryBox('Tunde',hours)}${summaryBox('Puudumisi',abs.length)}${summaryBox('Valveid',oc.length)}</div>${card(p.name,[['Roll',p.role],['Piirkond',p.region],['Telefon',p.phone],['E-post',p.email],['Oskused',p.skills]],workloadStatus(hours,abs))}<div class="section-title">Nädala tööd</div><div class="list">${jobsHtml}</div><div class="section-title">Saadavuse kirjed</div><div class="list">${absHtml}</div><div class="section-title">Valve</div><div class="list">${ocHtml}</div></div>`;
 }
 
 function nextOncallOrder(){
@@ -1651,7 +1652,41 @@ function absenceTypeClass(type){
   if(t.includes('haig')) return 'red';
   if(t.includes('puhkus')) return 'ok';
   if(t.includes('koolitus')) return 'warn';
+  if(t.includes('valve')) return 'info';
+  if(t.includes('lähet')||t.includes('lahet')) return 'info';
   return 'warn';
+}
+function availabilityMeta(type){
+  const t=String(type||'').toLowerCase();
+  if(t.includes('puhkus')) return {icon:'🏖', label:'Puhkus', cls:'vacation'};
+  if(t.includes('haig')) return {icon:'🤒', label:'Haigus', cls:'sick'};
+  if(t.includes('koolitus')) return {icon:'🎓', label:'Koolitus', cls:'training'};
+  if(t.includes('valve')) return {icon:'☎', label:'Valve', cls:'oncall'};
+  if(t.includes('lähet')||t.includes('lahet')) return {icon:'🚗', label:'Lähetus', cls:'travel'};
+  if(t.includes('puud')) return {icon:'⛔', label:'Puudub', cls:'absent'};
+  return {icon:'📌', label:type||'Muu', cls:'other'};
+}
+function activeAbsencesForPerson(personId,day=dateKeyFromDate(new Date())){
+  return (state.absences||[]).filter(a=>a.personId===personId && a.start<=day && a.end>=day);
+}
+function activeOncallForPerson(personId,day=dateKeyFromDate(new Date())){
+  return (state.oncall||[]).filter(o=>o.personId===personId && o.start<=day && o.end>=day);
+}
+function availabilityBadgesForPerson(personId,day=dateKeyFromDate(new Date())){
+  const abs=activeAbsencesForPerson(personId,day).map(a=>{
+    const meta=availabilityMeta(a.type||'Puudumine');
+    return {kind:'absence', cls:meta.cls, icon:meta.icon, label:meta.label, title:`${meta.label}: ${fmtActDate(a.start)}–${fmtActDate(a.end)}${a.note?' · '+a.note:''}`};
+  });
+  const calls=activeOncallForPerson(personId,day).map(o=>{
+    const meta=availabilityMeta('Valve');
+    return {kind:'oncall', cls:meta.cls, icon:meta.icon, label:'Valve', title:`Valve: ${fmtActDate(o.start)}–${fmtActDate(o.end)}${o.note?' · '+o.note:''}`};
+  });
+  return [...abs,...calls];
+}
+function availabilityBadgesHtml(personId,day=dateKeyFromDate(new Date()),opts={}){
+  const badges=availabilityBadgesForPerson(personId,day);
+  if(!badges.length) return opts.empty?`<div class="availability-strip availability-ok"><span>✓ Saadaval</span></div>`:'';
+  return `<div class="availability-strip">${badges.map(b=>`<span class="availability-badge availability-${esc(b.cls)}" title="${esc(b.title)}">${esc(b.icon)} ${esc(b.label)}</span>`).join('')}</div>`;
 }
 function absenceWorkConflicts(absence){
   return (state.workorders||[]).filter(w=>workorderMatchesPerson(w,absence.personId)&&w.status!=='Lõpetatud'&&w.date<=absence.end&&workorderEndDate(w)>=absence.start);
@@ -1674,7 +1709,7 @@ function renderVacations(){
   const upcoming=sorted.filter(a=>absenceIsUpcoming(a,today));
   const past=sorted.filter(a=>a.end<today);
   const conflicts=sorted.reduce((sum,a)=>sum+absenceWorkConflicts(a).length+absenceOncallConflicts(a).length,0);
-  const actions='<button class="btn primary" id="newAbsenceBtn" type="button">＋ Lisa puudumine</button>';
+  const actions='<button class="btn primary" id="newAbsenceBtn" type="button">＋ Lisa saadavuse kirje</button>';
   const row=(a)=>{
     const conflict=absenceConflictSummary(a);
     const status=absenceIsActive(a,today)?'<span class="status warn">Täna</span>':(a.end<today?'<span class="status">Möödunud</span>':'<span class="status ok">Planeeritud</span>');
@@ -1685,7 +1720,7 @@ function renderVacations(){
     ...absenceWorkConflicts(a).map(w=>`<div class="event-row"><strong>⚠ ${esc(techName(a.personId))} · ${esc(a.type)}</strong><span class="muted">Kattub tööga: ${esc(w.title)} · ${fmtActDate(w.date)}${workorderEndDate(w)!==w.date?'–'+fmtActDate(workorderEndDate(w)):''} · ${esc(objectName(w.objectId))}</span></div>`),
     ...absenceOncallConflicts(a).map(o=>`<div class="event-row"><strong>⚠ ${esc(techName(a.personId))} · ${esc(a.type)}</strong><span class="muted">Kattub valvega: ${fmtActDate(o.start)}–${fmtActDate(o.end)}</span></div>`)
   ]).join('')||'<span class="muted">Konflikte ei ole.</span>';
-  const main=header('Puhkused ja puudumised','',actions,'Puhkused')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Kokku',state.absences.length)}${summaryBox('Täna puudub',active.length)}${summaryBox('Tulekul',upcoming.length)}${summaryBox('Konflikte',conflicts)}</div><div class="grid"><section class="card"><div class="card-top"><h3>Täna puuduvad</h3><span class="status ${active.length?'warn':'ok'}">${active.length}</span></div><div class="list">${activeHtml}</div></section><section class="card"><div class="card-top"><h3>Konfliktid</h3><span class="status ${conflicts?'warn':'ok'}">${conflicts?conflicts:'OK'}</span></div><div class="list">${conflictHtml}</div></section></div><div class="section-title">Puudumised</div>${table(['Töötaja','Tüüp','Algus','Lõpp','Päevi','Konflikt','Staatus','Tegevused'],sorted.map(row))}<div class="muted">Puudumise alla märgi puhkus, haigus, koolitus või muu äraolek. Sama info kasutatakse valvegraafiku ja tiimivaate konfliktide näitamiseks.</div></div>`;
+  const main=header('Saadavus','',actions,'SAADAVUS')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Kokku',state.absences.length)}${summaryBox('Täna puudub',active.length)}${summaryBox('Tulekul',upcoming.length)}${summaryBox('Konflikte',conflicts)}</div><div class="grid"><section class="card"><div class="card-top"><h3>Täna puuduvad</h3><span class="status ${active.length?'warn':'ok'}">${active.length}</span></div><div class="list">${activeHtml}</div></section><section class="card"><div class="card-top"><h3>Konfliktid</h3><span class="status ${conflicts?'warn':'ok'}">${conflicts?conflicts:'OK'}</span></div><div class="list">${conflictHtml}</div></section></div><div class="section-title">Saadavuse kirjed</div>${table(['Töötaja','Tüüp','Algus','Lõpp','Päevi','Konflikt','Staatus','Tegevused'],sorted.map(row))}<div class="muted">Saadavuse alla märgi puhkus, haigus, koolitus, valve, lähetus või muu olek. Sama info kasutatakse valvegraafiku ja tiimivaate konfliktide näitamiseks.</div></div>`;
   shell(main,'',{wide:true});
   bindVacations();
 }
@@ -1716,8 +1751,8 @@ function bindVacations(){
 function openAbsenceModal(id=''){
   const today=dateKeyFromDate(new Date());
   const a=id?byId(state.absences,id):{personId:state.people.find(p=>p.active)?.id||state.people[0]?.id||'',type:'Puhkus',start:today,end:today,note:''};
-  const types=['Puhkus','Haigus','Puudumine','Koolitus','Muu'];
-  openModal(`<form id="absenceForm"><div class="dialog-head"><h2>${id?'Muuda puudumist':'Lisa puudumine'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Töötaja<select class="select" name="personId" required>${state.people.filter(p=>p.active).map(p=>`<option value="${esc(p.id)}" ${a.personId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><label>Tüüp<select class="select" name="type">${types.map(t=>`<option value="${t}" ${a.type===t?'selected':''}>${t}</option>`).join('')}</select></label><label>Algus<input class="field" name="start" type="date" required value="${esc(a.start)}"></label><label>Lõpp<input class="field" name="end" type="date" required value="${esc(a.end)}"></label><label class="full">Märkus<textarea name="note">${esc(a.note||'')}</textarea></label></div><div class="muted">Puhkus, haigus ja muu puudumine tekitavad hoiatused, kui samale ajale on planeeritud töö või valve.</div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  const types=['Puhkus','Haigus','Koolitus','Valve','Lähetus','Puudumine','Muu'];
+  openModal(`<form id="absenceForm"><div class="dialog-head"><h2>${id?'Muuda saadavust':'Lisa saadavus'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Töötaja<select class="select" name="personId" required>${state.people.filter(p=>p.active).map(p=>`<option value="${esc(p.id)}" ${a.personId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><label>Tüüp<select class="select" name="type">${types.map(t=>`<option value="${t}" ${a.type===t?'selected':''}>${t}</option>`).join('')}</select></label><label>Algus<input class="field" name="start" type="date" required value="${esc(a.start)}"></label><label>Lõpp<input class="field" name="end" type="date" required value="${esc(a.end)}"></label><label class="full">Märkus<textarea name="note">${esc(a.note||'')}</textarea></label></div><div class="muted">Puhkus, haigus, koolitus, valve ja muu saadavuse kirje tekitavad vajadusel hoiatused, kui samale ajale on planeeritud töö või valve.</div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
   $('#absenceForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('EV'),personId:f.personId.value,type:f.type.value,start:f.start.value,end:f.end.value,note:f.note.value};if(next.end<next.start){alert('Lõpp ei saa olla enne algust.');return;}if(id){Object.assign(a,next)}else{state.absences.push(next)}save();closeModal();renderVacations();});
 }
@@ -1844,7 +1879,8 @@ function renderMobile(){
   const activePeople=activeMobilePeople();
   const current=mobileCurrentUser();
   if(!current){
-    const cards=activePeople.map(p=>`<button class="card clickable mobile-user-choice" data-mobile-user="${p.id}" type="button"><div class="card-top"><h3>${esc(p.name)}</h3><span class="status ${p.role==='Admin'?'ok':p.role==='Demo'?'warn':''}">${esc(p.role||'Tehnik')}</span></div><span class="muted">${esc(p.region||'')} ${p.skills?`· ${esc(p.skills)}`:''}</span></button>`).join('')||'<span class="muted">Aktiivseid kasutajaid ei ole. Lisa kasutaja admin vaates.</span>';
+    const today=dateKeyFromDate(new Date());
+    const cards=activePeople.map(p=>`<button class="card clickable mobile-user-choice" data-mobile-user="${p.id}" type="button"><div class="card-top"><h3>${esc(p.name)}</h3><span class="status ${p.role==='Admin'?'ok':p.role==='Demo'?'warn':''}">${esc(p.role||'Tehnik')}</span></div>${availabilityBadgesHtml(p.id,today,{empty:true})}<span class="muted">${esc(p.region||'')} ${p.skills?`· ${esc(p.skills)}`:''}</span></button>`).join('')||'<span class="muted">Aktiivseid kasutajaid ei ole. Lisa kasutaja admin vaates.</span>';
     shell(`<div class="panel-head mobile-head"><div><h2>VECO TEHNIKU VAADE</h2><span class="muted">Vali kasutaja piloodi testimiseks.</span></div></div><div class="detail-body mobile-detail"><div class="grid mobile-user-grid">${cards}</div></div>`,'',{wide:true});
     $$('[data-mobile-user]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem(USER_KEY,btn.dataset.mobileUser);renderMobile();}));
     return;
@@ -1894,6 +1930,7 @@ function renderMobile(){
   const activeGroup=groups[activeTab];
   const headerStats=`${todayJobs.length} täna • ${tomorrowJobs.length} homme • ${thisWeekJobs.length} see nädal • ${nextWeekJobs.length} järgmine nädal • ${unfinishedJobs.length} tegemata`;
   const oncallInfo=mobileOncallForPerson(current.id,today);
+  const availabilityToday=availabilityBadgesHtml(current.id,today);
   const tabCards=order.map(key=>{
     const g=groups[key];
     const warn=key==='unfinished'&&g.count>0?' warn':'';
@@ -1901,7 +1938,7 @@ function renderMobile(){
     return `<button class="mobile-tab-card${active}${warn}" data-mobile-tab="${key}" type="button"><span>${esc(g.short)}</span><strong>${g.count}</strong></button>`;
   }).join('');
   const activeBody=activeGroup.body||`<div class="card"><strong>${esc(activeGroup.empty)}</strong><span class="muted">Vali ülevalt teine kaart või lisa uus töö.</span></div>`;
-  shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2><div class="mobile-duty ${esc(oncallInfo.type)}">${esc(oncallInfo.label)}</div><span class="muted">${esc(headerStats)} · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${actions}</div></div><div class="detail-body mobile-detail"><div class="mobile-tab-grid">${tabCards}</div><div class="mobile-active-section"><div class="mobile-active-title"><h3>${esc(activeGroup.label)} (${activeGroup.count})</h3><span class="muted">Kaardivalik</span></div><div class="grid mobile-work-grid">${activeBody}</div></div></div>`,'',{wide:true});
+  shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2><div class="mobile-duty ${esc(oncallInfo.type)}">${esc(oncallInfo.label)}</div>${availabilityToday}<span class="muted">${esc(headerStats)} · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${actions}</div></div><div class="detail-body mobile-detail"><div class="mobile-tab-grid">${tabCards}</div><div class="mobile-active-section"><div class="mobile-active-title"><h3>${esc(activeGroup.label)} (${activeGroup.count})</h3><span class="muted">Kaardivalik</span></div><div class="grid mobile-work-grid">${activeBody}</div></div></div>`,'',{wide:true});
   $('#mobileSwitchUserBtn')?.addEventListener('click',()=>{localStorage.removeItem(USER_KEY);renderMobile();});
   $('#mobileAddWorkBtn')?.addEventListener('click',()=>openMobileAddWorkModal(current.id));
   $$('[data-mobile-tab]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_mobile_active_tab',btn.dataset.mobileTab);renderMobile();}));

@@ -2374,3 +2374,17 @@ body.modal-open .modal *{
     left:-52px!important;
   }
 }
+
+/* Build 20260610_1420: Saadavus badges for people and mobile technician views */
+.availability-strip{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;min-height:22px;}
+.availability-strip.availability-ok span{display:inline-flex;align-items:center;border:1px solid rgba(34,197,94,.32);background:rgba(34,197,94,.10);color:#b6f5ca;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800;}
+.availability-badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:900;line-height:1;border:1px solid rgba(148,163,184,.25);white-space:nowrap;}
+.availability-vacation{background:rgba(34,197,94,.14);border-color:rgba(34,197,94,.35);color:#b8f7ce;}
+.availability-sick,.availability-absent{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.40);color:#fecaca;}
+.availability-training{background:rgba(245,158,11,.16);border-color:rgba(245,158,11,.40);color:#fde68a;}
+.availability-oncall{background:rgba(59,130,246,.16);border-color:rgba(59,130,246,.42);color:#bfdbfe;}
+.availability-travel{background:rgba(168,85,247,.16);border-color:rgba(168,85,247,.40);color:#e9d5ff;}
+.availability-other{background:rgba(148,163,184,.14);border-color:rgba(148,163,184,.32);color:#e2e8f0;}
+.mobile-user-choice .availability-strip{margin:10px 0 6px;}
+.mobile-head .availability-strip{margin:7px 0 4px;}
+.table .availability-strip{margin:0;}
