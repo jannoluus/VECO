@@ -2268,7 +2268,7 @@ body.modal-open .modal *{
   box-shadow:none!important;
 }
 
-/* Build 20260610_1322 - team filters */
+/* Build 20260610_1327 - team filters */
 .team-filter-strip{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex-basis:100%;padding-top:4px;}
 .team-quick-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .chip{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:7px 10px;font-weight:750;cursor:pointer;box-shadow:none;}
@@ -2276,3 +2276,31 @@ body.modal-open .modal *{
 .chip.active{border-color:rgba(23,105,170,.45);background:rgba(23,105,170,.16);color:var(--blue);}
 .team-people-menu-actions{display:flex;gap:6px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:8px;margin-top:4px;}
 .team-people-menu .btn.full{width:100%;justify-content:center;margin:2px 0 4px;}
+
+
+/* Build 20260610_1327 - team filter dropdown click/visibility fix
+   The header/filter row used fixed height + overflow hidden, which clipped
+   the status and technician dropdown menus so the buttons appeared inactive. */
+.app.page-team .panel,
+.app.page-team .panel-head.view-head,
+.app.page-team .filter-row{
+  overflow:visible!important;
+}
+.app.page-team .panel-head.view-head{
+  position:relative!important;
+  z-index:200!important;
+}
+.app.page-team .detail-body{
+  position:relative!important;
+  z-index:1!important;
+}
+.app.page-team .team-people-filter{
+  z-index:5000!important;
+}
+.app.page-team .team-people-filter .btn{
+  pointer-events:auto!important;
+  cursor:pointer!important;
+}
+.app.page-team .team-people-menu{
+  z-index:6000!important;
+}

@@ -3,7 +3,26 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.15.4';
-const APP_BUILD='20260610_1322';
+const APP_BUILD='20260610_1327';
+
+// Build 20260610_1327: delegated fallback for team filter dropdowns.
+// Keeps filters clickable even if render lifecycle replaces the direct listeners.
+document.addEventListener('click',e=>{
+  const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
+  const peopleBtn=e.target.closest?.('#teamPeopleFilterBtn');
+  if(statusBtn){
+    e.preventDefault();
+    e.stopPropagation();
+    document.querySelector('#teamPeopleMenu')?.classList.add('hidden');
+    document.querySelector('#teamStatusMenu')?.classList.toggle('hidden');
+  }
+  if(peopleBtn){
+    e.preventDefault();
+    e.stopPropagation();
+    document.querySelector('#teamStatusMenu')?.classList.add('hidden');
+    document.querySelector('#teamPeopleMenu')?.classList.toggle('hidden');
+  }
+},true);
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 normalizeOncallPeople();
