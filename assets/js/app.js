@@ -41,7 +41,7 @@ function workorderAssigneeLabel(w){
 function workorderCalendarPeopleHtml(w){
   const respName=techName(workorderResponsibleId(w))||'-';
   const participants=workorderParticipantIds(w).map(techName).filter(n=>n&&n!=='-');
-  const participantText=participants.length===1?participants[0]:(participants.length>1?`+${participants.length}`:'');
+  const participantText=participants.length===1?participants[0]:(participants.length>1?`${participants[0]} +${participants.length-1}`:'');
   return `<span class="calendar-people"><span class="calendar-person-resp" title="Vastutaja: ${esc(respName)}">👑 ${esc(respName)}</span>${participantText?`<span class="calendar-person-participants" title="Osalejad: ${esc(participants.join(', '))}">👥 ${esc(participantText)}</span>`:''}</span>`;
 }
 function workorderCalendarTitle(w){
