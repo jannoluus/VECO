@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.15.3';
-const APP_BUILD='20260610_1307';
+const APP_VERSION='v3.15.4';
+const APP_BUILD='20260610_1322';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 normalizeOncallPeople();
@@ -1324,7 +1324,20 @@ function workloadClass(hours,absences,limit=8){
 function renderTeam(){
   const rawWeek=$('#teamWeekStart')?.value||localStorage.getItem('veco_team_week')||dateKeyFromDate(new Date());
   const currentWeek=weekStartKeyFrom(rawWeek);
-  const statusFilter=$('#teamStatusFilter')?.value||'open';
+  const legacyStatusFilter=$('#teamStatusFilter')?.value||'';
+  const readTeamStatuses=()=>{
+    const checked=$$('#teamStatusMenu input[type="checkbox"]:checked').map(i=>i.value);
+    if(checked.length) return checked;
+    try{
+      const stored=JSON.parse(localStorage.getItem('veco_team_statuses')||'null');
+      if(Array.isArray(stored)&&stored.length) return stored;
+    }catch(_){ }
+    if(legacyStatusFilter==='all') return ['Uus','Planeeritud','Töös','Ootel','Pausil','Lõpetatud','Täidetud','Suletud','Arhiveeritud'];
+    if(legacyStatusFilter==='open') return ['Uus','Planeeritud','Töös','Ootel','Pausil'];
+    if(legacyStatusFilter) return [legacyStatusFilter];
+    return ['Planeeritud','Töös'];
+  };
+  const selectedStatuses=readTeamStatuses();
   const q='';
   const view=$('#teamViewMode')?.value||localStorage.getItem('veco_team_view')||'cards';
   const scope=$('#teamWeekScope')?.value||localStorage.getItem('veco_team_scope')||'workdays';
@@ -1335,17 +1348,23 @@ function renderTeam(){
   localStorage.setItem('veco_team_view',view);
   localStorage.setItem('veco_team_scope',scope);
   localStorage.setItem('veco_team_day',selectedDay);
+  const allTeamStatuses=['Uus','Planeeritud','Töös','Ootel','Pausil','Lõpetatud','Täidetud','Suletud','Arhiveeritud'];
   const openStatuses=['Uus','Planeeritud','Töös','Ootel','Pausil'];
+  localStorage.setItem('veco_team_statuses',JSON.stringify(selectedStatuses));
   const inVisibleRange=w=>visibleDays.some(date=>workorderOccursOnDay(w,date));
   const inWeek=w=>weekDays.some(date=>workorderOccursOnDay(w,date));
-  const statusOk=w=>statusFilter==='all'||(statusFilter==='open'?openStatuses.includes(w.status):w.status===statusFilter);
+  const statusOk=w=>selectedStatuses.includes(w.status);
   const searchable=w=>`${w.id} ${w.title} ${objectName(w.objectId)} ${clientName(objectClientId(w.objectId))} ${projectName(w.projectId)} ${workorderPeopleLabel(w)}`.toLowerCase().includes(q);
   const rawSelectedPeople=(()=>{
     try{ return JSON.parse(localStorage.getItem('veco_team_people_filter')||'[]')||[]; }catch(_){ return []; }
   })().filter(id=>state.people.some(p=>p.id===id));
   const selectedPeople=rawSelectedPeople.length?rawSelectedPeople:state.people.map(p=>p.id);
   const visiblePeople=state.people.filter(p=>selectedPeople.includes(p.id));
+  const currentTeamUser=mobileCurrentUser?.()||activeMobilePeople?.()[0]||state.people.find(p=>p.active)||state.people[0]||null;
   const peopleFilterLabel=rawSelectedPeople.length?`${rawSelectedPeople.length} valitud`:'Kõik tehnikud';
+  const statusFilterLabel=selectedStatuses.length===allTeamStatuses.length?'Kõik staatused':(selectedStatuses.length===openStatuses.length && openStatuses.every(s=>selectedStatuses.includes(s))?'Avatud tööd':`${selectedStatuses.length} staatust`);
+  const quickPeopleChips=`<div class="team-quick-chips"><button class="chip ${rawSelectedPeople.length?'':'active'}" type="button" data-team-quick="all">Kõik</button>${currentTeamUser?`<button class="chip ${rawSelectedPeople.length===1&&rawSelectedPeople[0]===currentTeamUser.id?'active':''}" type="button" data-team-quick="mine">Minu tööd${currentTeamUser.name?' · '+esc(currentTeamUser.name):''}</button>`:''}${state.people.slice(0,8).map(p=>`<button class="chip ${rawSelectedPeople.length===1&&rawSelectedPeople[0]===p.id?'active':''}" type="button" data-team-quick-person="${esc(p.id)}">${esc(p.name)}</button>`).join('')}</div>`;
+  const statusQuickChips=`<div class="team-quick-chips"><button class="chip ${selectedStatuses.includes('Planeeritud')?'active':''}" type="button" data-team-status-toggle="Planeeritud">Planeeritud</button><button class="chip ${selectedStatuses.includes('Töös')?'active':''}" type="button" data-team-status-toggle="Töös">Töös</button><button class="chip ${selectedStatuses.includes('Lõpetatud')?'active':''}" type="button" data-team-status-toggle="Lõpetatud">Lõpetatud</button></div>`;
   const weekWorkorders=state.workorders.filter(w=>inWeek(w)&&statusOk(w)&&searchable(w));
   const visibleWorkorders=weekWorkorders.filter(w=>inVisibleRange(w)&&visiblePeople.some(p=>workorderMatchesPerson(w,p.id)));
   const dayWorkorders=state.workorders.filter(w=>workorderOccursOnDay(w,selectedDay)&&statusOk(w)&&searchable(w)&&visiblePeople.some(p=>workorderMatchesPerson(w,p.id)));
@@ -1355,9 +1374,10 @@ function renderTeam(){
   const personDayJobs=(person,date)=>weekWorkorders.filter(w=>workorderMatchesPerson(w,person.id)&&workorderOccursOnDay(w,date)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
   const dayNames=['E','T','K','N','R','L','P'];
   const weekDayOptions=weekDays.map((d,i)=>`<option value="${d}" ${selectedDay===d?'selected':''}>${dayNames[i]} ${d}</option>`).join('');
-  const teamPeopleFilter=`<div class="team-people-filter" id="teamPeopleFilter"><button class="btn ghost" type="button" id="teamPeopleFilterBtn">👥 ${esc(peopleFilterLabel)}</button><div class="team-people-menu hidden" id="teamPeopleMenu"><div class="team-people-menu-head"><strong>Tehnikud vaates</strong><button class="btn small ghost" type="button" id="teamPeopleAllBtn">Kõik</button></div>${state.people.map(p=>`<label class="team-people-option"><input type="checkbox" value="${esc(p.id)}" ${selectedPeople.includes(p.id)?'checked':''}> <span>${esc(p.name)}</span><small>${esc(p.role||'Tehnik')}</small></label>`).join('')}</div></div>`;
+  const teamStatusFilter=`<div class="team-people-filter" id="teamStatusFilterWrap"><button class="btn ghost" type="button" id="teamStatusFilterBtn">☑ ${esc(statusFilterLabel)}</button><div class="team-people-menu hidden" id="teamStatusMenu"><div class="team-people-menu-head"><strong>Staatused vaates</strong><button class="btn small ghost" type="button" id="teamStatusOpenBtn">Avatud</button></div>${allTeamStatuses.map(st=>`<label class="team-people-option"><input type="checkbox" value="${esc(st)}" ${selectedStatuses.includes(st)?'checked':''}> <span>${esc(st)}</span><small>${isCompletedStatus(st)?'lõpetatud':'avatud'}</small></label>`).join('')}<div class="team-people-menu-actions"><button class="btn small ghost" type="button" id="teamStatusAllBtn">Kõik</button><button class="btn small ghost" type="button" id="teamStatusDefaultBtn">Vaikimisi</button></div></div></div>`;
+  const teamPeopleFilter=`<div class="team-people-filter" id="teamPeopleFilter"><button class="btn ghost" type="button" id="teamPeopleFilterBtn">👥 ${esc(peopleFilterLabel)}</button><div class="team-people-menu hidden" id="teamPeopleMenu"><div class="team-people-menu-head"><strong>Tehnikud vaates</strong><button class="btn small ghost" type="button" id="teamPeopleAllBtn">Kõik</button></div>${currentTeamUser?`<button class="btn small ghost full" type="button" id="teamPeopleMineBtn">Minu tööd · ${esc(currentTeamUser.name)}</button>`:''}${state.people.map(p=>`<label class="team-people-option"><input type="checkbox" value="${esc(p.id)}" ${selectedPeople.includes(p.id)?'checked':''}> <span>${esc(p.name)}</span><small>${esc(p.role||'Tehnik')}</small></label>`).join('')}</div></div>`;
   const viewSwitch=`<select class="select" id="teamViewMode"><option value="cards" ${view==='cards'?'selected':''}>Kaardid</option><option value="matrix" ${view==='matrix'?'selected':''}>Nädalatabel</option><option value="day" ${view==='day'?'selected':''}>Päev</option></select><select class="select" id="teamWeekScope"><option value="workdays" ${scope==='workdays'?'selected':''}>E–R</option><option value="full" ${scope==='full'?'selected':''}>E–P</option></select>${view==='day'?`<select class="select" id="teamDaySelect">${weekDayOptions}</select>`:''}`;
-  const filters=`<input class="field" id="teamWeekStart" type="date" value="${esc(currentWeek)}"><select class="select" id="teamStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Avatud tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${workorderStatusOptions.map(s=>`<option value="${s}" ${statusFilter===s?'selected':''}>${s}</option>`).join('')}</select>${teamPeopleFilter}${viewSwitch}`;
+  const filters=`<input class="field" id="teamWeekStart" type="date" value="${esc(currentWeek)}">${teamStatusFilter}${teamPeopleFilter}${viewSwitch}<div class="team-filter-strip">${quickPeopleChips}${statusQuickChips}</div>`;
   const actions=`<button class="btn ghost" id="teamPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="teamThisWeekBtn" type="button">↕ Täna</button><button class="btn ghost" id="teamNextWeekBtn" type="button">Järgmine ›</button>`;
 
   const techCards=visiblePeople.map(p=>{
@@ -1418,18 +1438,40 @@ function renderTeam(){
   const main=header('Tiimivaade',filters,actions,teamHeaderLabel)+`<div class="detail-body"><div class="summary-grid">${summaryBox('Tehnikuid',visiblePeople.length)}${summaryBox(view==='day'?'Päeva töid':'Vahemiku töid',view==='day'?dayWorkorders.length:visibleWorkorders.length)}${summaryBox('Planeeritud h',view==='day'?dayWorkorders.reduce((sum,w)=>sum+workorderHours(w),0):totalHours)}${summaryBox('Hoiatusi',absentCount+overloaded)}</div><div class="team-view-hint">${view==='cards'?'Kaardivaade näitab tehniku koormust valitud nädalas.':view==='matrix'?'Nädalatabel näitab kogu tiimi päevade kaupa.':'Päevavaade sobib hommikuseks tööde jagamiseks.'}</div>${content}</div>`;
   const detail=selectedTeamPersonId?teamDetailHtml(visibleDays,view==='day'?dayWorkorders:visibleWorkorders):'';
   shell(main,detail);
-  $('#teamWeekStart')?.addEventListener('change',()=>{const next=weekStartKeyFrom($('#teamWeekStart').value); localStorage.setItem('veco_team_week',next); $('#teamWeekStart').value=next; renderTeam();}); $('#teamStatusFilter')?.addEventListener('change',renderTeam); $('#teamViewMode')?.addEventListener('change',renderTeam); $('#teamWeekScope')?.addEventListener('change',renderTeam); $('#teamDaySelect')?.addEventListener('change',renderTeam);
+  $('#teamWeekStart')?.addEventListener('change',()=>{const next=weekStartKeyFrom($('#teamWeekStart').value); localStorage.setItem('veco_team_week',next); $('#teamWeekStart').value=next; renderTeam();}); $('#teamViewMode')?.addEventListener('change',renderTeam); $('#teamWeekScope')?.addEventListener('change',renderTeam); $('#teamDaySelect')?.addEventListener('change',renderTeam);
   $('#teamPeopleFilterBtn')?.addEventListener('click',e=>{ e.stopPropagation(); $('#teamPeopleMenu')?.classList.toggle('hidden'); });
   $('#teamPeopleAllBtn')?.addEventListener('click',e=>{ e.stopPropagation(); localStorage.setItem('veco_team_people_filter','[]'); renderTeam(); });
+  $('#teamPeopleMineBtn')?.addEventListener('click',e=>{ e.stopPropagation(); if(currentTeamUser) localStorage.setItem('veco_team_people_filter',JSON.stringify([currentTeamUser.id])); renderTeam(); });
+  $$('[data-team-quick="all"]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_team_people_filter','[]');renderTeam();}));
+  $$('[data-team-quick="mine"]').forEach(btn=>btn.addEventListener('click',()=>{if(currentTeamUser)localStorage.setItem('veco_team_people_filter',JSON.stringify([currentTeamUser.id]));renderTeam();}));
+  $$('[data-team-quick-person]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_team_people_filter',JSON.stringify([btn.dataset.teamQuickPerson]));renderTeam();}));
   $$('#teamPeopleMenu input[type="checkbox"]').forEach(input=>input.addEventListener('change',()=>{
     const selected=$$('#teamPeopleMenu input[type="checkbox"]:checked').map(i=>i.value);
     localStorage.setItem('veco_team_people_filter',JSON.stringify(selected));
     renderTeam();
   }));
+  $('#teamStatusFilterBtn')?.addEventListener('click',e=>{ e.stopPropagation(); $('#teamStatusMenu')?.classList.toggle('hidden'); });
+  $$('#teamStatusMenu input[type="checkbox"]').forEach(input=>input.addEventListener('change',()=>{
+    const selected=$$('#teamStatusMenu input[type="checkbox"]:checked').map(i=>i.value);
+    localStorage.setItem('veco_team_statuses',JSON.stringify(selected.length?selected:['Planeeritud','Töös']));
+    renderTeam();
+  }));
+  $('#teamStatusOpenBtn')?.addEventListener('click',e=>{ e.stopPropagation(); localStorage.setItem('veco_team_statuses',JSON.stringify(openStatuses)); renderTeam(); });
+  $('#teamStatusAllBtn')?.addEventListener('click',e=>{ e.stopPropagation(); localStorage.setItem('veco_team_statuses',JSON.stringify(allTeamStatuses)); renderTeam(); });
+  $('#teamStatusDefaultBtn')?.addEventListener('click',e=>{ e.stopPropagation(); localStorage.setItem('veco_team_statuses',JSON.stringify(['Planeeritud','Töös'])); renderTeam(); });
+  $$('[data-team-status-toggle]').forEach(btn=>btn.addEventListener('click',()=>{
+    const value=btn.dataset.teamStatusToggle;
+    const next=new Set(selectedStatuses);
+    next.has(value)?next.delete(value):next.add(value);
+    localStorage.setItem('veco_team_statuses',JSON.stringify(Array.from(next).length?Array.from(next):['Planeeritud','Töös']));
+    renderTeam();
+  }));
   document.addEventListener('pointerdown',function teamPeopleOutside(e){
     const wrap=$('#teamPeopleFilter');
     if(!document.body.contains(wrap)){ document.removeEventListener('pointerdown',teamPeopleOutside,true); return; }
+    const statusWrap=$('#teamStatusFilterWrap');
     if(wrap&&!wrap.contains(e.target)) $('#teamPeopleMenu')?.classList.add('hidden');
+    if(statusWrap&&!statusWrap.contains(e.target)) $('#teamStatusMenu')?.classList.add('hidden');
   },true);
   $('#teamPrevWeekBtn')?.addEventListener('click',()=>{
     if(view==='day'){

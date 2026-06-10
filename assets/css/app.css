@@ -2267,3 +2267,12 @@ body.modal-open .modal *{
   background:transparent!important;
   box-shadow:none!important;
 }
+
+/* Build 20260610_1322 - team filters */
+.team-filter-strip{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex-basis:100%;padding-top:4px;}
+.team-quick-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.chip{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:7px 10px;font-weight:750;cursor:pointer;box-shadow:none;}
+.chip:hover{background:rgba(23,105,170,.10);}
+.chip.active{border-color:rgba(23,105,170,.45);background:rgba(23,105,170,.16);color:var(--blue);}
+.team-people-menu-actions{display:flex;gap:6px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:8px;margin-top:4px;}
+.team-people-menu .btn.full{width:100%;justify-content:center;margin:2px 0 4px;}
