@@ -1,7 +1,7 @@
 window.VECO_STORAGE={
   key:'veco_v3_shared_state',
   legacyKeys:['veco_v3_step2_state'],
-  version:9,
+  version:10,
   clone(value){return JSON.parse(JSON.stringify(value||{}))},
   defaultData(){
     return this.clone(window.VECO_DATA||{});
@@ -45,10 +45,10 @@ window.VECO_STORAGE={
         try{ if(localStorage.getItem('veco_mobile_user_id')==='U-DEMO') localStorage.removeItem('veco_mobile_user_id'); }catch(e){}
       }
     }
-    ['people','clients','objects','devices','projects','workorders','acts','absences','oncall'].forEach(key=>{
+    ['people','clients','objects','devices','projects','workorders','acts','absences','oncall','maintenanceNorms'].forEach(key=>{
       result[key]=Array.isArray(result[key])?result[key]:[];
     });
-    result._meta={...(result._meta||{}),version:this.version,updatedAt:new Date().toISOString(),build:'VECO_V3_20260609_2213'};
+    result._meta={...(result._meta||{}),version:this.version,updatedAt:new Date().toISOString(),build:'VECO_V3_20260610_1923'};
     return result;
   },
   load(){

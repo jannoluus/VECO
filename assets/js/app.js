@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.15.5';
-const APP_BUILD='20260610_1450';
+const APP_VERSION='v3.15.6';
+const APP_BUILD='20260610_1923';
 
 // Build 20260610_1328: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -24,7 +24,7 @@ document.addEventListener('click',e=>{
   }
 },true);
 let state=window.VECO_STORAGE.load();
-state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
+state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[]; state.maintenanceNorms=state.maintenanceNorms||[];
 normalizeOncallPeople();
 
 
@@ -101,8 +101,8 @@ let selectedTeamPersonId='';
 const detailOpen={objects:false,projects:false,workorders:false,acts:false};
 let modalEscHandler=null;
 
-const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
-const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
+const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
+const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
 
 const byId=(arr,id)=>arr.find(x=>x.id===id)||null;
 const clientName=(id)=>byId(state.clients,id)?.name||'-';
@@ -222,6 +222,7 @@ function nav(){
   const groups=[
     ['Töö',[['calendar','▦'],['team','◫'],['mobile','▤']]],
     ['Haldus',[['workorders','☑'],['acts','▧'],['oncall','☎'],['vacations','▤'],['people','☷'],['objects','⌂'],['clients','▥'],['projects','▣'],['ticker','▭']]],
+    ['Seaded',[['maintenanceNorms','≡']]],
     ['Süsteem',[['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
     ['Arendus',[['mobilePreview','▧'],['demo','↺'],['diagnostics','◎']]]
   ];
@@ -2733,6 +2734,68 @@ function renderDemo(){
     onConfirm:()=>{state=window.VECO_STORAGE.reset();normalizeWorkorderPeople();normalizeOncallPeople();save();renderDemo();}
   }));
 }
+
+const maintenanceNormTypes=['Vent TH','Jahutus TH','Elektrikäit','VK','Automaatika','Gaas','Muu'];
+const maintenanceNormLevels=['Kontroll','Hooldus','Aastahooldus'];
+function normalizeMaintenanceNorms(){
+  state.maintenanceNorms=Array.isArray(state.maintenanceNorms)?state.maintenanceNorms:[];
+  state.maintenanceNorms.forEach(n=>{
+    n.id=n.id||uid('MN');
+    n.type=n.type||'Muu';
+    n.level=n.level||'Hooldus';
+    n.hours=Number(n.hours||0);
+    n.active=n.active!==false;
+    n.notes=n.notes||'';
+  });
+}
+function renderMaintenanceNorms(){
+  normalizeMaintenanceNorms();
+  const q=($('#maintenanceNormSearch')?.value||'').toLowerCase();
+  const type=$('#maintenanceNormTypeFilter')?.value||'all';
+  const level=$('#maintenanceNormLevelFilter')?.value||'all';
+  const active=$('#maintenanceNormActiveFilter')?.value||'active';
+  const list=state.maintenanceNorms.filter(n=>{
+    const hay=[n.type,n.level,n.notes,`${n.hours}`].join(' ').toLowerCase();
+    const okQ=!q||hay.includes(q);
+    const okType=type==='all'||n.type===type;
+    const okLevel=level==='all'||n.level===level;
+    const okActive=active==='all'||(active==='active'?n.active!==false:n.active===false);
+    return okQ&&okType&&okLevel&&okActive;
+  }).sort((a,b)=>String(a.type).localeCompare(String(b.type),'et')||maintenanceNormLevels.indexOf(a.level)-maintenanceNormLevels.indexOf(b.level)||Number(a.hours)-Number(b.hours));
+  const hoursTotal=list.filter(n=>n.active!==false).reduce((sum,n)=>sum+Number(n.hours||0),0);
+  const types=Array.from(new Set([...(state.maintenanceNorms||[]).map(n=>n.type).filter(Boolean),...maintenanceNormTypes]));
+  const filters=`<input class="field" id="maintenanceNormSearch" placeholder="Otsi normi, taset või märkust..." value="${esc(q)}"><select class="select" id="maintenanceNormTypeFilter"><option value="all">Kõik hooldusliigid</option>${types.map(t=>`<option value="${esc(t)}" ${type===t?'selected':''}>${esc(t)}</option>`).join('')}</select><select class="select" id="maintenanceNormLevelFilter"><option value="all">Kõik tasemed</option>${maintenanceNormLevels.map(l=>`<option value="${esc(l)}" ${level===l?'selected':''}>${esc(l)}</option>`).join('')}</select><select class="select" id="maintenanceNormActiveFilter"><option value="active" ${active==='active'?'selected':''}>Aktiivsed</option><option value="inactive" ${active==='inactive'?'selected':''}>Peidetud</option><option value="all" ${active==='all'?'selected':''}>Kõik</option></select>`;
+  const actions=`<button class="btn ghost" id="resetDataBtn" type="button">Taasta demo</button><button class="btn primary" id="newMaintenanceNormBtn" type="button">+ Uus norm</button>`;
+  const rows=list.map(n=>`<tr><td><strong>${esc(n.type)}</strong></td><td>${esc(n.level)}</td><td><strong>${Number(n.hours||0).toFixed(1)} h</strong></td><td><span class="status ${n.active!==false?'ok':'red'}">${n.active!==false?'Aktiivne':'Peidetud'}</span></td><td>${esc(n.notes||'')}</td><td class="nowrap"><button class="btn small ghost" data-edit-maintenance-norm="${esc(n.id)}" type="button">Muuda</button> <button class="btn small ghost" data-toggle-maintenance-norm="${esc(n.id)}" type="button">${n.active!==false?'Peida':'Aktiveeri'}</button> <button class="btn small danger" data-delete-maintenance-norm="${esc(n.id)}" type="button">Kustuta</button></td></tr>`).join('')||`<tr><td colspan="6" class="muted">Hooldusnorme ei leitud.</td></tr>`;
+  const intro=`<div class="card"><div class="card-top"><h3>Planeerimisbaas</h3><span class="status ok">MVP</span></div><span class="muted">Hooldusnormid on tulevase hooldusmahu arvutuse alus. Esialgu kasutame lihtsat mudelit: hooldusliik × tase × standardaeg. Järgmises etapis seotakse need objekti hooldusprofiiliga.</span></div>`;
+  const main=header('Hooldusnormid',filters,actions,'SEADED')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Norme',state.maintenanceNorms.length)}${summaryBox('Aktiivseid',state.maintenanceNorms.filter(n=>n.active!==false).length)}${summaryBox('Hooldusliike',new Set(state.maintenanceNorms.map(n=>n.type)).size)}${summaryBox('Valitud h summa',`${hoursTotal.toFixed(1)} h`)}</div>${intro}<div class="section-title">Normide register</div>${table(['Hooldusliik','Tase','Standardaeg','Staatus','Märkus','Tegevused'],rows)}<div class="muted">Soovituslik algloogika: Kontroll 1 h, Hooldus 2 h, Aastahooldus 4 h. Täpsustame hiljem päris tööaegade põhjal.</div></div>`;
+  shell(main,'',{wide:true});
+  $('#maintenanceNormSearch')?.addEventListener('input',renderMaintenanceNorms);
+  $('#maintenanceNormTypeFilter')?.addEventListener('change',renderMaintenanceNorms);
+  $('#maintenanceNormLevelFilter')?.addEventListener('change',renderMaintenanceNorms);
+  $('#maintenanceNormActiveFilter')?.addEventListener('change',renderMaintenanceNorms);
+  $('#newMaintenanceNormBtn')?.addEventListener('click',()=>openMaintenanceNormModal());
+  $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();normalizeMaintenanceNorms();save();renderMaintenanceNorms();});
+  $$('[data-edit-maintenance-norm]').forEach(btn=>btn.addEventListener('click',()=>openMaintenanceNormModal(btn.dataset.editMaintenanceNorm)));
+  $$('[data-toggle-maintenance-norm]').forEach(btn=>btn.addEventListener('click',()=>{const n=byId(state.maintenanceNorms,btn.dataset.toggleMaintenanceNorm);if(n){n.active=n.active===false;save();renderMaintenanceNorms();}}));
+  $$('[data-delete-maintenance-norm]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteMaintenanceNorm;const n=byId(state.maintenanceNorms,id);if(!n)return;openConfirm({title:'Kustuta hooldusnorm?',message:`${n.type} · ${n.level} · ${n.hours} h`,details:'<div class="muted">Kustutamine eemaldab normi registrist. Tulevikus objektide hooldusprofiilid hakkavad kasutama ainult olemasolevaid aktiivseid norme.</div>',confirmText:'Kustuta',onConfirm:()=>{state.maintenanceNorms=state.maintenanceNorms.filter(x=>x.id!==id);save();renderMaintenanceNorms();}});}));
+}
+function openMaintenanceNormModal(id=''){
+  normalizeMaintenanceNorms();
+  const n=id?byId(state.maintenanceNorms,id):{type:'',level:'',hours:'',active:true,notes:''};
+  const typeOptions=maintenanceNormTypes.map(t=>`<option value="${esc(t)}" ${n.type===t?'selected':''}>${esc(t)}</option>`).join('');
+  const levelOptions=maintenanceNormLevels.map(l=>`<option value="${esc(l)}" ${n.level===l?'selected':''}>${esc(l)}</option>`).join('');
+  openModal(`<form id="maintenanceNormForm"><div class="dialog-head"><h2>${id?'Muuda hooldusnormi':'Lisa hooldusnorm'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Hooldusliik<select class="select" name="type" required><option value="">Vali hooldusliik...</option>${typeOptions}</select></label><label>Tase<select class="select" name="level" required><option value="">Vali tase...</option>${levelOptions}</select></label><label>Standardaeg (h)<input class="field" name="hours" type="number" min="0" step="0.25" required value="${esc(n.hours)}"></label><label>Staatus<select class="select" name="active"><option value="true" ${n.active!==false?'selected':''}>Aktiivne</option><option value="false" ${n.active===false?'selected':''}>Peidetud</option></select></label><label class="full">Märkus<textarea name="notes" placeholder="Näiteks: aastahooldus sisaldab filtrivahetust ja põhjalikumat kontrolli.">${esc(n.notes||'')}</textarea></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  bindClose();
+  $('#maintenanceNormForm')?.addEventListener('submit',e=>{
+    e.preventDefault();
+    const f=e.currentTarget.elements;
+    const next={id:id||uid('MN'),type:f.type.value,level:f.level.value,hours:Number(f.hours.value||0),active:f.active.value==='true',notes:f.notes.value||''};
+    if(id){Object.assign(n,next)}else{state.maintenanceNorms.push(next)}
+    save();closeModal();renderMaintenanceNorms();
+  });
+}
+
 function renderDiagnostics(){
   const rows=[
     ['Versioon',APP_VERSION],
@@ -2743,14 +2806,15 @@ function renderDiagnostics(){
     ['Akte',state.acts.length],
     ['Tehnikuid',state.people.length],
     ['Puudumisi',state.absences.length],
-    ['Valvekirjeid',state.oncall.length]
+    ['Valvekirjeid',state.oncall.length],
+    ['Hooldusnorme',state.maintenanceNorms.length]
   ].map(([k,v])=>`<tr><td><strong>${esc(k)}</strong></td><td>${esc(v)}</td></tr>`).join('');
   const main=header('Diagnostika','','','ARENDUS')+`<div class="detail-body">${table(['Parameeter','Väärtus'],rows)}</div>`;
   shell(main,'',{wide:true});
 }
 
 function renderCurrentPage(){
-  ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
+  ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
 }
 async function bootstrapApp(){
   bindLocalPeerSync();

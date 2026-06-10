@@ -48,5 +48,19 @@ window.VECO_DATA={
   oncall:[
     {id:'OC-01',personId:'U-JANNO',start:'2026-06-01',end:'2026-06-07',note:'Telefonivalve'},
     {id:'OC-02',personId:'U-RICHARD',start:'2026-06-08',end:'2026-06-14',note:'Telefonivalve'}
+  ],
+  maintenanceNorms:[
+    {id:'MN-001',type:'Vent TH',level:'Kontroll',hours:1,active:true,notes:'Kiire ülevaatus ja põhilised kontrollid.'},
+    {id:'MN-002',type:'Vent TH',level:'Hooldus',hours:2,active:true,notes:'Standardne ventilatsiooni tehnohooldus.'},
+    {id:'MN-003',type:'Vent TH',level:'Aastahooldus',hours:4,active:true,notes:'Põhjalikum hooldus, filtrid ja lisatööde potentsiaali kaardistus.'},
+    {id:'MN-004',type:'Jahutus TH',level:'Kontroll',hours:1,active:true,notes:'Kiire tööparameetrite kontroll.'},
+    {id:'MN-005',type:'Jahutus TH',level:'Hooldus',hours:2,active:true,notes:'Standardne jahutusseadme hooldus.'},
+    {id:'MN-006',type:'Jahutus TH',level:'Aastahooldus',hours:4,active:true,notes:'Põhjalikum hooldus ja remondivajaduste kaardistus.'},
+    {id:'MN-007',type:'Elektrikäit',level:'Kontroll',hours:1,active:true,notes:'Kiire kontroll või kuu test.'},
+    {id:'MN-008',type:'Elektrikäit',level:'Hooldus',hours:2,active:true,notes:'Standardne elektrikäidu hooldus.'},
+    {id:'MN-009',type:'Elektrikäit',level:'Aastahooldus',hours:4,active:true,notes:'Põhjalikum kontroll ja dokumenteerimine.'},
+    {id:'MN-010',type:'VK',level:'Kontroll',hours:1,active:true,notes:'Kiire VK kontroll.'},
+    {id:'MN-011',type:'VK',level:'Hooldus',hours:2,active:true,notes:'Standardne VK hooldus.'},
+    {id:'MN-012',type:'VK',level:'Aastahooldus',hours:4,active:true,notes:'Põhjalikum hooldus ja lisatööde kaardistus.'}
   ]
 };

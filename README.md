@@ -1,7 +1,7 @@
 # VECO V3
 
-Versioon: v3.11.27
-Build: 20260608_1742
+Versioon: v3.15.6
+Build: 20260610_1923
 
 Muudatused:
 - Töökäsu staatuse töövoog: Planeeritud / Töös / Lõpetatud.
@@ -259,3 +259,11 @@ Muudatused:
 - “Minu tööd” kasutab vaikimisi Janno kasutajat (`U-JANNO`), mitte esimest tehniku kasutajat.
 - Tehnikute valik jäi dropdown-menüüsse alles; seal saab jätkuvalt valida kõik, Janno/minu tööd või konkreetsed tehnikud.
 - Footer/cache build uuendatud `20260610_1334`.
+
+
+## V3.15.6 / 20260610_1923
+- Lisatud uus menüü: Seaded → Hooldusnormid.
+- Lisatud hooldusnormide register: hooldusliik, tase, standardaeg, staatus ja märkus.
+- Lisatud normide lisamine, muutmine, peitmine/aktiveerimine ja kustutamine.
+- Lisatud algsed normid: Vent TH, Jahutus TH, Elektrikäit ja VK tasemetega Kontroll / Hooldus / Aastahooldus.
+- Andmemudelisse lisatud `maintenanceNorms`, mida kasutatakse järgmises etapis objekti hooldusprofiili ja hooldusmahu arvutuse alusena.
