@@ -1997,3 +1997,9 @@ body.modal-open .modal *{
 .calendar-event.compact .calendar-person-participants{
   display:block!important;
 }
+
+
+.calendar-person-participants{opacity:.75;}
+.calendar-event-footer{background:transparent!important;border-top:1px solid var(--border-color,#3a4a5a);}
+.calendar-now-label,.calendar-current-time-label{z-index:1;}
+.calendar-event,.calendar-card,button.calendar-event{z-index:5;}
