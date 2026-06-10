@@ -2268,7 +2268,7 @@ body.modal-open .modal *{
   box-shadow:none!important;
 }
 
-/* Build 20260610_1328 - team filters */
+/* Build 20260610_1334 - team filters */
 .team-filter-strip{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex-basis:100%;padding-top:4px;}
 .team-quick-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .chip{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:7px 10px;font-weight:750;cursor:pointer;box-shadow:none;}
@@ -2330,3 +2330,24 @@ body.modal-open .modal *{
   font-size:11px!important;
   line-height:1.15!important;
 }
+
+
+/* Build 20260610_1334 - korrastatud tiimivaate filtririda */
+.app.page-team .filter-row{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  align-items:center!important;
+  gap:8px!important;
+  min-height:auto!important;
+  height:auto!important;
+  padding-bottom:6px!important;
+}
+.app.page-team .filter-row > .field,
+.app.page-team .filter-row > .select,
+.app.page-team .filter-row > .team-people-filter{
+  flex:0 0 auto!important;
+}
+.app.page-team .team-filter-strip{display:none!important;}
+.app.page-team .team-quick-chips{display:none!important;}
+.app.page-team .chip{white-space:nowrap;}
+.app.page-team .panel-head.view-head{padding-bottom:8px!important;}

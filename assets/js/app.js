@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.15.4';
-const APP_BUILD='20260610_1328';
+const APP_VERSION='v3.15.5';
+const APP_BUILD='20260610_1334';
 
 // Build 20260610_1328: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -1379,11 +1379,19 @@ function renderTeam(){
   })().filter(id=>state.people.some(p=>p.id===id));
   const selectedPeople=rawSelectedPeople.length?rawSelectedPeople:state.people.map(p=>p.id);
   const visiblePeople=state.people.filter(p=>selectedPeople.includes(p.id));
-  const currentTeamUser=mobileCurrentUser?.()||activeMobilePeople?.()[0]||state.people.find(p=>p.active)||state.people[0]||null;
+  const preferredCurrentUser=()=>{
+    const stored=localStorage.getItem('veco_team_current_user_id')||'';
+    return state.people.find(p=>p.id===stored)
+      || state.people.find(p=>p.id==='U-JANNO')
+      || state.people.find(p=>String(p.name||'').toLowerCase().includes('janno'))
+      || mobileCurrentUser?.()
+      || state.people.find(p=>p.active)
+      || state.people[0]
+      || null;
+  };
+  const currentTeamUser=preferredCurrentUser();
   const peopleFilterLabel=rawSelectedPeople.length?`${rawSelectedPeople.length} valitud`:'Kõik tehnikud';
   const statusFilterLabel=selectedStatuses.length===allTeamStatuses.length?'Kõik staatused':(selectedStatuses.length===openStatuses.length && openStatuses.every(s=>selectedStatuses.includes(s))?'Avatud tööd':`${selectedStatuses.length} staatust`);
-  const quickPeopleChips=`<div class="team-quick-chips"><button class="chip ${rawSelectedPeople.length?'':'active'}" type="button" data-team-quick="all">Kõik</button>${currentTeamUser?`<button class="chip ${rawSelectedPeople.length===1&&rawSelectedPeople[0]===currentTeamUser.id?'active':''}" type="button" data-team-quick="mine">Minu tööd${currentTeamUser.name?' · '+esc(currentTeamUser.name):''}</button>`:''}${state.people.slice(0,8).map(p=>`<button class="chip ${rawSelectedPeople.length===1&&rawSelectedPeople[0]===p.id?'active':''}" type="button" data-team-quick-person="${esc(p.id)}">${esc(p.name)}</button>`).join('')}</div>`;
-  const statusQuickChips=`<div class="team-quick-chips"><button class="chip ${selectedStatuses.includes('Planeeritud')?'active':''}" type="button" data-team-status-toggle="Planeeritud">Planeeritud</button><button class="chip ${selectedStatuses.includes('Töös')?'active':''}" type="button" data-team-status-toggle="Töös">Töös</button><button class="chip ${selectedStatuses.includes('Lõpetatud')?'active':''}" type="button" data-team-status-toggle="Lõpetatud">Lõpetatud</button></div>`;
   const weekWorkorders=state.workorders.filter(w=>inWeek(w)&&statusOk(w)&&searchable(w));
   const visibleWorkorders=weekWorkorders.filter(w=>inVisibleRange(w)&&visiblePeople.some(p=>workorderMatchesPerson(w,p.id)));
   const dayWorkorders=state.workorders.filter(w=>workorderOccursOnDay(w,selectedDay)&&statusOk(w)&&searchable(w)&&visiblePeople.some(p=>workorderMatchesPerson(w,p.id)));
@@ -1396,7 +1404,7 @@ function renderTeam(){
   const teamStatusFilter=`<div class="team-people-filter" id="teamStatusFilterWrap"><button class="btn ghost" type="button" id="teamStatusFilterBtn">☑ ${esc(statusFilterLabel)}</button><div class="team-people-menu hidden" id="teamStatusMenu"><div class="team-people-menu-head"><strong>Staatused vaates</strong><button class="btn small ghost" type="button" id="teamStatusOpenBtn">Avatud</button></div>${allTeamStatuses.map(st=>`<label class="team-people-option"><input type="checkbox" value="${esc(st)}" ${selectedStatuses.includes(st)?'checked':''}> <span>${esc(st)}</span><small>${isCompletedStatus(st)?'lõpetatud':'avatud'}</small></label>`).join('')}<div class="team-people-menu-actions"><button class="btn small ghost" type="button" id="teamStatusAllBtn">Kõik</button><button class="btn small ghost" type="button" id="teamStatusDefaultBtn">Vaikimisi</button></div></div></div>`;
   const teamPeopleFilter=`<div class="team-people-filter" id="teamPeopleFilter"><button class="btn ghost" type="button" id="teamPeopleFilterBtn">👥 ${esc(peopleFilterLabel)}</button><div class="team-people-menu hidden" id="teamPeopleMenu"><div class="team-people-menu-head"><strong>Tehnikud vaates</strong><button class="btn small ghost" type="button" id="teamPeopleAllBtn">Kõik</button></div>${currentTeamUser?`<button class="btn small ghost full" type="button" id="teamPeopleMineBtn">Minu tööd · ${esc(currentTeamUser.name)}</button>`:''}${state.people.map(p=>`<label class="team-people-option"><input type="checkbox" value="${esc(p.id)}" ${selectedPeople.includes(p.id)?'checked':''}> <span>${esc(p.name)}</span><small>${esc(p.role||'Tehnik')}</small></label>`).join('')}</div></div>`;
   const viewSwitch=`<select class="select" id="teamViewMode"><option value="cards" ${view==='cards'?'selected':''}>Kaardid</option><option value="matrix" ${view==='matrix'?'selected':''}>Nädalatabel</option><option value="day" ${view==='day'?'selected':''}>Päev</option></select><select class="select" id="teamWeekScope"><option value="workdays" ${scope==='workdays'?'selected':''}>E–R</option><option value="full" ${scope==='full'?'selected':''}>E–P</option></select>${view==='day'?`<select class="select" id="teamDaySelect">${weekDayOptions}</select>`:''}`;
-  const filters=`<input class="field" id="teamWeekStart" type="date" value="${esc(currentWeek)}">${teamStatusFilter}${teamPeopleFilter}${viewSwitch}<div class="team-filter-strip">${quickPeopleChips}${statusQuickChips}</div>`;
+  const filters=`<input class="field" id="teamWeekStart" type="date" value="${esc(currentWeek)}">${teamStatusFilter}${teamPeopleFilter}${viewSwitch}`;
   const actions=`<button class="btn ghost" id="teamPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="teamThisWeekBtn" type="button">↕ Täna</button><button class="btn ghost" id="teamNextWeekBtn" type="button">Järgmine ›</button>`;
 
   const techCards=visiblePeople.map(p=>{

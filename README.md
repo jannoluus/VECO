@@ -252,3 +252,10 @@ Muudatused:
 - Kalendri nädala- ja päevavaates kuvatakse kattuvad ühepäevased töökäsud servapidi/kõrvuti.
 - Kattuvate tööde kastid jäävad eraldi klikitavaks ega kata üksteist täielikult.
 - 3+ kattuva töö korral kasutatakse kompaktsemat kitsast kuva.
+
+
+## Build 20260610_1334
+- Tiimivaate filtririda korrastatud: eemaldatud ülemisest ribast dubleerivad personaalsed kiirfiltri chipid, mis tekitasid segadust ja kattumist.
+- “Minu tööd” kasutab vaikimisi Janno kasutajat (`U-JANNO`), mitte esimest tehniku kasutajat.
+- Tehnikute valik jäi dropdown-menüüsse alles; seal saab jätkuvalt valida kõik, Janno/minu tööd või konkreetsed tehnikud.
+- Footer/cache build uuendatud `20260610_1334`.
