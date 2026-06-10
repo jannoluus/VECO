@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260610_2203';
+const APP_BUILD='20260610_2204';
 
 // Build 20260610_1328: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -3081,7 +3081,7 @@ function renderUnplannedMaintenance(){
   const statusVal=$('#unplannedStatusFilter')?.value||'all';
   const q=$('#unplannedSearch')?.value||'';
   const filters=`<input class="field" id="unplannedSearch" placeholder="Otsi objekti, tööd, liiki või märkust..." value="${esc(q)}"><select class="select" id="unplannedStatusFilter"><option value="all">Kõik staatused</option>${unplannedStatuses.map(st=>`<option value="${esc(st)}" ${statusVal===st?'selected':''}>${esc(st)}</option>`).join('')}</select><select class="select" id="unplannedObjectFilter"><option value="all">Kõik objektid</option>${objectOptions}</select><select class="select" id="unplannedTypeFilter"><option value="all">Kõik liigid</option>${typeOptions}</select>`;
-  const actions='<button class="btn primary" id="newUnplannedBtn" type="button">+ Lisa planeerimata hooldus</button>';
+  const actions='<button class="btn ghost" id="importGranlundBtn" type="button">Impordi Granlund raport</button><button class="btn primary" id="newUnplannedBtn" type="button">+ Lisa planeerimata hooldus</button>';
   const rows=list.map(r=>`<tr><td><input type="checkbox" data-unplanned-select="${esc(r.id)}" aria-label="Vali ${esc(r.task||'kirje')}"></td><td><span class="status ${unplannedStatusClass(r.status)}">${esc(r.status||'Uus')}</span></td><td>${esc(unplannedObjectName(r))}</td><td><strong>${esc(r.task||'-')}</strong>${r.notes?`<div class="muted">${esc(r.notes)}</div>`:''}</td><td>${esc(r.due||'')}</td><td>${esc(r.type||'')}</td><td>${esc(r.level||'')}</td><td><strong>${Number(r.hours||0).toFixed(1)} h</strong></td><td class="nowrap"><button class="btn small ghost" data-edit-unplanned="${esc(r.id)}" type="button">Muuda</button> <button class="btn small ghost" data-confirm-unplanned="${esc(r.id)}" type="button">Kinnita</button> <button class="btn small danger" data-exclude-unplanned="${esc(r.id)}" type="button">Välista</button></td></tr>`).join('')||'<tr><td colspan="9" class="muted">Planeerimata hooldusi ei ole.</td></tr>';
   const batch=`<div class="toolbar"><button class="btn small ghost" id="selectAllUnplannedBtn" type="button">Vali kõik nähtavad</button><button class="btn small primary" id="confirmSelectedUnplannedBtn" type="button">✓ Kinnita valitud</button><button class="btn small danger" id="excludeSelectedUnplannedBtn" type="button">✕ Välista valitud</button></div>`;
   const cards=`<div class="summary-grid">${summaryBox('Uusi',state.unplannedMaintenance.filter(x=>x.status==='Uus').length)}${summaryBox('Kinnitatud',confirmed.length)}${summaryBox('Välistatud',excluded)}${summaryBox('Kinnitatud maht',confirmedHours.toFixed(1)+' h')}${summaryBox('Hilinenud',overdue)}</div>`;
@@ -3093,6 +3093,7 @@ function renderUnplannedMaintenance(){
   $('#unplannedObjectFilter')?.addEventListener('change',renderUnplannedMaintenance);
   $('#unplannedTypeFilter')?.addEventListener('change',renderUnplannedMaintenance);
   $('#newUnplannedBtn')?.addEventListener('click',()=>openUnplannedMaintenanceModal());
+  $('#importGranlundBtn')?.addEventListener('click',()=>openGranlundImportModal());
   $('#selectAllUnplannedBtn')?.addEventListener('click',()=>{$$('[data-unplanned-select]').forEach(cb=>cb.checked=true);});
   $('#confirmSelectedUnplannedBtn')?.addEventListener('click',()=>updateSelectedUnplannedStatus('Kinnitatud'));
   $('#excludeSelectedUnplannedBtn')?.addEventListener('click',()=>updateSelectedUnplannedStatus('Välistatud'));
@@ -3100,6 +3101,154 @@ function renderUnplannedMaintenance(){
   $$('[data-confirm-unplanned]').forEach(btn=>btn.addEventListener('click',()=>{const r=byId(state.unplannedMaintenance,btn.dataset.confirmUnplanned); if(r){r.status='Kinnitatud'; save(); renderUnplannedMaintenance();}}));
   $$('[data-exclude-unplanned]').forEach(btn=>btn.addEventListener('click',()=>{const r=byId(state.unplannedMaintenance,btn.dataset.excludeUnplanned); if(r){r.status='Välistatud'; save(); renderUnplannedMaintenance();}}));
 }
+
+let granlundImportPreview=[];
+function normalizeImportText(v){return String(v||'').replace(/\s+/g,' ').trim();}
+function parseEstonianDate(v){
+  if(!v) return '';
+  if(v instanceof Date && !Number.isNaN(v.getTime())) return v.toISOString().slice(0,10);
+  const s=String(v).trim();
+  const iso=s.match(/(20\d{2})[-.\/]([01]?\d)[-.\/]([0-3]?\d)/);
+  if(iso) return `${iso[1]}-${iso[2].padStart(2,'0')}-${iso[3].padStart(2,'0')}`;
+  const ee=s.match(/([0-3]?\d)[-.\/]([01]?\d)[-.\/](20\d{2})/);
+  if(ee) return `${ee[3]}-${ee[2].padStart(2,'0')}-${ee[1].padStart(2,'0')}`;
+  return '';
+}
+function objectFromGranlundText(text){
+  const row=normalizeImportText(text).toLowerCase();
+  const objects=(state.objects||[]).filter(o=>o.name).sort((a,b)=>String(b.name).length-String(a.name).length);
+  const found=objects.find(o=>row.includes(String(o.name||'').toLowerCase()));
+  return found||null;
+}
+function classifyGranlundTask(task,serviceArea=''){
+  normalizeGranlundClassifiers();
+  const hay=normalizeImportText(`${task} ${serviceArea}`).toLowerCase();
+  const rules=(state.granlundClassifiers||[]).filter(c=>c.active!==false&&c.pattern).sort((a,b)=>String(b.pattern).length-String(a.pattern).length);
+  const rule=rules.find(c=>hay.includes(String(c.pattern).toLowerCase()));
+  if(!rule) return {type:'Muu',level:'Hooldus',hours:0,exclude:false,rule:null,matched:false};
+  const norm=rule.exclude?null:normByTypeLevel(rule.type,rule.level);
+  return {type:rule.type||'Muu',level:rule.level||'Hooldus',hours:Number(norm?.hours||0),exclude:!!rule.exclude,rule,matched:true};
+}
+function granlundImportKey(row){
+  return [row.objectId||row.object||'',row.task||'',row.due||''].map(x=>String(x).trim().toLowerCase()).join('|');
+}
+function makeGranlundPreviewRow({objectId='',object='',task='',due='',serviceArea='',raw=''}){
+  const obj=objectId?byId(state.objects,objectId):objectFromGranlundText(`${object} ${raw}`);
+  const cls=classifyGranlundTask(task||raw,serviceArea||raw);
+  const taskText=normalizeImportText(task||raw);
+  const existing=(state.unplannedMaintenance||[]).find(x=>granlundImportKey(x)===granlundImportKey({objectId:obj?.id||'',object:obj?.name||object,task:taskText,due}));
+  return {id:uid('GIMP'),objectId:obj?.id||'',object:obj?.name||object||'',task:taskText,due,serviceArea,raw, type:cls.type, level:cls.level, hours:cls.hours, status:cls.exclude?'Välistatud':'Uus', exclude:cls.exclude, matched:cls.matched, rulePattern:cls.rule?.pattern||'', duplicate:!!existing};
+}
+function parseGranlundRowsFromText(text){
+  const lines=String(text||'').split(/\r?\n/).map(normalizeImportText).filter(Boolean);
+  const out=[];
+  for(const line of lines){
+    if(/Tööpakett\s+Töö\s+Teeninduspiirkond/i.test(line) || /^Granlund Manager/i.test(line)) continue;
+    const due=parseEstonianDate(line);
+    if(!due) continue;
+    const obj=objectFromGranlundText(line);
+    let task=line.replace(/\b\d{1,2}[.\/]\d{1,2}[.\/]20\d{2}\b/g,' ').replace(/\b20\d{2}[-\/]\d{1,2}[-\/]\d{1,2}\b/g,' ');
+    if(obj) task=task.replace(new RegExp(String(obj.name).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'ig'),' ');
+    task=normalizeImportText(task);
+    if(task.length<4) continue;
+    out.push(makeGranlundPreviewRow({objectId:obj?.id||'',object:obj?.name||'',task,due,raw:line}));
+  }
+  return out;
+}
+function parseGranlundRowsFromMatrix(rows){
+  const data=(rows||[]).filter(r=>Array.isArray(r)&&r.some(c=>String(c??'').trim()));
+  if(!data.length) return [];
+  const headerIdx=data.findIndex(r=>r.some(c=>/Tööpakett/i.test(String(c)))&&r.some(c=>/Tähtaeg/i.test(String(c))));
+  const header=headerIdx>=0?data[headerIdx].map(c=>String(c||'').trim()):[];
+  const idx=(pattern)=>header.findIndex(h=>pattern.test(h));
+  const taskI=idx(/^Töö$/i);
+  const dueI=idx(/Tähtaeg/i);
+  const objectI=idx(/Objekt/i);
+  const serviceI=idx(/Teeninduspiirkond/i);
+  const body=data.slice(headerIdx>=0?headerIdx+1:0);
+  const out=[];
+  for(const r of body){
+    let due=dueI>=0?parseEstonianDate(r[dueI]):'';
+    if(!due){
+      const dcell=r.find(c=>parseEstonianDate(c));
+      due=parseEstonianDate(dcell);
+    }
+    if(!due) continue;
+    const raw=r.map(c=>String(c??'').trim()).filter(Boolean).join(' ');
+    const object=objectI>=0?String(r[objectI]||'').trim():'';
+    const obj=object?objectFromGranlundText(object)||objectFromGranlundText(raw):objectFromGranlundText(raw);
+    let task=taskI>=0?String(r[taskI]||'').trim():'';
+    if(!task){
+      const candidates=r.map(c=>String(c??'').trim()).filter(x=>x && !parseEstonianDate(x) && (!obj || x!==obj.name));
+      task=candidates.sort((a,b)=>b.length-a.length)[0]||raw;
+    }
+    const serviceArea=serviceI>=0?String(r[serviceI]||'').trim():'';
+    out.push(makeGranlundPreviewRow({objectId:obj?.id||'',object:obj?.name||object,task,due,serviceArea,raw}));
+  }
+  return out;
+}
+function renderGranlundImportPreview(){
+  const box=$('#granlundImportPreview');
+  const importBtn=$('#granlundImportApplyBtn');
+  if(!box) return;
+  if(!granlundImportPreview.length){
+    box.innerHTML='<div class="muted">Eelvaadet pole. Vali fail või kleebi Granlundi raporti tekst ja vajuta "Analüüsi".</div>';
+    if(importBtn) importBtn.disabled=true;
+    return;
+  }
+  if(importBtn) importBtn.disabled=false;
+  const addCount=granlundImportPreview.filter(x=>!x.duplicate).length;
+  const excl=granlundImportPreview.filter(x=>x.status==='Välistatud').length;
+  const dup=granlundImportPreview.filter(x=>x.duplicate).length;
+  const hours=granlundImportPreview.filter(x=>!x.duplicate&&x.status!=='Välistatud').reduce((s,x)=>s+Number(x.hours||0),0);
+  const rows=granlundImportPreview.slice(0,80).map(r=>`<tr><td><span class="status ${r.duplicate?'warn':(r.status==='Välistatud'?'red':'ok')}">${r.duplicate?'Duplikaat':esc(r.status)}</span></td><td>${esc(r.object||'-')}</td><td><strong>${esc(r.task)}</strong><div class="muted">${r.rulePattern?`reegel: ${esc(r.rulePattern)}`:(r.matched?'':'reeglit ei leitud')}</div></td><td>${esc(r.due)}</td><td>${esc(r.type)}</td><td>${esc(r.level)}</td><td><strong>${Number(r.hours||0).toFixed(1)} h</strong></td></tr>`).join('');
+  box.innerHTML=`<div class="summary-grid">${summaryBox('Lisatavaid',addCount)}${summaryBox('Välistatud',excl)}${summaryBox('Duplikaate',dup)}${summaryBox('Maht',hours.toFixed(1)+' h')}</div>${table(['Staatus','Objekt','Töö','Tähtaeg','Liik','Tase','Maht'],rows)}`;
+}
+async function readGranlundImportFile(file){
+  if(!file) return '';
+  const name=String(file.name||'').toLowerCase();
+  if(name.endsWith('.xlsx')||name.endsWith('.xls')){
+    if(!window.XLSX) throw new Error('XLSX parser ei ole laaditud. Kontrolli internetiühendust või kleebi raporti tekst käsitsi.');
+    const buf=await file.arrayBuffer();
+    const wb=window.XLSX.read(buf,{type:'array',cellDates:true});
+    const rows=[];
+    wb.SheetNames.forEach(sn=>rows.push(...window.XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''})));
+    granlundImportPreview=parseGranlundRowsFromMatrix(rows);
+    return 'xlsx';
+  }
+  const text=await file.text();
+  granlundImportPreview=parseGranlundRowsFromText(text);
+  return 'text';
+}
+function applyGranlundImportPreview(){
+  let added=0,updated=0,skipped=0;
+  granlundImportPreview.forEach(r=>{
+    const key=granlundImportKey(r);
+    const existing=(state.unplannedMaintenance||[]).find(x=>granlundImportKey(x)===key);
+    if(existing){Object.assign(existing,{type:r.type,level:r.level,hours:r.hours,status:existing.status||r.status,source:'Granlund',raw:r.raw||existing.raw||''}); updated++; return;}
+    state.unplannedMaintenance.push({id:uid('UM'),source:'Granlund',objectId:r.objectId,object:r.object,task:r.task,due:r.due,type:r.type,level:r.level,hours:Number(r.hours||0),status:r.status||'Uus',notes:r.rulePattern?`Imporditud Granlundist. Reegel: ${r.rulePattern}`:'Imporditud Granlundist. Klassifikaatori vastet ei leitud.',raw:r.raw||''}); added++;
+  });
+  save();
+  const msg=`Lisatud ${added}, uuendatud ${updated}, vahele jäetud ${skipped}.`;
+  closeModal();
+  renderUnplannedMaintenance();
+  setTimeout(()=>alert(msg),50);
+}
+function openGranlundImportModal(){
+  granlundImportPreview=[];
+  openModal(`<div><div class="dialog-head"><h2>Impordi Granlund raport</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><div class="card-top"><h3>Import v1</h3><span class="status ok">Eelvaade</span></div><span class="muted">XLSX import töötab brauseris SheetJS parseriga. PDF-i puhul kasuta esialgu raporti teksti kopeerimist/kleepimist, sest PDF-ist teksti lugemine brauseris ei ole veel täielik.</span></div><div class="form-grid"><label class="full">Raporti fail<input class="field" id="granlundImportFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.txt,.pdf"></label><label class="full">Või kleebi raporti tekst<textarea id="granlundImportText" placeholder="Kleebi siia Granlund raporti read..." style="min-height:140px"></textarea></label></div><div class="toolbar"><button class="btn ghost" id="granlundImportAnalyzeBtn" type="button">Analüüsi</button></div><div id="granlundImportPreview" class="section-title"></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" id="granlundImportApplyBtn" type="button" disabled>Lisa planeerimata hooldustesse</button></div></div>`);
+  renderGranlundImportPreview();
+  $('#granlundImportAnalyzeBtn')?.addEventListener('click',async()=>{
+    try{
+      const file=$('#granlundImportFile')?.files?.[0];
+      const pasted=$('#granlundImportText')?.value||'';
+      if(file) await readGranlundImportFile(file); else granlundImportPreview=parseGranlundRowsFromText(pasted);
+      renderGranlundImportPreview();
+    }catch(err){ alert(err?.message||String(err)); }
+  });
+  $('#granlundImportApplyBtn')?.addEventListener('click',applyGranlundImportPreview);
+}
+
 function selectedUnplannedIds(){return $$('[data-unplanned-select]:checked').map(cb=>cb.dataset.unplannedSelect).filter(Boolean);}
 function updateSelectedUnplannedStatus(status){
   const ids=selectedUnplannedIds();
