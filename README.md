@@ -240,3 +240,10 @@ Muudatused:
 - Objekti valimisel täidetakse klient automaatselt.
 - Kliendi muutmisel filtreeritakse objektide valik ümber ning vale kliendi objekt puhastatakse vormilt.
 - Kopeerimisel ja objekti vaatest töökäsu loomisel säilib lubatud eeltäitmise loogika.
+
+
+## Build VECO_V3_20260610_1307
+- Parandatud kalendri päises oleva `+ Lisa töökäsk` nupu käitumine: avab täiesti tühja uue töökäsu vormi.
+- Kalendri ajaruudul klikkimine täidab ainult kuupäeva ja algusaja.
+- Objekti vaatest ja projekti vaatest loodud töökäsk säilitab lubatud eeltäitmise.
+- ZIP, HTML cache-bust ja rakenduse footer build on viidud samale build-numbrile `20260610_1307`.
