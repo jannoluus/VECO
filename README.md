@@ -216,3 +216,9 @@ Muudatused:
 - Lisatud localStorage migratsioon, mis eemaldab vana DEMO-põhise mobiilivaate seisu.
 - DEMO kasutaja eemaldatud vaikimisi andmetest ja mobiili kasutajavalikust.
 - Kiire lähtestus: ava `mobile.html?fresh=1` või `mobile.html?resetLocal=1`.
+
+## Build VECO_V3_20260610_1220
+- Lisatud töökäsu kopeerimine kalendrist ja töökäsu detailist.
+- Koopia avaneb uue töökäsu vormina, vaikimisi järgmisel päeval.
+- Kopeeritakse objekt, projekt, pealkiri, kirjeldus, vastutaja, osalejad, kellaaeg ja kestus.
+- Ei kopeerita staatust, lõpetamise infot, akti ega PDF-i.
