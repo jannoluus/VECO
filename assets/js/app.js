@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.17.0';
-const APP_BUILD='20260610_2202';
+const APP_VERSION='v3.18.0';
+const APP_BUILD='20260610_2203';
 
 // Build 20260610_1328: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -3029,17 +3029,104 @@ function openGranlundClassifierModal(id=''){
 }
 
 
+function normalizeUnplannedMaintenance(){
+  state.unplannedMaintenance=Array.isArray(state.unplannedMaintenance)?state.unplannedMaintenance:[];
+  state.unplannedMaintenance.forEach(r=>{
+    r.id=r.id||uid('UM');
+    r.status=r.status||'Uus';
+    r.object=r.object||'';
+    r.objectId=r.objectId||'';
+    r.task=r.task||'';
+    r.due=r.due||'';
+    r.type=r.type||'Vent TH';
+    r.level=r.level||'Hooldus';
+    const n=normByTypeLevel(r.type,r.level);
+    r.hours=Number(r.hours||n?.hours||0);
+    r.notes=r.notes||'';
+  });
+}
+const unplannedStatuses=['Uus','Kinnitatud','Planeeritud','Töös','Valmis','Välistatud'];
+function unplannedStatusClass(status){
+  if(status==='Kinnitatud'||status==='Valmis') return 'ok';
+  if(status==='Välistatud') return 'red';
+  if(status==='Planeeritud'||status==='Töös') return 'info';
+  return 'warn';
+}
+function unplannedObjectName(r){
+  return r.objectId?objectName(r.objectId):(r.object||'');
+}
+function filteredUnplannedMaintenance(){
+  normalizeUnplannedMaintenance();
+  const q=($('#unplannedSearch')?.value||'').toLowerCase();
+  const status=$('#unplannedStatusFilter')?.value||'all';
+  const object=$('#unplannedObjectFilter')?.value||'all';
+  const type=$('#unplannedTypeFilter')?.value||'all';
+  return state.unplannedMaintenance.filter(r=>{
+    const obj=unplannedObjectName(r);
+    const hay=[r.status,obj,r.task,r.due,r.type,r.level,r.hours,r.notes].join(' ').toLowerCase();
+    return (!q||hay.includes(q)) && (status==='all'||r.status===status) && (object==='all'||r.objectId===object||r.object===object) && (type==='all'||r.type===type);
+  }).sort((a,b)=>String(a.due||'9999-99-99').localeCompare(String(b.due||'9999-99-99'))||String(unplannedObjectName(a)).localeCompare(String(unplannedObjectName(b)),'et'));
+}
 function renderUnplannedMaintenance(){
- const list=state.unplannedMaintenance||[];
- const total=list.filter(x=>x.status==='Kinnitatud').reduce((s,x)=>s+Number(x.hours||0),0);
- const rows=list.map(r=>`<tr><td>${esc(r.status||'Uus')}</td><td>${esc(r.object||'')}</td><td>${esc(r.task||'')}</td><td>${esc(r.due||'')}</td><td>${esc(r.type||'')}</td><td>${esc(r.level||'')}</td><td>${esc(r.hours||0)} h</td></tr>`).join('');
- const cards=`<div class="stats"><div class="stat"><b>${list.filter(x=>x.status==='Uus').length}</b><span>Uusi</span></div><div class="stat"><b>${list.filter(x=>x.status==='Kinnitatud').length}</b><span>Kinnitatud</span></div><div class="stat"><b>${total}</b><span>Maht h</span></div></div>`;
- const main=header('Planeerimata hooldused','','','TÖÖLAUD')+cards+`<div class="toolbar"><button class="btn primary" id="newUnplannedBtn">+ Lisa planeerimata hooldus</button></div>`+table(['Staatus','Objekt','Töö','Tähtaeg','Liik','Tase','Maht'],rows||'<tr><td colspan="7" class="muted">Kirjed puuduvad</td></tr>');
- shell(main,'',{wide:true});
- document.getElementById('newUnplannedBtn')?.addEventListener('click',()=>{
-   state.unplannedMaintenance.push({id:Date.now().toString(),status:'Uus',object:'',task:'',due:'',type:'Vent TH',level:'Hooldus',hours:2});
-   save(); renderUnplannedMaintenance();
- });
+  normalizeUnplannedMaintenance();
+  const list=filteredUnplannedMaintenance();
+  const today=new Date(); today.setHours(0,0,0,0);
+  const confirmed=state.unplannedMaintenance.filter(x=>x.status==='Kinnitatud');
+  const confirmedHours=confirmed.reduce((s,x)=>s+Number(x.hours||0),0);
+  const excluded=state.unplannedMaintenance.filter(x=>x.status==='Välistatud').length;
+  const overdue=state.unplannedMaintenance.filter(x=>x.status!=='Valmis'&&x.status!=='Välistatud'&&x.due&&new Date(x.due)<today).length;
+  const types=Array.from(new Set([...(state.maintenanceNorms||[]).map(n=>n.type).filter(Boolean),...maintenanceNormTypes]));
+  const objectOptions=(state.objects||[]).map(o=>`<option value="${esc(o.id)}" ${($('#unplannedObjectFilter')?.value||'all')===o.id?'selected':''}>${esc(o.name)}</option>`).join('');
+  const typeOptions=types.map(t=>`<option value="${esc(t)}" ${($('#unplannedTypeFilter')?.value||'all')===t?'selected':''}>${esc(t)}</option>`).join('');
+  const statusVal=$('#unplannedStatusFilter')?.value||'all';
+  const q=$('#unplannedSearch')?.value||'';
+  const filters=`<input class="field" id="unplannedSearch" placeholder="Otsi objekti, tööd, liiki või märkust..." value="${esc(q)}"><select class="select" id="unplannedStatusFilter"><option value="all">Kõik staatused</option>${unplannedStatuses.map(st=>`<option value="${esc(st)}" ${statusVal===st?'selected':''}>${esc(st)}</option>`).join('')}</select><select class="select" id="unplannedObjectFilter"><option value="all">Kõik objektid</option>${objectOptions}</select><select class="select" id="unplannedTypeFilter"><option value="all">Kõik liigid</option>${typeOptions}</select>`;
+  const actions='<button class="btn primary" id="newUnplannedBtn" type="button">+ Lisa planeerimata hooldus</button>';
+  const rows=list.map(r=>`<tr><td><input type="checkbox" data-unplanned-select="${esc(r.id)}" aria-label="Vali ${esc(r.task||'kirje')}"></td><td><span class="status ${unplannedStatusClass(r.status)}">${esc(r.status||'Uus')}</span></td><td>${esc(unplannedObjectName(r))}</td><td><strong>${esc(r.task||'-')}</strong>${r.notes?`<div class="muted">${esc(r.notes)}</div>`:''}</td><td>${esc(r.due||'')}</td><td>${esc(r.type||'')}</td><td>${esc(r.level||'')}</td><td><strong>${Number(r.hours||0).toFixed(1)} h</strong></td><td class="nowrap"><button class="btn small ghost" data-edit-unplanned="${esc(r.id)}" type="button">Muuda</button> <button class="btn small ghost" data-confirm-unplanned="${esc(r.id)}" type="button">Kinnita</button> <button class="btn small danger" data-exclude-unplanned="${esc(r.id)}" type="button">Välista</button></td></tr>`).join('')||'<tr><td colspan="9" class="muted">Planeerimata hooldusi ei ole.</td></tr>';
+  const batch=`<div class="toolbar"><button class="btn small ghost" id="selectAllUnplannedBtn" type="button">Vali kõik nähtavad</button><button class="btn small primary" id="confirmSelectedUnplannedBtn" type="button">✓ Kinnita valitud</button><button class="btn small danger" id="excludeSelectedUnplannedBtn" type="button">✕ Välista valitud</button></div>`;
+  const cards=`<div class="summary-grid">${summaryBox('Uusi',state.unplannedMaintenance.filter(x=>x.status==='Uus').length)}${summaryBox('Kinnitatud',confirmed.length)}${summaryBox('Välistatud',excluded)}${summaryBox('Kinnitatud maht',confirmedHours.toFixed(1)+' h')}${summaryBox('Hilinenud',overdue)}</div>`;
+  const intro=`<div class="card"><div class="card-top"><h3>Kinnitusring</h3><span class="status ok">MVP</span></div><span class="muted">Granlundist või käsitsi lisatud hooldused tulevad esmalt staatusesse Uus. Kinnitatud kirjed lähevad hiljem hooldusvõimekuse arvutusse, välistatud kirjed jäävad arvestusest välja.</span></div>`;
+  const main=header('Planeerimata hooldused',filters,actions,'TÖÖLAUD')+`<div class="detail-body">${cards}${intro}${batch}${table(['','Staatus','Objekt','Töö','Tähtaeg','Liik','Tase','Maht','Tegevused'],rows)}</div>`;
+  shell(main,'',{wide:true});
+  $('#unplannedSearch')?.addEventListener('input',renderUnplannedMaintenance);
+  $('#unplannedStatusFilter')?.addEventListener('change',renderUnplannedMaintenance);
+  $('#unplannedObjectFilter')?.addEventListener('change',renderUnplannedMaintenance);
+  $('#unplannedTypeFilter')?.addEventListener('change',renderUnplannedMaintenance);
+  $('#newUnplannedBtn')?.addEventListener('click',()=>openUnplannedMaintenanceModal());
+  $('#selectAllUnplannedBtn')?.addEventListener('click',()=>{$$('[data-unplanned-select]').forEach(cb=>cb.checked=true);});
+  $('#confirmSelectedUnplannedBtn')?.addEventListener('click',()=>updateSelectedUnplannedStatus('Kinnitatud'));
+  $('#excludeSelectedUnplannedBtn')?.addEventListener('click',()=>updateSelectedUnplannedStatus('Välistatud'));
+  $$('[data-edit-unplanned]').forEach(btn=>btn.addEventListener('click',()=>openUnplannedMaintenanceModal(btn.dataset.editUnplanned)));
+  $$('[data-confirm-unplanned]').forEach(btn=>btn.addEventListener('click',()=>{const r=byId(state.unplannedMaintenance,btn.dataset.confirmUnplanned); if(r){r.status='Kinnitatud'; save(); renderUnplannedMaintenance();}}));
+  $$('[data-exclude-unplanned]').forEach(btn=>btn.addEventListener('click',()=>{const r=byId(state.unplannedMaintenance,btn.dataset.excludeUnplanned); if(r){r.status='Välistatud'; save(); renderUnplannedMaintenance();}}));
+}
+function selectedUnplannedIds(){return $$('[data-unplanned-select]:checked').map(cb=>cb.dataset.unplannedSelect).filter(Boolean);}
+function updateSelectedUnplannedStatus(status){
+  const ids=selectedUnplannedIds();
+  if(!ids.length){showSyncNotice('Vali vähemalt üks rida'); return;}
+  state.unplannedMaintenance.forEach(r=>{if(ids.includes(r.id)) r.status=status;});
+  save(); renderUnplannedMaintenance();
+}
+function openUnplannedMaintenanceModal(id=''){
+  normalizeUnplannedMaintenance();
+  const r=id?byId(state.unplannedMaintenance,id):{status:'Uus',objectId:'',object:'',task:'',due:'',type:'Vent TH',level:'Hooldus',hours:0,notes:''};
+  const objectOptions=(state.objects||[]).map(o=>`<option value="${esc(o.id)}" ${r.objectId===o.id?'selected':''}>${esc(o.name)}</option>`).join('');
+  const types=Array.from(new Set([...(state.maintenanceNorms||[]).map(n=>n.type).filter(Boolean),...maintenanceNormTypes]));
+  const typeOptions=types.map(t=>`<option value="${esc(t)}" ${r.type===t?'selected':''}>${esc(t)}</option>`).join('');
+  const levelOptions=maintenanceNormLevels.map(l=>`<option value="${esc(l)}" ${r.level===l?'selected':''}>${esc(l)}</option>`).join('');
+  const statusOptions=unplannedStatuses.map(st=>`<option value="${esc(st)}" ${r.status===st?'selected':''}>${esc(st)}</option>`).join('');
+  const norm=normByTypeLevel(r.type,r.level);
+  openModal(`<form id="unplannedMaintenanceForm"><div class="dialog-head"><h2>${id?'Muuda planeerimata hooldust':'Lisa planeerimata hooldus'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Staatus<select class="select" name="status">${statusOptions}</select></label><label>Objekt<select class="select" name="objectId"><option value="">Vali objekt...</option>${objectOptions}</select></label><label class="full">Töö<input class="field" name="task" required placeholder="Näiteks Ventilatsioonisüsteemi aastahooldus" value="${esc(r.task||'')}"></label><label>Tähtaeg<input class="field" name="due" type="date" value="${esc(r.due||'')}"></label><label>Liik<select class="select" name="type">${typeOptions}</select></label><label>Tase<select class="select" name="level">${levelOptions}</select></label><label>Maht (h)<input class="field" name="hours" type="number" min="0" step="0.25" value="${esc(r.hours||norm?.hours||0)}"><span class="muted">Vaikimisi normist${norm?` (${norm.hours} h)`:''}</span></label><label class="full">Märkus<textarea name="notes" placeholder="Allikas, täpsustus, Granlundi viide vms...">${esc(r.notes||'')}</textarea></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  bindClose();
+  $('#unplannedMaintenanceForm')?.addEventListener('submit',e=>{
+    e.preventDefault();
+    const f=e.currentTarget.elements;
+    const obj=byId(state.objects,f.objectId.value);
+    const n=normByTypeLevel(f.type.value,f.level.value);
+    const next={id:id||uid('UM'),status:f.status.value,objectId:f.objectId.value,object:obj?.name||r.object||'',task:f.task.value.trim(),due:f.due.value,type:f.type.value,level:f.level.value,hours:Number(f.hours.value||n?.hours||0),notes:f.notes.value||''};
+    if(id){Object.assign(r,next)}else{state.unplannedMaintenance.push(next)}
+    save(); closeModal(); renderUnplannedMaintenance();
+  });
 }
 
 function renderDiagnostics(){
