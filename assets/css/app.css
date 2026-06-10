@@ -2007,9 +2007,9 @@ body.modal-open .modal *{
 
 /* V3.15.1: softer current time marker */
 .calendar-now-line{
-  opacity:.42 !important;
+  opacity:.28 !important;
   background:rgba(22,134,217,.55) !important;
-  box-shadow:0 0 10px rgba(22,134,217,.22) !important;
+  box-shadow:0 0 6px rgba(22,134,217,.12) !important;
 }
 .calendar-now-line:before{
   opacity:.65 !important;
@@ -2017,7 +2017,7 @@ body.modal-open .modal *{
 .calendar-now-line span,
 .calendar-now-label,
 .calendar-current-time-label{
-  background:rgba(22,134,217,.58) !important;
+  background:rgba(22,134,217,.90) !important;
   color:#fff !important;
   backdrop-filter:blur(3px);
   -webkit-backdrop-filter:blur(3px);
