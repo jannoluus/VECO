@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.16.0';
-const APP_BUILD='20260610_1936';
+const APP_VERSION='v3.17.0';
+const APP_BUILD='20260610_2004';
 
 // Build 20260610_1328: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -24,7 +24,7 @@ document.addEventListener('click',e=>{
   }
 },true);
 let state=window.VECO_STORAGE.load();
-state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[]; state.maintenanceNorms=state.maintenanceNorms||[];
+state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[]; state.maintenanceNorms=state.maintenanceNorms||[]; state.maintenanceProfiles=state.maintenanceProfiles||[];
 normalizeOncallPeople();
 
 
@@ -101,8 +101,8 @@ let selectedTeamPersonId='';
 const detailOpen={objects:false,projects:false,workorders:false,acts:false};
 let modalEscHandler=null;
 
-const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
-const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
+const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',maintenanceProfiles:'Hooldusprofiil',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
+const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',maintenanceProfiles:'maintenance-profiles.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
 
 const byId=(arr,id)=>arr.find(x=>x.id===id)||null;
 const clientName=(id)=>byId(state.clients,id)?.name||'-';
@@ -115,6 +115,7 @@ const projectClientId=(projectId)=>objectClientId(projectObjectId(projectId));
 const objectProjects=(id)=>state.projects.filter(p=>p.objectId===id);
 const objectWorkorders=(id)=>state.workorders.filter(w=>w.objectId===id);
 const objectDevices=(id)=>state.devices.filter(d=>d.objectId===id);
+const objectMaintenanceProfiles=(id)=>state.maintenanceProfiles.filter(p=>objectDevices(id).some(d=>d.id===p.deviceId));
 const objectActs=(id)=>state.acts.filter(a=>a.objectId===id);
 const clientObjects=(id)=>state.objects.filter(o=>o.clientId===id);
 const clientProjects=(id)=>state.projects.filter(p=>clientObjects(id).some(o=>o.id===p.objectId));
@@ -222,7 +223,7 @@ function nav(){
   const groups=[
     ['Töö',[['calendar','▦'],['team','◫'],['mobile','▤']]],
     ['Haldus',[['workorders','☑'],['acts','▧'],['oncall','☎'],['vacations','▤'],['people','☷'],['objects','⌂'],['clients','▥'],['projects','▣'],['ticker','▭']]],
-    ['Seaded',[['maintenanceNorms','≡'],['devices','▤']]],
+    ['Seaded',[['maintenanceNorms','≡'],['devices','▤'],['maintenanceProfiles','☑']]],
     ['Süsteem',[['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
     ['Arendus',[['mobilePreview','▧'],['demo','↺'],['diagnostics','◎']]]
   ];
@@ -578,10 +579,11 @@ function renderObjects(){
 }
 function objectDetailHtml(){
   const o=byId(state.objects,selectedObjectId); if(!o) return detailHeader('Objekti detail')+`<div class="detail-body"><span class="muted">Vali objekt.</span></div>`;
-  const tabs=[['overview','Üldinfo'],['devices','Seadmed'],['projects','Projektid'],['workorders','Töökäsud'],['acts','Aktid']];
+  const tabs=[['overview','Üldinfo'],['devices','Seadmed'],['maintenance','Hooldusprofiil'],['projects','Projektid'],['workorders','Töökäsud'],['acts','Aktid']];
   let body='';
   if(objectTab==='overview') body=`<div class="summary-grid">${summaryBox('Seadmeid',objectDevices(o.id).length)}${summaryBox('Projekte',objectProjects(o.id).length)}${summaryBox('Töökäske',objectWorkorders(o.id).length)}${summaryBox('Akte',objectActs(o.id).length)}</div>${card(o.name,[['Klient',clientName(o.clientId)],['Aadress',o.address],['Vastutaja',techName(o.responsibleTechId)],['Hooldusleping',o.contract],['Kontakt',o.mainContact]],o.status==='active'?'Aktiivne':'Peatatud',`<div class="section-title">Märkused</div><div class="muted">${esc(o.notes)}</div>`)}<div class="section-title">Kontaktid</div><div class="list">${(o.contacts||[]).map(c=>`<div class="event-row"><strong>${esc(c.name)} · ${esc(c.role)}</strong><span class="muted">${esc(c.phone)} · ${esc(c.email)}</span></div>`).join('')||'<span class="muted">Kontaktid puuduvad.</span>'}</div>`;
   if(objectTab==='devices') body=`<div class="list">${objectDevices(o.id).map(d=>`<div class="event-row"><strong>${esc(d.code||d.name)} · ${esc(d.type)}</strong><span class="muted">${esc(d.name||'')} ${d.location?'· '+esc(d.location):''}</span><span class="status ${d.status==='Aktiivne'?'ok':(d.status==='Reserv'?'warn':'red')}">${esc(d.status||'')}</span></div>`).join('')||'<span class="muted">Seadmeid pole.</span>'}</div>`;
+  if(objectTab==='maintenance'){ normalizeMaintenanceProfiles(); const profiles=objectMaintenanceProfiles(o.id); const total=profiles.reduce((sum,p)=>sum+profileHours(p),0); body=`<div class="summary-grid">${summaryBox('Profiile',profiles.length)}${summaryBox('Prognoos',total.toFixed(1)+' h')} ${summaryBox('Seadmeid',new Set(profiles.map(p=>p.deviceId)).size)}${summaryBox('Aktiivseid',profiles.filter(p=>p.active!==false).length)}</div>${table(['Seade','Hooldus','Tase','Sagedus','Norm'],profiles.map(p=>`<tr><td><strong>${esc(deviceLabel(p.deviceId))}</strong></td><td>${esc(p.type)}</td><td>${esc(p.level)}</td><td>${esc(p.frequency)}</td><td><strong>${profileHours(p).toFixed(1)} h</strong></td></tr>`).join('')||'<tr><td colspan="5" class="muted">Hooldusprofiile pole.</td></tr>')}<div class="muted">Profiile saab hallata menüüs Seaded → Hooldusprofiil.</div>`; }
   if(objectTab==='projects') body=`<div class="list">${objectProjects(o.id).map(p=>`<div class="event-row"><strong>${esc(p.name)}</strong><span class="muted">Vastutaja: ${esc(techName(p.responsibleTechId))} · tähtaeg ${esc(fmtActDate(p.deadline))}</span><span class="status ${statusClass(p.status)}">${esc(p.status)}</span></div>`).join('')||'<span class="muted">Projekte pole.</span>'}</div>`;
   if(objectTab==='workorders') body=`<div class="list">${objectWorkorders(o.id).map(w=>`<div class="event-row"><strong>${esc(fmtActDate(w.date))} ${esc(w.time)} · ${esc(w.title)}</strong><span class="muted">${esc(workorderAssigneeLabel(w))} · ${esc(w.description)}</span><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div>`).join('')||'<span class="muted">Töökäske pole.</span>'}</div>`;
   if(objectTab==='acts') body=`<div class="list">${objectActs(o.id).map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="muted">Seotud töökäsk: ${esc(a.workorderId)}</span><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
@@ -2881,6 +2883,87 @@ function openMaintenanceNormModal(id=''){
   });
 }
 
+const maintenanceFrequencies=['Kuu','Kvartal','Poolaasta','Aasta','Ühekordne'];
+function normByTypeLevel(type,level){
+  normalizeMaintenanceNorms();
+  return state.maintenanceNorms.find(n=>n.active!==false&&n.type===type&&n.level===level)||null;
+}
+function deviceLabel(id){
+  const d=byId(state.devices,id);
+  if(!d) return '-';
+  return `${d.code||d.name||'-'}${d.name&&d.name!==d.code?' · '+d.name:''}`;
+}
+function profileHours(p){
+  const n=normByTypeLevel(p.type,p.level);
+  return Number(p.hoursOverride||n?.hours||0);
+}
+function normalizeMaintenanceProfiles(){
+  normalizeDevices();
+  normalizeMaintenanceNorms();
+  state.maintenanceProfiles=Array.isArray(state.maintenanceProfiles)?state.maintenanceProfiles:[];
+  state.maintenanceProfiles.forEach(p=>{
+    p.id=p.id||uid('MP');
+    p.deviceId=p.deviceId||'';
+    p.type=p.type||'';
+    p.level=p.level||'Hooldus';
+    p.frequency=p.frequency||'Poolaasta';
+    p.active=p.active!==false;
+    p.notes=p.notes||'';
+    p.hoursOverride=Number(p.hoursOverride||0);
+  });
+}
+function renderMaintenanceProfiles(){
+  normalizeMaintenanceProfiles();
+  const q=($('#maintenanceProfileSearch')?.value||'').toLowerCase();
+  const objectFilter=$('#maintenanceProfileObjectFilter')?.value||'all';
+  const typeFilter=$('#maintenanceProfileTypeFilter')?.value||'all';
+  const activeFilter=$('#maintenanceProfileActiveFilter')?.value||'active';
+  const list=state.maintenanceProfiles.filter(p=>{
+    const d=byId(state.devices,p.deviceId);
+    const objectId=d?.objectId||'';
+    const hay=[deviceLabel(p.deviceId),objectName(objectId),clientName(objectClientId(objectId)),p.type,p.level,p.frequency,p.notes].join(' ').toLowerCase();
+    return (!q||hay.includes(q)) && (objectFilter==='all'||objectId===objectFilter) && (typeFilter==='all'||p.type===typeFilter) && (activeFilter==='all'||(activeFilter==='active'?p.active!==false:p.active===false));
+  }).sort((a,b)=>objectName(byId(state.devices,a.deviceId)?.objectId).localeCompare(objectName(byId(state.devices,b.deviceId)?.objectId),'et')||deviceLabel(a.deviceId).localeCompare(deviceLabel(b.deviceId),'et'));
+  const types=Array.from(new Set([...(state.maintenanceNorms||[]).map(n=>n.type).filter(Boolean),...maintenanceNormTypes]));
+  const total=list.filter(p=>p.active!==false).reduce((sum,p)=>sum+profileHours(p),0);
+  const objectTotals={};
+  list.filter(p=>p.active!==false).forEach(p=>{const d=byId(state.devices,p.deviceId); const oid=d?.objectId||''; if(oid) objectTotals[oid]=(objectTotals[oid]||0)+profileHours(p);});
+  const topObject=Object.entries(objectTotals).sort((a,b)=>b[1]-a[1])[0];
+  const filters=`<input class="field" id="maintenanceProfileSearch" placeholder="Otsi seadet, objekti või hooldusliiki..." value="${esc(q)}"><select class="select" id="maintenanceProfileObjectFilter"><option value="all">Kõik objektid</option>${state.objects.map(o=>`<option value="${esc(o.id)}" ${objectFilter===o.id?'selected':''}>${esc(o.name)}</option>`).join('')}</select><select class="select" id="maintenanceProfileTypeFilter"><option value="all">Kõik hooldusliigid</option>${types.map(t=>`<option value="${esc(t)}" ${typeFilter===t?'selected':''}>${esc(t)}</option>`).join('')}</select><select class="select" id="maintenanceProfileActiveFilter"><option value="active" ${activeFilter==='active'?'selected':''}>Aktiivsed</option><option value="inactive" ${activeFilter==='inactive'?'selected':''}>Peidetud</option><option value="all" ${activeFilter==='all'?'selected':''}>Kõik</option></select>`;
+  const actions=`<button class="btn ghost" id="resetDataBtn" type="button">Taasta demo</button><button class="btn primary" id="newMaintenanceProfileBtn" type="button">+ Uus profiil</button>`;
+  const rows=list.map(p=>{const d=byId(state.devices,p.deviceId); const n=normByTypeLevel(p.type,p.level); const h=profileHours(p); return `<tr><td><strong>${esc(objectName(d?.objectId))}</strong><div class="muted">${esc(clientName(objectClientId(d?.objectId)))}</div></td><td><strong>${esc(deviceLabel(p.deviceId))}</strong><div class="muted">${esc(d?.type||'')}</div></td><td>${esc(p.type)}</td><td>${esc(p.level)}</td><td>${esc(p.frequency)}</td><td><strong>${h.toFixed(1)} h</strong>${p.hoursOverride?'<div class="muted">käsitsi</div>':(n?'<div class="muted">normist</div>':'<div class="muted">norm puudub</div>')}</td><td><span class="status ${p.active!==false?'ok':'red'}">${p.active!==false?'Aktiivne':'Peidetud'}</span></td><td class="nowrap"><button class="btn small ghost" data-edit-maintenance-profile="${esc(p.id)}" type="button">Muuda</button> <button class="btn small ghost" data-toggle-maintenance-profile="${esc(p.id)}" type="button">${p.active!==false?'Peida':'Aktiveeri'}</button> <button class="btn small danger" data-delete-maintenance-profile="${esc(p.id)}" type="button">Kustuta</button></td></tr>`}).join('')||'<tr><td colspan="8" class="muted">Hooldusprofiile ei leitud.</td></tr>';
+  const intro=`<div class="card"><div class="card-top"><h3>Seade → hooldusnorm</h3><span class="status ok">MVP</span></div><span class="muted">Hooldusprofiil seob seadme hooldusliigi ja tasemega. VECO arvutab normitabelist esialgse hooldusmahu. See on alus tulevasele 30/60/90 päeva ressursivaatele.</span></div>`;
+  const main=header('Hooldusprofiil',filters,actions,'SEADED')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Profiile',state.maintenanceProfiles.length)}${summaryBox('Aktiivseid',state.maintenanceProfiles.filter(p=>p.active!==false).length)}${summaryBox('Valitud maht',total.toFixed(1)+' h')}${summaryBox('Suurim objekt',topObject?`${objectName(topObject[0])} · ${topObject[1].toFixed(1)} h`:'-')}</div>${intro}<div class="section-title">Hooldusprofiilide register</div>${table(['Objekt','Seade','Hooldusliik','Tase','Sagedus','Norm','Staatus','Tegevused'],rows)}<div class="muted">Järgmine samm: hooldusmahu arvutus 30/60/90 päeva lõikes ja meeskonna võimekuse võrdlus.</div></div>`;
+  shell(main,'',{wide:true});
+  $('#maintenanceProfileSearch')?.addEventListener('input',renderMaintenanceProfiles);
+  $('#maintenanceProfileObjectFilter')?.addEventListener('change',renderMaintenanceProfiles);
+  $('#maintenanceProfileTypeFilter')?.addEventListener('change',renderMaintenanceProfiles);
+  $('#maintenanceProfileActiveFilter')?.addEventListener('change',renderMaintenanceProfiles);
+  $('#newMaintenanceProfileBtn')?.addEventListener('click',()=>openMaintenanceProfileModal());
+  $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();normalizeMaintenanceProfiles();save();renderMaintenanceProfiles();});
+  $$('[data-edit-maintenance-profile]').forEach(btn=>btn.addEventListener('click',()=>openMaintenanceProfileModal(btn.dataset.editMaintenanceProfile)));
+  $$('[data-toggle-maintenance-profile]').forEach(btn=>btn.addEventListener('click',()=>{const p=byId(state.maintenanceProfiles,btn.dataset.toggleMaintenanceProfile); if(p){p.active=p.active===false; save(); renderMaintenanceProfiles();}}));
+  $$('[data-delete-maintenance-profile]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteMaintenanceProfile; const p=byId(state.maintenanceProfiles,id); if(!p)return; openConfirm({title:'Kustuta hooldusprofiil?',message:`${deviceLabel(p.deviceId)} · ${p.type} · ${p.level}`,details:'<div class="muted">Kustutamine eemaldab seadme ja normi seose, kuid seadet ega hooldusnormi ei kustuta.</div>',confirmText:'Kustuta',onConfirm:()=>{state.maintenanceProfiles=state.maintenanceProfiles.filter(x=>x.id!==id); save(); renderMaintenanceProfiles();}})}));
+}
+function openMaintenanceProfileModal(id=''){
+  normalizeMaintenanceProfiles();
+  const p=id?byId(state.maintenanceProfiles,id):{deviceId:'',type:'',level:'',frequency:'Poolaasta',hoursOverride:0,active:true,notes:''};
+  const deviceOptions=state.devices.filter(d=>d.status!=='Peidetud'&&d.status!=='Mahakantud').map(d=>`<option value="${esc(d.id)}" ${p.deviceId===d.id?'selected':''}>${esc(objectName(d.objectId))} · ${esc(deviceLabel(d.id))}</option>`).join('');
+  const typeOptions=Array.from(new Set([...(state.maintenanceNorms||[]).map(n=>n.type).filter(Boolean),...maintenanceNormTypes])).map(t=>`<option value="${esc(t)}" ${p.type===t?'selected':''}>${esc(t)}</option>`).join('');
+  const levelOptions=maintenanceNormLevels.map(l=>`<option value="${esc(l)}" ${p.level===l?'selected':''}>${esc(l)}</option>`).join('');
+  const frequencyOptions=maintenanceFrequencies.map(f=>`<option value="${esc(f)}" ${p.frequency===f?'selected':''}>${esc(f)}</option>`).join('');
+  const currentNorm=normByTypeLevel(p.type,p.level);
+  openModal(`<form id="maintenanceProfileForm"><div class="dialog-head"><h2>${id?'Muuda hooldusprofiili':'Lisa hooldusprofiil'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Seade<select class="select" name="deviceId" required><option value="">Vali seade...</option>${deviceOptions}</select></label><label>Hooldusliik<select class="select" name="type" required><option value="">Vali hooldus...</option>${typeOptions}</select></label><label>Tase<select class="select" name="level" required><option value="">Vali tase...</option>${levelOptions}</select></label><label>Sagedus<select class="select" name="frequency" required>${frequencyOptions}</select></label><label>Normi asendus (h)<input class="field" name="hoursOverride" type="number" min="0" step="0.25" value="${esc(p.hoursOverride||'')}"><span class="muted">Tühjaks/0 = kasuta normi${currentNorm?` (${currentNorm.hours} h)`:''}</span></label><label>Staatus<select class="select" name="active"><option value="true" ${p.active!==false?'selected':''}>Aktiivne</option><option value="false" ${p.active===false?'selected':''}>Peidetud</option></select></label><label class="full">Märkus<textarea name="notes" placeholder="Näiteks ligipääs, erisused või hoolduspiirangud...">${esc(p.notes||'')}</textarea></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  bindClose();
+  $('#maintenanceProfileForm')?.addEventListener('submit',e=>{
+    e.preventDefault();
+    const f=e.currentTarget.elements;
+    const next={id:id||uid('MP'),deviceId:f.deviceId.value,type:f.type.value,level:f.level.value,frequency:f.frequency.value,hoursOverride:Number(f.hoursOverride.value||0),active:f.active.value==='true',notes:f.notes.value||''};
+    if(id){Object.assign(p,next)}else{state.maintenanceProfiles.push(next)}
+    save(); closeModal(); renderMaintenanceProfiles();
+  });
+}
+
 function renderDiagnostics(){
   const rows=[
     ['Versioon',APP_VERSION],
@@ -2893,14 +2976,15 @@ function renderDiagnostics(){
     ['Puudumisi',state.absences.length],
     ['Valvekirjeid',state.oncall.length],
     ['Hooldusnorme',state.maintenanceNorms.length],
-    ['Seadmeid',state.devices.length]
+    ['Seadmeid',state.devices.length],
+    ['Hooldusprofiile',(state.maintenanceProfiles||[]).length]
   ].map(([k,v])=>`<tr><td><strong>${esc(k)}</strong></td><td>${esc(v)}</td></tr>`).join('');
   const main=header('Diagnostika','','','ARENDUS')+`<div class="detail-body">${table(['Parameeter','Väärtus'],rows)}</div>`;
   shell(main,'',{wide:true});
 }
 
 function renderCurrentPage(){
-  ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
+  ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
 }
 async function bootstrapApp(){
   bindLocalPeerSync();

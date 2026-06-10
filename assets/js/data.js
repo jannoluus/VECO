@@ -62,5 +62,13 @@ window.VECO_DATA={
     {id:'MN-010',type:'VK',level:'Kontroll',hours:1,active:true,notes:'Kiire VK kontroll.'},
     {id:'MN-011',type:'VK',level:'Hooldus',hours:2,active:true,notes:'Standardne VK hooldus.'},
     {id:'MN-012',type:'VK',level:'Aastahooldus',hours:4,active:true,notes:'Põhjalikum hooldus ja lisatööde kaardistus.'}
+  ],
+  maintenanceProfiles:[
+    {id:'MP-001',deviceId:'D-01',type:'Vent TH',level:'Hooldus',frequency:'Poolaasta',hoursOverride:0,active:true,notes:'Demo: AHU hooldusprofiil'},
+    {id:'MP-002',deviceId:'D-02',type:'Vent TH',level:'Hooldus',frequency:'Poolaasta',hoursOverride:0,active:true,notes:'Demo: AHU hooldusprofiil'},
+    {id:'MP-003',deviceId:'D-03',type:'Jahutus TH',level:'Hooldus',frequency:'Aasta',hoursOverride:0,active:true,notes:'Demo: jahutusmasina hooldusprofiil'},
+    {id:'MP-004',deviceId:'D-04',type:'Elektrikäit',level:'Kontroll',frequency:'Kuu',hoursOverride:0,active:true,notes:'Demo: RVK kuu kontroll'},
+    {id:'MP-005',deviceId:'D-05',type:'Elektrikäit',level:'Kontroll',frequency:'Kuu',hoursOverride:0,active:true,notes:'Demo: turvavalgustuse kontroll'},
+    {id:'MP-006',deviceId:'D-06',type:'Jahutus TH',level:'Hooldus',frequency:'Aasta',hoursOverride:0,active:true,notes:'Demo: split süsteemi hooldus'}
   ]
 };
