@@ -2268,7 +2268,7 @@ body.modal-open .modal *{
   box-shadow:none!important;
 }
 
-/* Build 20260610_1327 - team filters */
+/* Build 20260610_1328 - team filters */
 .team-filter-strip{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex-basis:100%;padding-top:4px;}
 .team-quick-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .chip{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:7px 10px;font-weight:750;cursor:pointer;box-shadow:none;}
@@ -2278,7 +2278,7 @@ body.modal-open .modal *{
 .team-people-menu .btn.full{width:100%;justify-content:center;margin:2px 0 4px;}
 
 
-/* Build 20260610_1327 - team filter dropdown click/visibility fix
+/* Build 20260610_1328 - team filter dropdown click/visibility fix
    The header/filter row used fixed height + overflow hidden, which clipped
    the status and technician dropdown menus so the buttons appeared inactive. */
 .app.page-team .panel,
@@ -2303,4 +2303,30 @@ body.modal-open .modal *{
 }
 .app.page-team .team-people-menu{
   z-index:6000!important;
+}
+
+
+/* V3.13.0: overlapping calendar events stay visible side-by-side */
+.calendar-event.overlapping{
+  z-index:4!important;
+  min-width:46px!important;
+}
+.calendar-event.overlapping:hover{
+  z-index:12!important;
+}
+.calendar-event.overlapping.narrow{
+  padding-left:6px!important;
+  padding-right:6px!important;
+}
+.calendar-event.overlapping.narrow .calendar-event-head{
+  display:block!important;
+}
+.calendar-event.overlapping.narrow .status,
+.calendar-event.overlapping.narrow .calendar-people,
+.calendar-event.overlapping.narrow .calendar-duration{
+  display:none!important;
+}
+.calendar-event.overlapping.narrow .calendar-work-title{
+  font-size:11px!important;
+  line-height:1.15!important;
 }

@@ -247,3 +247,8 @@ Muudatused:
 - Kalendri ajaruudul klikkimine täidab ainult kuupäeva ja algusaja.
 - Objekti vaatest ja projekti vaatest loodud töökäsk säilitab lubatud eeltäitmise.
 - ZIP, HTML cache-bust ja rakenduse footer build on viidud samale build-numbrile `20260610_1307`.
+
+## Build 20260610_1328
+- Kalendri nädala- ja päevavaates kuvatakse kattuvad ühepäevased töökäsud servapidi/kõrvuti.
+- Kattuvate tööde kastid jäävad eraldi klikitavaks ega kata üksteist täielikult.
+- 3+ kattuva töö korral kasutatakse kompaktsemat kitsast kuva.
