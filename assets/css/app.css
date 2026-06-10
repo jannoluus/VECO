@@ -1881,3 +1881,24 @@ body.modal-open .modal *{
   bottom:8px!important;
   font-size:10px!important;
 }
+
+
+/* V3.19 Calendar Card cleanup */
+.calendar-event .calendar-client,
+.calendar-event .calendar-description{
+  display:none!important;
+}
+.calendar-event{
+  gap:4px!important;
+}
+.calendar-event .calendar-title{
+  font-weight:800!important;
+}
+.calendar-people{
+  margin-top:auto!important;
+}
+.calendar-event-footer{
+  border-top:1px solid var(--border,#d0d7de)!important;
+  padding-top:4px!important;
+  margin-top:4px!important;
+}
