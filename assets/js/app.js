@@ -24,7 +24,7 @@ document.addEventListener('click',e=>{
   }
 },true);
 let state=window.VECO_STORAGE.load();
-state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[]; state.maintenanceNorms=state.maintenanceNorms||[]; state.maintenanceProfiles=state.maintenanceProfiles||[]; state.granlundClassifiers=state.granlundClassifiers||[];
+state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[]; state.maintenanceNorms=state.maintenanceNorms||[]; state.maintenanceProfiles=state.maintenanceProfiles||[]; state.granlundClassifiers=state.granlundClassifiers||[]; state.unplannedMaintenance=state.unplannedMaintenance||[];
 normalizeOncallPeople();
 
 
@@ -3028,6 +3028,20 @@ function openGranlundClassifierModal(id=''){
   });
 }
 
+
+function renderUnplannedMaintenance(){
+ const list=state.unplannedMaintenance||[];
+ const total=list.filter(x=>x.status==='Kinnitatud').reduce((s,x)=>s+Number(x.hours||0),0);
+ const rows=list.map(r=>`<tr><td>${esc(r.status||'Uus')}</td><td>${esc(r.object||'')}</td><td>${esc(r.task||'')}</td><td>${esc(r.due||'')}</td><td>${esc(r.type||'')}</td><td>${esc(r.level||'')}</td><td>${esc(r.hours||0)} h</td></tr>`).join('');
+ const cards=`<div class="stats"><div class="stat"><b>${list.filter(x=>x.status==='Uus').length}</b><span>Uusi</span></div><div class="stat"><b>${list.filter(x=>x.status==='Kinnitatud').length}</b><span>Kinnitatud</span></div><div class="stat"><b>${total}</b><span>Maht h</span></div></div>`;
+ const main=header('Planeerimata hooldused','','','TÖÖLAUD')+cards+`<div class="toolbar"><button class="btn primary" id="newUnplannedBtn">+ Lisa planeerimata hooldus</button></div>`+table(['Staatus','Objekt','Töö','Tähtaeg','Liik','Tase','Maht'],rows||'<tr><td colspan="7" class="muted">Kirjed puuduvad</td></tr>');
+ shell(main,'',{wide:true});
+ document.getElementById('newUnplannedBtn')?.addEventListener('click',()=>{
+   state.unplannedMaintenance.push({id:Date.now().toString(),status:'Uus',object:'',task:'',due:'',type:'Vent TH',level:'Hooldus',hours:2});
+   save(); renderUnplannedMaintenance();
+ });
+}
+
 function renderDiagnostics(){
   const rows=[
     ['Versioon',APP_VERSION],
@@ -3042,14 +3056,14 @@ function renderDiagnostics(){
     ['Hooldusnorme',state.maintenanceNorms.length],
     ['Seadmeid',state.devices.length],
     ['Hooldusprofiile',(state.maintenanceProfiles||[]).length],
-    ['Granlundi klassifikaatoreid',(state.granlundClassifiers||[]).length]
+    ['Granlundi klassifikaatoreid',(state.granlundClassifiers||[]).length],['Planeerimata hooldusi',(state.unplannedMaintenance||[]).length]
   ].map(([k,v])=>`<tr><td><strong>${esc(k)}</strong></td><td>${esc(v)}</td></tr>`).join('');
   const main=header('Diagnostika','','','ARENDUS')+`<div class="detail-body">${table(['Parameeter','Väärtus'],rows)}</div>`;
   shell(main,'',{wide:true});
 }
 
 function renderCurrentPage(){
-  ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
+  ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,unplannedMaintenance:renderUnplannedMaintenance,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
 }
 async function bootstrapApp(){
   bindLocalPeerSync();
