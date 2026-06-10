@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260610_2204';
+const APP_BUILD='20260610_2205';
 
 // Build 20260610_1328: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -3081,19 +3081,21 @@ function renderUnplannedMaintenance(){
   const statusVal=$('#unplannedStatusFilter')?.value||'all';
   const q=$('#unplannedSearch')?.value||'';
   const filters=`<input class="field" id="unplannedSearch" placeholder="Otsi objekti, tööd, liiki või märkust..." value="${esc(q)}"><select class="select" id="unplannedStatusFilter"><option value="all">Kõik staatused</option>${unplannedStatuses.map(st=>`<option value="${esc(st)}" ${statusVal===st?'selected':''}>${esc(st)}</option>`).join('')}</select><select class="select" id="unplannedObjectFilter"><option value="all">Kõik objektid</option>${objectOptions}</select><select class="select" id="unplannedTypeFilter"><option value="all">Kõik liigid</option>${typeOptions}</select>`;
-  const actions='<button class="btn ghost" id="importGranlundBtn" type="button">Impordi Granlund raport</button><button class="btn primary" id="newUnplannedBtn" type="button">+ Lisa planeerimata hooldus</button>';
-  const rows=list.map(r=>`<tr><td><input type="checkbox" data-unplanned-select="${esc(r.id)}" aria-label="Vali ${esc(r.task||'kirje')}"></td><td><span class="status ${unplannedStatusClass(r.status)}">${esc(r.status||'Uus')}</span></td><td>${esc(unplannedObjectName(r))}</td><td><strong>${esc(r.task||'-')}</strong>${r.notes?`<div class="muted">${esc(r.notes)}</div>`:''}</td><td>${esc(r.due||'')}</td><td>${esc(r.type||'')}</td><td>${esc(r.level||'')}</td><td><strong>${Number(r.hours||0).toFixed(1)} h</strong></td><td class="nowrap"><button class="btn small ghost" data-edit-unplanned="${esc(r.id)}" type="button">Muuda</button> <button class="btn small ghost" data-confirm-unplanned="${esc(r.id)}" type="button">Kinnita</button> <button class="btn small danger" data-exclude-unplanned="${esc(r.id)}" type="button">Välista</button></td></tr>`).join('')||'<tr><td colspan="9" class="muted">Planeerimata hooldusi ei ole.</td></tr>';
+  const actions='<button class="btn primary" id="newUnplannedBtn" type="button">+ Lisa planeerimata hooldus</button><button class="btn ghost" data-open-granlund-import type="button">Impordi Granlund raport</button>';
+  const rows=list.map(r=>`<tr><td><input type="checkbox" data-unplanned-select="${esc(r.id)}" aria-label="Vali ${esc(r.task||'kirje')}"></td><td><span class="status ${unplannedStatusClass(r.status)}">${esc(r.status||'Uus')}</span></td><td>${esc(unplannedObjectName(r))}</td><td><strong>${esc(r.task||'-')}</strong>${r.notes?`<div class="muted">${esc(r.notes)}</div>`:''}</td><td>${esc(r.due||'')}</td><td>${esc(r.type||'')}</td><td>${esc(r.level||'')}</td><td><strong>${Number(r.hours||0).toFixed(1)} h</strong></td><td class="nowrap"><button class="btn small ghost" data-edit-unplanned="${esc(r.id)}" type="button">Muuda</button> <button class="btn small ghost" data-confirm-unplanned="${esc(r.id)}" type="button">Kinnita</button> <button class="btn small danger" data-exclude-unplanned="${esc(r.id)}" type="button">Välista</button></td></tr>`).join('')||'<tr><td colspan="9"><div class="empty-state"><strong>Planeerimata hooldusi ei ole.</strong><div class="muted">Alusta Granlundi raporti importimisest või lisa hooldus käsitsi.</div><div class="toolbar"><button class="btn primary" data-open-granlund-import type="button">Impordi Granlund raport</button><button class="btn ghost" data-open-unplanned-manual type="button">Lisa käsitsi</button></div></div></td></tr>';
   const batch=`<div class="toolbar"><button class="btn small ghost" id="selectAllUnplannedBtn" type="button">Vali kõik nähtavad</button><button class="btn small primary" id="confirmSelectedUnplannedBtn" type="button">✓ Kinnita valitud</button><button class="btn small danger" id="excludeSelectedUnplannedBtn" type="button">✕ Välista valitud</button></div>`;
   const cards=`<div class="summary-grid">${summaryBox('Uusi',state.unplannedMaintenance.filter(x=>x.status==='Uus').length)}${summaryBox('Kinnitatud',confirmed.length)}${summaryBox('Välistatud',excluded)}${summaryBox('Kinnitatud maht',confirmedHours.toFixed(1)+' h')}${summaryBox('Hilinenud',overdue)}</div>`;
   const intro=`<div class="card"><div class="card-top"><h3>Kinnitusring</h3><span class="status ok">MVP</span></div><span class="muted">Granlundist või käsitsi lisatud hooldused tulevad esmalt staatusesse Uus. Kinnitatud kirjed lähevad hiljem hooldusvõimekuse arvutusse, välistatud kirjed jäävad arvestusest välja.</span></div>`;
-  const main=header('Planeerimata hooldused',filters,actions,'TÖÖLAUD')+`<div class="detail-body">${cards}${intro}${batch}${table(['','Staatus','Objekt','Töö','Tähtaeg','Liik','Tase','Maht','Tegevused'],rows)}</div>`;
+  const importToolbar=`<div class="toolbar"><button class="btn primary" data-open-granlund-import type="button">Impordi Granlund raport</button><button class="btn ghost" data-open-unplanned-manual type="button">Lisa käsitsi</button></div>`;
+  const main=header('Planeerimata hooldused',filters,actions,'TÖÖLAUD')+`<div class="detail-body">${cards}${intro}${importToolbar}${batch}${table(['','Staatus','Objekt','Töö','Tähtaeg','Liik','Tase','Maht','Tegevused'],rows)}</div>`;
   shell(main,'',{wide:true});
   $('#unplannedSearch')?.addEventListener('input',renderUnplannedMaintenance);
   $('#unplannedStatusFilter')?.addEventListener('change',renderUnplannedMaintenance);
   $('#unplannedObjectFilter')?.addEventListener('change',renderUnplannedMaintenance);
   $('#unplannedTypeFilter')?.addEventListener('change',renderUnplannedMaintenance);
   $('#newUnplannedBtn')?.addEventListener('click',()=>openUnplannedMaintenanceModal());
-  $('#importGranlundBtn')?.addEventListener('click',()=>openGranlundImportModal());
+  $$('[data-open-unplanned-manual]').forEach(btn=>btn.addEventListener('click',()=>openUnplannedMaintenanceModal()));
+  $$('[data-open-granlund-import]').forEach(btn=>btn.addEventListener('click',()=>openGranlundImportModal()));
   $('#selectAllUnplannedBtn')?.addEventListener('click',()=>{$$('[data-unplanned-select]').forEach(cb=>cb.checked=true);});
   $('#confirmSelectedUnplannedBtn')?.addEventListener('click',()=>updateSelectedUnplannedStatus('Kinnitatud'));
   $('#excludeSelectedUnplannedBtn')?.addEventListener('click',()=>updateSelectedUnplannedStatus('Välistatud'));
