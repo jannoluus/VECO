@@ -2196,7 +2196,7 @@ body.modal-open .modal *{
 .team-people-option span{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .team-people-option small{color:var(--muted);font-weight:650;}
 
-/* Build 20260610_1231: cleaner calendar horizontal resize handles
+/* Build 20260610_1254: cleaner calendar horizontal resize handles
    - keep wide left/right hitbox for resizing
    - hide heavy vertical hover bars
    - show only a subtle 1px guide while actively resizing */
@@ -2241,3 +2241,29 @@ body.modal-open .modal *{
   text-shadow:0 0 6px rgba(45,156,255,.16)!important;
 }
 
+
+
+/* Build 20260610_1254: remove wide vertical calendar hover/move bars
+   Functionality remains: dragging/resizing is handled by the card and hidden hitboxes.
+   These side affordance bars were too visually dominant in calendar cards. */
+.app.page-calendar .calendar-move-edge,
+.app.page-calendar .calendar-event:hover .calendar-move-edge,
+.app.page-calendar .calendar-event.dragging .calendar-move-edge{
+  opacity:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  border:0!important;
+}
+.app.page-calendar .calendar-move-edge::before,
+.app.page-calendar .calendar-move-edge::after{
+  content:""!important;
+  display:none!important;
+}
+
+/* Keep left/right span resize invisible unless actively resizing. */
+.app.page-calendar .calendar-event:not(.span-resizing) .calendar-span-resize,
+.app.page-calendar .calendar-event:hover:not(.span-resizing) .calendar-span-resize{
+  opacity:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}

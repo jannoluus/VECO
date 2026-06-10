@@ -224,8 +224,12 @@ Muudatused:
 - Ei kopeerita staatust, lõpetamise infot, akti ega PDF-i.
 
 
-## Build VECO_V3_20260610_1231
+## Build VECO_V3_20260610_1254
 - Kalendri töökäsu kaardi vasaku/parema serva paksud sinised resize-jooned peidetud.
 - Horisontaalse venitamise funktsionaalsus säilib: lai hitbox ja ew-resize kursor.
 - Aktiivse venitamise ajal kuvatakse ainult õrn 1px orientiir.
 - Ülemine/alumine kestuse muutmise käepide jäi alles, kuid hoveril tagasihoidlikum.
+
+## Build 20260610_1254
+- Kalendri töökäsu kaardilt eemaldatud hoveril/lohistamisel ilmuvad laiad sinised vertikaalsed küljeribad.
+- Horisontaalne lohistamine ja venitamine jäävad alles; eemaldatud on ainult häiriv visuaalne indikaator.
