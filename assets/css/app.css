@@ -2351,3 +2351,26 @@ body.modal-open .modal *{
 .app.page-team .team-quick-chips{display:none!important;}
 .app.page-team .chip{white-space:nowrap;}
 .app.page-team .panel-head.view-head{padding-bottom:8px!important;}
+
+/* Build 20260610_1404: current-time line starts after time scale */
+.app.page-calendar .calendar-now-line.calendar-now-line-global{
+  left:62px!important;
+  right:0!important;
+}
+.app.page-calendar .calendar-now-line.calendar-now-line-global:before{
+  left:-5px!important;
+}
+.app.page-calendar .calendar-now-line.calendar-now-line-global span{
+  left:-62px!important;
+}
+@media(max-width:1120px){
+  .app.page-calendar .calendar-now-line.calendar-now-line-global{
+    left:52px!important;
+  }
+  .app.page-calendar .calendar-now-line.calendar-now-line-global:before{
+    left:-5px!important;
+  }
+  .app.page-calendar .calendar-now-line.calendar-now-line-global span{
+    left:-52px!important;
+  }
+}
