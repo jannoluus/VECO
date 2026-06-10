@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.15.5';
-const APP_BUILD='20260610_1420';
+const APP_BUILD='20260610_1447';
 
 // Build 20260610_1328: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -1750,9 +1750,9 @@ function bindVacations(){
 }
 function openAbsenceModal(id=''){
   const today=dateKeyFromDate(new Date());
-  const a=id?byId(state.absences,id):{personId:state.people.find(p=>p.active)?.id||state.people[0]?.id||'',type:'Puhkus',start:today,end:today,note:''};
+  const a=id?byId(state.absences,id):{personId:'',type:'',start:'',end:'',note:''};
   const types=['Puhkus','Haigus','Koolitus','Valve','Lähetus','Puudumine','Muu'];
-  openModal(`<form id="absenceForm"><div class="dialog-head"><h2>${id?'Muuda saadavust':'Lisa saadavus'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Töötaja<select class="select" name="personId" required>${state.people.filter(p=>p.active).map(p=>`<option value="${esc(p.id)}" ${a.personId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><label>Tüüp<select class="select" name="type">${types.map(t=>`<option value="${t}" ${a.type===t?'selected':''}>${t}</option>`).join('')}</select></label><label>Algus<input class="field" name="start" type="date" required value="${esc(a.start)}"></label><label>Lõpp<input class="field" name="end" type="date" required value="${esc(a.end)}"></label><label class="full">Märkus<textarea name="note">${esc(a.note||'')}</textarea></label></div><div class="muted">Puhkus, haigus, koolitus, valve ja muu saadavuse kirje tekitavad vajadusel hoiatused, kui samale ajale on planeeritud töö või valve.</div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  openModal(`<form id="absenceForm"><div class="dialog-head"><h2>${id?'Muuda saadavust':'Lisa saadavus'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Töötaja<select class="select" name="personId" required><option value="" ${!a.personId?'selected':''} disabled>Vali töötaja...</option>${state.people.filter(p=>p.active).map(p=>`<option value="${esc(p.id)}" ${a.personId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><label>Tüüp<select class="select" name="type" required><option value="" ${!a.type?'selected':''} disabled>Vali tüüp...</option>${types.map(t=>`<option value="${t}" ${a.type===t?'selected':''}>${t}</option>`).join('')}</select></label><label>Algus<input class="field" name="start" type="date" required value="${esc(a.start)}"></label><label>Lõpp<input class="field" name="end" type="date" required value="${esc(a.end)}"></label><label class="full">Märkus<textarea name="note">${esc(a.note||'')}</textarea></label></div><div class="muted">Puhkus, haigus, koolitus, valve ja muu saadavuse kirje tekitavad vajadusel hoiatused, kui samale ajale on planeeritud töö või valve.</div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
   $('#absenceForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('EV'),personId:f.personId.value,type:f.type.value,start:f.start.value,end:f.end.value,note:f.note.value};if(next.end<next.start){alert('Lõpp ei saa olla enne algust.');return;}if(id){Object.assign(a,next)}else{state.absences.push(next)}save();closeModal();renderVacations();});
 }
