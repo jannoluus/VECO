@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.15.2';
-const APP_BUILD='20260610_1130';
+const APP_BUILD='20260610_1201';
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[];
 normalizeOncallPeople();
@@ -206,14 +206,22 @@ function nav(){
     ['Süsteem',[['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
     ['Arendus',[['mobilePreview','▧'],['demo','↺'],['diagnostics','◎']]]
   ];
+  const activeGroupTitle=(groups.find(([_,items])=>items.some(([key])=>key===page))||groups[0])[0];
+  const openGroups=(()=>{
+    try{ return JSON.parse(localStorage.getItem('veco_nav_open_groups')||'null')||null; }catch(_){ return null; }
+  })() || {'Töö':true};
+  openGroups[activeGroupTitle]=true;
   const navItem=([key,ic])=>{
     if(key==='system-database') return `<button type="button" id="databaseBtn">${icon(ic)}Andmebaas: ${window.VECO_API?.modeLabel?.()||'lokaalne'}</button>`;
     if(key==='system-export') return `<button type="button" id="exportDataBtn">${icon(ic)}Varukoopia</button>`;
     if(key==='system-import') return `<label class="nav-file-action" for="importDataFile">${icon(ic)}Taasta</label>`;
     return `<a class="${page===key?'active':''}" href="${pageFiles[key]}">${icon(ic)}${pageTitles[key]}</a>`;
   };
-  const navGroups=groups.map(([title,items])=>`<div class="nav-section"><div class="nav-section-title">${title}</div>${items.map(navItem).join('')}</div>`).join('');
-  return `<aside class="sidebar"><div class="sidebar-actions"><button class="btn ghost sidebar-toggle" id="sidebarToggleBtn" type="button" title="Näita/peida menüü" aria-label="Näita/peida menüü">${icon('☰')}</button><input id="importDataFile" type="file" accept="application/json" class="hidden"></div><nav class="nav nav-grouped" aria-label="Põhivaated">${navGroups}</nav></aside>`
+  const navGroups=groups.map(([title,items])=>{
+    const isOpen=!!openGroups[title];
+    return `<div class="nav-section ${isOpen?'open':'collapsed'}" data-nav-group="${esc(title)}"><button class="nav-section-title" type="button" data-nav-toggle="${esc(title)}" aria-expanded="${isOpen?'true':'false'}"><span>${isOpen?'▾':'▸'}</span>${title}</button><div class="nav-section-items">${items.map(navItem).join('')}</div></div>`;
+  }).join('');
+  return `<aside class="sidebar"><div class="sidebar-actions"><button class="btn ghost sidebar-toggle" id="sidebarToggleBtn" type="button" title="Näita/peida menüü" aria-label="Näita/peida menüü">${icon('☰')}</button><input id="importDataFile" type="file" accept="application/json" class="hidden"></div><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
 }
 function themeLogo(){
   return `<button class="brand-badge brand-theme-toggle" type="button" data-theme-toggle title="Vaheta hele/tume režiim" aria-label="Vaheta hele/tume režiim"><span class="brand-wordmark">VECO</span></button>`;
@@ -305,6 +313,14 @@ function bindGlobal(){
     app.classList.toggle('sidebar-collapsed',collapsed);
     localStorage.setItem('veco_sidebar_collapsed',collapsed?'true':'false');
   });
+  $$('[data-nav-toggle]').forEach(btn=>btn.addEventListener('click',()=>{
+    const title=btn.dataset.navToggle;
+    let open={};
+    try{ open=JSON.parse(localStorage.getItem('veco_nav_open_groups')||'{}')||{}; }catch(_){ open={}; }
+    open[title]=!open[title];
+    localStorage.setItem('veco_nav_open_groups',JSON.stringify(open));
+    renderCurrentPage();
+  }));
   $('#databaseBtn')?.addEventListener('click',()=>{ if(window.VECO_API?.configure?.()){ location.reload(); } });
   $('#exportDataBtn')?.addEventListener('click',()=>{
     const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
@@ -700,10 +716,18 @@ function openWorkorderModal(id='',defaults={}){
     if(add){ selectedParticipants.push(add.dataset.addParticipant); $('#participantSearch').value=''; renderParticipantPicker(); openParticipantSearch(); }
     if(remove){ selectedParticipants=selectedParticipants.filter(id=>id!==remove.dataset.removeParticipant); renderParticipantPicker(); }
   });
-  document.addEventListener('click',function participantOutsideHandler(e){
-    if(!document.body.contains(participantPicker)){ document.removeEventListener('click',participantOutsideHandler); return; }
-    if(participantPicker&&!participantPicker.contains(e.target)){ $('#participantDropdown')?.classList.add('hidden'); $('#participantSearch')?.classList.add('hidden'); }
-  });
+  function closeParticipantSearch(){
+    $('#participantDropdown')?.classList.add('hidden');
+    $('#participantSearch')?.classList.add('hidden');
+  }
+  document.addEventListener('pointerdown',function participantOutsideHandler(e){
+    if(!document.body.contains(participantPicker)){ document.removeEventListener('pointerdown',participantOutsideHandler,true); return; }
+    if(participantPicker&&!participantPicker.contains(e.target)) closeParticipantSearch();
+  },true);
+  document.addEventListener('keydown',function participantEscHandler(e){
+    if(!document.body.contains(participantPicker)){ document.removeEventListener('keydown',participantEscHandler,true); return; }
+    if(e.key==='Escape') closeParticipantSearch();
+  },true);
   renderParticipantPicker();
   const resolveObject=()=>{
     const rawObject=form.elements.objectName.value.trim();
@@ -1259,20 +1283,27 @@ function renderTeam(){
   const inWeek=w=>weekDays.some(date=>workorderOccursOnDay(w,date));
   const statusOk=w=>statusFilter==='all'||(statusFilter==='open'?openStatuses.includes(w.status):w.status===statusFilter);
   const searchable=w=>`${w.id} ${w.title} ${objectName(w.objectId)} ${clientName(objectClientId(w.objectId))} ${projectName(w.projectId)} ${workorderPeopleLabel(w)}`.toLowerCase().includes(q);
+  const rawSelectedPeople=(()=>{
+    try{ return JSON.parse(localStorage.getItem('veco_team_people_filter')||'[]')||[]; }catch(_){ return []; }
+  })().filter(id=>state.people.some(p=>p.id===id));
+  const selectedPeople=rawSelectedPeople.length?rawSelectedPeople:state.people.map(p=>p.id);
+  const visiblePeople=state.people.filter(p=>selectedPeople.includes(p.id));
+  const peopleFilterLabel=rawSelectedPeople.length?`${rawSelectedPeople.length} valitud`:'Kõik tehnikud';
   const weekWorkorders=state.workorders.filter(w=>inWeek(w)&&statusOk(w)&&searchable(w));
-  const visibleWorkorders=weekWorkorders.filter(w=>inVisibleRange(w));
-  const dayWorkorders=state.workorders.filter(w=>workorderOccursOnDay(w,selectedDay)&&statusOk(w)&&searchable(w));
-  if(selectedTeamPersonId && !state.people.some(p=>p.id===selectedTeamPersonId)) selectedTeamPersonId='';
+  const visibleWorkorders=weekWorkorders.filter(w=>inVisibleRange(w)&&visiblePeople.some(p=>workorderMatchesPerson(w,p.id)));
+  const dayWorkorders=state.workorders.filter(w=>workorderOccursOnDay(w,selectedDay)&&statusOk(w)&&searchable(w)&&visiblePeople.some(p=>workorderMatchesPerson(w,p.id)));
+  if(selectedTeamPersonId && !visiblePeople.some(p=>p.id===selectedTeamPersonId)) selectedTeamPersonId='';
 
   const personJobs=(person,days=visibleDays)=>weekWorkorders.filter(w=>workorderMatchesPerson(w,person.id)&&days.some(date=>workorderOccursOnDay(w,date))).sort((a,b)=>`${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
   const personDayJobs=(person,date)=>weekWorkorders.filter(w=>workorderMatchesPerson(w,person.id)&&workorderOccursOnDay(w,date)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
   const dayNames=['E','T','K','N','R','L','P'];
   const weekDayOptions=weekDays.map((d,i)=>`<option value="${d}" ${selectedDay===d?'selected':''}>${dayNames[i]} ${d}</option>`).join('');
+  const teamPeopleFilter=`<div class="team-people-filter" id="teamPeopleFilter"><button class="btn ghost" type="button" id="teamPeopleFilterBtn">👥 ${esc(peopleFilterLabel)}</button><div class="team-people-menu hidden" id="teamPeopleMenu"><div class="team-people-menu-head"><strong>Tehnikud vaates</strong><button class="btn small ghost" type="button" id="teamPeopleAllBtn">Kõik</button></div>${state.people.map(p=>`<label class="team-people-option"><input type="checkbox" value="${esc(p.id)}" ${selectedPeople.includes(p.id)?'checked':''}> <span>${esc(p.name)}</span><small>${esc(p.role||'Tehnik')}</small></label>`).join('')}</div></div>`;
   const viewSwitch=`<select class="select" id="teamViewMode"><option value="cards" ${view==='cards'?'selected':''}>Kaardid</option><option value="matrix" ${view==='matrix'?'selected':''}>Nädalatabel</option><option value="day" ${view==='day'?'selected':''}>Päev</option></select><select class="select" id="teamWeekScope"><option value="workdays" ${scope==='workdays'?'selected':''}>E–R</option><option value="full" ${scope==='full'?'selected':''}>E–P</option></select>${view==='day'?`<select class="select" id="teamDaySelect">${weekDayOptions}</select>`:''}`;
-  const filters=`<input class="field" id="teamWeekStart" type="date" value="${esc(currentWeek)}"><select class="select" id="teamStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Avatud tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${workorderStatusOptions.map(s=>`<option value="${s}" ${statusFilter===s?'selected':''}>${s}</option>`).join('')}</select>${viewSwitch}`;
+  const filters=`<input class="field" id="teamWeekStart" type="date" value="${esc(currentWeek)}"><select class="select" id="teamStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Avatud tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${workorderStatusOptions.map(s=>`<option value="${s}" ${statusFilter===s?'selected':''}>${s}</option>`).join('')}</select>${teamPeopleFilter}${viewSwitch}`;
   const actions=`<button class="btn ghost" id="teamPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="teamThisWeekBtn" type="button">↕ Täna</button><button class="btn ghost" id="teamNextWeekBtn" type="button">Järgmine ›</button>`;
 
-  const techCards=state.people.map(p=>{
+  const techCards=visiblePeople.map(p=>{
     const jobs=personJobs(p);
     const hours=jobs.reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0);
     const abs=teamWeekAbsences(p.id,visibleDays);
@@ -1295,7 +1326,7 @@ function renderTeam(){
     </div>`;
   }).join('');
 
-  const matrixRows=state.people.map(p=>{
+  const matrixRows=visiblePeople.map(p=>{
     const cells=visibleDays.map(date=>{
       const jobs=personDayJobs(p,date);
       const h=jobs.reduce((sum,w)=>sum+workorderHours(w),0);
@@ -1313,7 +1344,7 @@ function renderTeam(){
   }).join('');
   const matrixHtml=`<div class="team-matrix-wrap"><table class="team-matrix"><thead><tr><th>Tehnik</th>${visibleDays.map((d,i)=>`<th>${dayNames[weekDays.indexOf(d)]}<span>${esc(fmtActDate(d))}</span></th>`).join('')}</tr></thead><tbody>${matrixRows}</tbody></table></div>`;
 
-  const dayHtml=`<div class="team-day-view">${state.people.map(p=>{
+  const dayHtml=`<div class="team-day-view">${visiblePeople.map(p=>{
     const jobs=dayWorkorders.filter(w=>workorderMatchesPerson(w,p.id)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
     const abs=state.absences.filter(a=>a.personId===p.id&&a.start<=selectedDay&&a.end>=selectedDay);
     const oc=state.oncall.filter(o=>o.personId===p.id&&o.start<=selectedDay&&o.end>=selectedDay);
@@ -1327,10 +1358,22 @@ function renderTeam(){
   const content=view==='matrix'?matrixHtml:(view==='day'?dayHtml:`<div class="grid team-grid">${techCards}</div>`);
   const teamHeaderLabel=formatViewPeriod('Tiimivaade',view==='day'?'day':'week',view==='day'?[selectedDay]:visibleDays,currentWeek,{hideRange:view!=='day'});
   window.__VECO_ONCALL_CONTEXT_DAYS__ = view==='day' ? [selectedDay] : visibleDays;
-  const main=header('Tiimivaade',filters,actions,teamHeaderLabel)+`<div class="detail-body"><div class="summary-grid">${summaryBox('Tehnikuid',state.people.length)}${summaryBox(view==='day'?'Päeva töid':'Vahemiku töid',view==='day'?dayWorkorders.length:visibleWorkorders.length)}${summaryBox('Planeeritud h',view==='day'?dayWorkorders.reduce((sum,w)=>sum+workorderHours(w),0):totalHours)}${summaryBox('Hoiatusi',absentCount+overloaded)}</div><div class="team-view-hint">${view==='cards'?'Kaardivaade näitab tehniku koormust valitud nädalas.':view==='matrix'?'Nädalatabel näitab kogu tiimi päevade kaupa.':'Päevavaade sobib hommikuseks tööde jagamiseks.'}</div>${content}</div>`;
+  const main=header('Tiimivaade',filters,actions,teamHeaderLabel)+`<div class="detail-body"><div class="summary-grid">${summaryBox('Tehnikuid',visiblePeople.length)}${summaryBox(view==='day'?'Päeva töid':'Vahemiku töid',view==='day'?dayWorkorders.length:visibleWorkorders.length)}${summaryBox('Planeeritud h',view==='day'?dayWorkorders.reduce((sum,w)=>sum+workorderHours(w),0):totalHours)}${summaryBox('Hoiatusi',absentCount+overloaded)}</div><div class="team-view-hint">${view==='cards'?'Kaardivaade näitab tehniku koormust valitud nädalas.':view==='matrix'?'Nädalatabel näitab kogu tiimi päevade kaupa.':'Päevavaade sobib hommikuseks tööde jagamiseks.'}</div>${content}</div>`;
   const detail=selectedTeamPersonId?teamDetailHtml(visibleDays,view==='day'?dayWorkorders:visibleWorkorders):'';
   shell(main,detail);
   $('#teamWeekStart')?.addEventListener('change',()=>{const next=weekStartKeyFrom($('#teamWeekStart').value); localStorage.setItem('veco_team_week',next); $('#teamWeekStart').value=next; renderTeam();}); $('#teamStatusFilter')?.addEventListener('change',renderTeam); $('#teamViewMode')?.addEventListener('change',renderTeam); $('#teamWeekScope')?.addEventListener('change',renderTeam); $('#teamDaySelect')?.addEventListener('change',renderTeam);
+  $('#teamPeopleFilterBtn')?.addEventListener('click',e=>{ e.stopPropagation(); $('#teamPeopleMenu')?.classList.toggle('hidden'); });
+  $('#teamPeopleAllBtn')?.addEventListener('click',e=>{ e.stopPropagation(); localStorage.setItem('veco_team_people_filter','[]'); renderTeam(); });
+  $$('#teamPeopleMenu input[type="checkbox"]').forEach(input=>input.addEventListener('change',()=>{
+    const selected=$$('#teamPeopleMenu input[type="checkbox"]:checked').map(i=>i.value);
+    localStorage.setItem('veco_team_people_filter',JSON.stringify(selected));
+    renderTeam();
+  }));
+  document.addEventListener('pointerdown',function teamPeopleOutside(e){
+    const wrap=$('#teamPeopleFilter');
+    if(!document.body.contains(wrap)){ document.removeEventListener('pointerdown',teamPeopleOutside,true); return; }
+    if(wrap&&!wrap.contains(e.target)) $('#teamPeopleMenu')?.classList.add('hidden');
+  },true);
   $('#teamPrevWeekBtn')?.addEventListener('click',()=>{
     if(view==='day'){
       const nextDay=dateKeyFromDate(addDateDays(parseDateKey(selectedDay),-1));
