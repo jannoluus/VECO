@@ -1,4 +1,4 @@
-Build: 20260611_1134
+Build: 20260611_1139
 
 # VECO V3
 
@@ -11,7 +11,7 @@ Muudatused:
 - Lisatud filtrid: objekt, liik, staatus ja otsing.
 - Seadmete andmemudel valmistatud ette hooldusprofiili ja hooldusmahu arvutuse jaoks.
 
-## V3.16.0 / 20260610_2016
+## V3.16.0 / 20260611_1139
 - Seaded → Seadmed admin-vaade seadmeregistri korrastamiseks.
 - CRUD, filtrid ja tulevase hooldusprofiili alusväljad.
 

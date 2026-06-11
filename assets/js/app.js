@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260611_1134';
+const APP_BUILD='20260611_1139';
 
-// Build 20260610_1328: delegated fallback for team filter dropdowns.
+// Build 20260611_1139: delegated fallback for team filter dropdowns.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -735,6 +735,7 @@ function openWorkorderModal(id='',defaults={}){
     <label>Algusaeg<input class="field" name="time" type="time" value="${esc(w.time)}"></label>
     <label>Kestus<div class="unit-field"><input class="field" name="plannedHours" type="number" min="1" max="16" step="1" value="${esc(currentHours)}"><span>h</span></div></label>
     <label class="full">Kirjeldus<textarea name="description" placeholder="Lisa töö kirjeldus või juhised...">${esc(w.description)}</textarea></label>
+    ${isEdit&&isCompletedStatus(w.status)?`<label class="full">Töö tulemus<textarea name="completionComment" placeholder="Kirjelda tehtud tööd või tulemust...">${esc(completionCommentText(w))}</textarea></label>`:''}
     ${defaults.copiedFromId?`<div class="full muted">Kopeeritakse töökäsk ${esc(defaults.copiedFromId)}. Muuda kuupäeva, vastutajat, osalejaid või aega enne salvestamist.</div>`:(!isEdit?'<div class="full muted">Uue töökäsu loomisel klienti, objekti, projekti ega tehnikut automaatselt ei valita. Kuupäev ja kell võivad tulla kalendris klikitud ajast.</div>':'')}
   </div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Sulge</button>${isEdit?'<button type="button" class="btn" id="copyWorkorderBtn">⧉ Kopeeri</button><button type="button" class="btn danger" id="deleteWorkorderBtn">Kustuta</button>':''}<button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
@@ -915,16 +916,22 @@ function openWorkorderModal(id='',defaults={}){
       next.completedAt=new Date().toISOString();
       next.completedBy=completedByLabel(next);
       next.completionComment=result.comment;
+      next.done=result.comment;
+      next.workDone=result.comment;
       next.actType=result.actType;
     }else if(nextStatus==='Lõpetatud' && isEdit){
-      const currentComment=completionCommentText(existing);
+      const currentComment=String(f.completionComment?.value||completionCommentText(existing)||'').trim();
       if(!currentComment){
         const result=normalizeCompletionResult(await openCompletionCommentModal(next,''));
         if(!result) return;
         next.completionComment=result.comment;
+        next.done=result.comment;
+        next.workDone=result.comment;
         next.actType=result.actType;
       }else{
         next.completionComment=currentComment;
+        next.done=currentComment;
+        next.workDone=currentComment;
       }
       next.completedAt=existing.completedAt||new Date().toISOString();
       next.completedBy=existing.completedBy||completedByLabel(next);
@@ -1224,7 +1231,7 @@ function renderActs(){
   if(!list.some(a=>a.id===selectedActId)) selectedActId=list[0]?.id||'';
   const filters=`<input class="field" id="actSearch" placeholder="Otsi akti..." value="${esc(q)}"><select class="select" id="actArchiveFilter"><option value="active" ${archiveView==='active'?'selected':''}>Aktiivsed aktid</option><option value="archive" ${archiveView==='archive'?'selected':''}>Arhiiv</option></select><select class="select" id="actStatusFilter"><option value="all">Kõik staatused</option>${statuses.map(s=>`<option value="${esc(s)}" ${status===s?'selected':''}>${esc(s)}</option>`).join('')}</select>`;
   const actions=archiveView==='active'?`<button class="btn primary" id="newActBtn">${icon('＋')}Lisa akt</button>`:`<button class="btn" id="backToActiveActsBtn" type="button">← Aktiivsed aktid</button>`;
-  const rows=list.map(a=>{const w=byId(state.workorders,a.workorderId)||{}; const rowActions=archiveView==='archive'?`<button class="btn small" data-restore-act="${esc(a.id)}" type="button">Taasta</button><button class="btn small danger" data-delete-act="${esc(a.id)}" type="button">Kustuta lõplikult</button>`:`<button class="btn small" data-archive-act="${esc(a.id)}" type="button">Arhiveeri</button>`;return `<tr data-act-id="${a.id}" class="${detailOpen.acts&&a.id===selectedActId?'selected':''}"><td><strong>${esc(a.title)}</strong><div class="muted">${esc(a.id)}</div></td><td>${esc(fmtActDate(a.date))}</td><td>${esc(clientName(objectClientId(a.objectId)))}</td><td>${esc(objectName(a.objectId))}</td><td>${esc(w.title||a.workorderId)}</td><td><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></td><td class="row-actions">${rowActions}</td></tr>`});
+  const rows=list.map(a=>{const w=byId(state.workorders,a.workorderId)||{}; const rowActions=archiveView==='archive'?`<button class="btn small" data-edit-act="${esc(a.id)}" type="button">Muuda</button><button class="btn small" data-restore-act="${esc(a.id)}" type="button">Taasta</button><button class="btn small danger" data-delete-act="${esc(a.id)}" type="button">Kustuta lõplikult</button>`:`<button class="btn small" data-edit-act="${esc(a.id)}" type="button">Muuda</button><button class="btn small" data-archive-act="${esc(a.id)}" type="button">Arhiveeri</button>`;return `<tr data-act-id="${a.id}" class="${detailOpen.acts&&a.id===selectedActId?'selected':''}"><td><strong>${esc(a.title)}</strong><div class="muted">${esc(a.id)}</div></td><td>${esc(fmtActDate(a.date))}</td><td>${esc(clientName(objectClientId(a.objectId)))}</td><td>${esc(objectName(a.objectId))}</td><td>${esc(w.title||a.workorderId)}</td><td><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></td><td class="row-actions">${rowActions}</td></tr>`});
   const pendingRows=pending.map(w=>{
     const active=activeActForWorkorder(w.id);
     const archived=archivedActForWorkorder(w.id);
@@ -1248,6 +1255,7 @@ function renderActs(){
     if(a){ selectedActId=a.id; detailOpen.acts=true; }
     renderActs();
   }));
+  $$('[data-edit-act]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation(); openActModal(btn.dataset.editAct); }));
   $$('[data-archive-act]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation(); archiveAct(btn.dataset.archiveAct); renderActs();}));
   $$('[data-restore-act]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation(); restoreAct(btn.dataset.restoreAct); renderActs();}));
   $$('[data-delete-act]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation(); deleteActPermanently(btn.dataset.deleteAct); renderActs();}));
@@ -1846,7 +1854,9 @@ function mobileCurrentUser(){
 }
 function mobileWorkflowButtons(w){
   if(isCompletedStatus(w.status)){
-    return `<button class="btn" data-mobile-edit="${w.id}" type="button">Ava / muuda</button><button class="btn primary" data-mobile-action="reopen" data-workorder-id="${w.id}" type="button">↺ Ava uuesti</button>`;
+    const act=actForWorkorder(w.id);
+    const actBtn=`<button class="btn" data-mobile-act="${w.id}" type="button">${act?'Ava akt':'Loo akt'}</button>`;
+    return `<button class="btn" data-mobile-edit="${w.id}" type="button">Ava / muuda</button>${actBtn}<button class="btn primary" data-mobile-action="reopen" data-workorder-id="${w.id}" type="button">↺ Ava uuesti</button>`;
   }
   if(String(w.status||'').trim()==='Töös'){
     return `<button class="btn" data-mobile-action="pause" data-workorder-id="${w.id}" type="button">⏸ Peata</button><button class="btn" data-mobile-edit="${w.id}" type="button">Täida</button><button class="btn primary" data-mobile-action="finish" data-workorder-id="${w.id}" type="button">✓ Lõpeta</button>`;
@@ -2023,6 +2033,7 @@ function renderMobile(){
   $$('[data-mobile-tab]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_mobile_active_tab',btn.dataset.mobileTab);renderMobile();}));
   $$('[data-mobile-action]').forEach(btn=>btn.addEventListener('click',()=>applyMobileWorkorderAction(btn.dataset.mobileAction,btn.dataset.workorderId)));
   $$('[data-mobile-edit]').forEach(btn=>btn.addEventListener('click',()=>openMobileWorkModal(btn.dataset.mobileEdit)));
+  $$('[data-mobile-act]').forEach(btn=>btn.addEventListener('click',()=>{const a=ensureActForWorkorder(btn.dataset.mobileAct); if(a){ selectedActId=a.id; openActPreview(a.id); }}));
 }
 
 function mobileObjectChoiceLabel(o){
@@ -2073,9 +2084,9 @@ function openMobileAddWorkModal(personId){
 }
 function openMobileWorkModal(id){
   const w=byId(state.workorders,id); if(!w) return;
-  openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Tehtud töö / märkus<textarea name="done">${esc(w.done||w.workDone||'')}</textarea></label><label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Foto lisamine tuleb järgmises etapis"></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Tehtud töö / märkus<textarea name="done">${esc(completionCommentText(w)||w.done||w.workDone||'')}</textarea></label><label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Foto lisamine tuleb järgmises etapis"></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
-  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;const note=String(f.done.value||'').trim();if(nextStatus==='Lõpetatud'){const result=isCompletedStatus(w.status)?{comment:(completionCommentText(w)||note),actType:w.actType||'Väljakutse akt'}:normalizeCompletionResult(await openCompletionCommentModal(w,note));if(!result||!result.comment)return;w.completedAt=w.completedAt||new Date().toISOString();w.completedBy=w.completedBy||completedByLabel(w);w.completionComment=result.comment;w.actType=result.actType;w.done=result.comment;w.workDone=result.comment;ensureActForWorkorder(w.id);}else{w.completedAt='';w.completedBy='';w.completionComment='';w.done=note;w.workDone=note;}w.status=nextStatus;w.photoNote=f.photoNote.value;save();closeModal();state=window.VECO_STORAGE.load();renderMobile();});
+  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;const note=String(f.done.value||'').trim();if(nextStatus==='Lõpetatud'){const result=isCompletedStatus(w.status)?{comment:(note||completionCommentText(w)),actType:w.actType||'Väljakutse akt'}:normalizeCompletionResult(await openCompletionCommentModal(w,note));if(!result||!result.comment)return;w.completedAt=w.completedAt||new Date().toISOString();w.completedBy=w.completedBy||completedByLabel(w);w.completionComment=result.comment;w.actType=result.actType;w.done=result.comment;w.workDone=result.comment;ensureActForWorkorder(w.id);}else{w.completedAt='';w.completedBy='';w.completionComment='';w.done=note;w.workDone=note;}w.status=nextStatus;w.photoNote=f.photoNote.value;save();closeModal();state=window.VECO_STORAGE.load();renderMobile();});
 }
 function renderMobilePreview(){
   const devices=[['iPhone SE','320px','568px'],['Android 360','360px','740px'],['iPhone 14','390px','844px'],['Large phone','414px','896px'],['Tahvel','768px','1024px']];
