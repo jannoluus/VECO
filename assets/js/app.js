@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260611_1242';
+const APP_BUILD='20260611_1252';
 
-// Build 20260611_1242: stabilized acts, archive, pending logic and blank new act form.
+// Build 20260611_1252: stabilized acts, archive, pending logic and blank new act form.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -551,13 +551,24 @@ function normalizeCompletionResult(result){
   return {comment:String(result.comment||'').trim(),actType:result.actType||'Väljakutse akt'};
 }
 
+function shortActDateCode(dateKey){
+  const m=String(dateKey||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return `${m[3]}${m[2]}${m[1].slice(-2)}`;
+  const digits=String(dateKey||'').replace(/[^0-9]/g,'');
+  if(digits.length>=8) return `${digits.slice(6,8)}${digits.slice(4,6)}${digits.slice(2,4)}`;
+  const d=new Date(); const pad=n=>String(n).padStart(2,'0');
+  return `${pad(d.getDate())}${pad(d.getMonth()+1)}${String(d.getFullYear()).slice(-2)}`;
+}
+function shortActTimeCode(timeValue){
+  const m=String(timeValue||'').match(/(\d{1,2})[:.](\d{2})/);
+  if(m) return `${String(m[1]).padStart(2,'0')}${m[2]}`;
+  const d=new Date(); const pad=n=>String(n).padStart(2,'0');
+  return `${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
 function actNumber(a){
   if(!a) return '';
-  if(String(a.number||'').startsWith('VECO-')) return a.number;
-  if(String(a.id||'').startsWith('VECO-')) return a.id;
-  const date=String(a.createdAt||a.date||dateKeyFromDate(new Date())).replace(/[^0-9]/g,'').slice(0,8)||dateKeyFromDate(new Date()).replace(/-/g,'');
-  const suffix=String(a.id||'ACT').replace(/[^0-9A-Za-z]/g,'').slice(-4).toUpperCase();
-  return `VECO-${date}-${suffix}`;
+  const w=byId(state.workorders,a.workorderId)||{};
+  return `${shortActDateCode(a.date||w.date||a.createdAt)}-${shortActTimeCode(w.time||a.createdAt)}`;
 }
 
 function timestampActId(){
@@ -1057,11 +1068,10 @@ function actPrintHtml(actId,{autoPrint=false,autoPdf=false}={}){
   const recommendations=actRecommendationsText(a,w);
   const materials=actMaterialsText(a,w);
   const logoUrl=new URL('assets/img/veco-act-logo.jpg', window.location.href).href;
-  const headerLeft=[['Akt nr',actNumber(a)],['Kuupäev',fmtActDate(a.date||w.date||'')]];
-  const headerRight=[['Objekt',obj.name||''],['Töö',w.title||a.title||'']];
+  const headerLeft=[['Kuupäev',fmtActDate(a.date||w.date||'')],['Akt nr',actNumber(a)]];
+  const headerRight=[['Objekt',obj.name||''],['Klient',client.name||'']];
   const topItems=[
-    ['Klient',client.name||''],['Staatus',w.status||a.status],['Vastutaja',techName(workorderResponsibleId(w))],['Osalejad',workorderParticipantIds(w).map(techName).join(', ')||'-'],['Kestus',`${workorderHours(w)} h`],
-    ['Algus',fmtActDateTime(w.date||a.date||'',startTime)],['Lõpp',endTime],['Tüüp',a.type||'Väljakutse akt']
+    ['Algus',fmtActDateTime(w.date||a.date||'',startTime)],['Lõpp',endTime],['Tehnik',techName(workorderResponsibleId(w))],['Kestus',`${workorderHours(w)} h`],['Tüüp',a.type||'Väljakutse akt']
   ];
   const autoScript=autoPrint?`<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>`:'';
   const helper=autoPrint?'Prindivaade avatakse automaatselt.':'Akti eelvaade.';
@@ -1096,8 +1106,6 @@ function actPdfData(actId){
     objectName:obj.name||'',
     address:obj.address||'',
     technician:workorderPeopleLabel(w),
-    workorder:w.id||a.workorderId||'',
-    status:w.status||a.status||'',
     start:fmtActDateTime(w.date||a.date||'',w.time||''),
     end:w.time?workorderEndTime(w):'',
     duration:`${workorderHours(w)} h`,
@@ -1202,18 +1210,18 @@ async function renderActPdfCanvas(actId){
   const logo=await loadActLogo();
   const logoSize=88;
   const headY=46;
-  drawInfoCell(ctx,'Akt nr',d.number,left,headY,colW*1.55,58);
-  drawInfoCell(ctx,'Kuupäev',d.date,left,headY+72,colW*1.55,58);
+  drawInfoCell(ctx,'Kuupäev',d.date,left,headY,colW*1.55,58);
+  drawInfoCell(ctx,'Akt nr',d.number,left,headY+72,colW*1.55,58);
   drawInfoCell(ctx,'Objekt',d.objectName,canvas.width-left-colW*1.55,headY,colW*1.55,58);
-  drawInfoCell(ctx,'Töökäsk',d.workorder,canvas.width-left-colW*1.55,headY+72,colW*1.55,58);
+  drawInfoCell(ctx,'Klient',d.clientName,canvas.width-left-colW*1.55,headY+72,colW*1.55,58);
   if(logo){ ctx.drawImage(logo, (canvas.width-logoSize)/2, headY+16, logoSize, logoSize); }
   else { ctx.fillStyle='#2483ff'; ctx.beginPath(); ctx.arc(canvas.width/2,headY+16+logoSize/2,logoSize/2,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#fff'; ctx.font='700 26px Arial'; ctx.textAlign='center'; ctx.fillText('VECO',canvas.width/2,headY+16+logoSize/2+8); ctx.textAlign='left'; }
   ctx.textAlign='left';
 
   let y=205;
   const cells=[
-    ['Klient',d.clientName],['Staatus',d.status],['Tehnik',d.technician],['Kestus',d.duration],
-    ['Algus',d.start],['Lõpp',d.end],['Tüüp',d.type],['Töökäsk',d.workorder]
+    ['Algus',d.start],['Lõpp',d.end],['Tehnik',d.technician],['Kestus',d.duration],
+    ['Tüüp',d.type]
   ];
   cells.forEach((c,i)=>{ const x=left+(i%4)*(colW+gap); const yy=y+Math.floor(i/4)*74; drawInfoCell(ctx,c[0],c[1],x,yy,colW,58); });
   y+=Math.ceil(cells.length/4)*74;
