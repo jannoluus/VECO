@@ -2398,3 +2398,8 @@ body.modal-open .modal *{
 /* V3 20260610_2205: unplanned maintenance import visibility */
 .empty-state{display:grid;gap:8px;align-items:start;padding:12px 4px;}
 .empty-state .toolbar{margin-top:4px;}
+
+/* Build 20260611_1202: act detail text blocks preserve line breaks */
+.preline{white-space:pre-wrap;overflow-wrap:anywhere;}
+#actForm textarea{min-height:96px;}
+#actForm label.full textarea[name="performedWork"]{min-height:140px;}
