@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260611_1222';
+const APP_BUILD='20260611_1230';
 
-// Build 20260611_1222: stabilized acts, archive, pending logic and blank new act form.
+// Build 20260611_1230: stabilized acts, archive, pending logic and blank new act form.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -498,7 +498,7 @@ function openCompletionCommentModal(w,initial=''){
     const el=document.createElement('div');
     el.id='vecoConfirm';
     el.className='confirm-modal open';
-    el.innerHTML=`<form class="confirm-dialog" id="completionCommentForm" role="dialog" aria-modal="true" aria-labelledby="completionCommentTitle">
+    el.innerHTML=`<form class="confirm-dialog" id="completionCommentForm" role="dialog" aria-modal="true" aria-labelledby="completionCommentTitle" novalidate>
       <div class="dialog-head"><h2 id="completionCommentTitle">Töö lõpetamine</h2></div>
       <div class="detail-body">
         <div class="confirm-message">Lisa töö tulemus enne töökäsu lõpetamist.</div>
@@ -512,7 +512,10 @@ function openCompletionCommentModal(w,initial=''){
         <button type="submit" class="btn primary" id="completionCommentOk">Lõpeta töö</button>
       </div>
     </form>`;
+    let resolved=false;
     const cleanup=(value)=>{
+      if(resolved) return;
+      resolved=true;
       document.removeEventListener('keydown',onKey);
       el.remove();
       resolve(value);
@@ -520,15 +523,22 @@ function openCompletionCommentModal(w,initial=''){
     const input=()=>el.querySelector('#completionCommentInput');
     const error=()=>el.querySelector('#completionCommentError');
     const onKey=(e)=>{ if(e.key==='Escape'){ e.preventDefault(); cleanup(null); } };
+    const submitCompletion=()=>{
+      const value=String(input()?.value||'').trim();
+      if(value.length<3){ error()?.classList.remove('hidden'); input()?.focus(); return; }
+      cleanup({comment:value,actType:el.querySelector('#completionActType')?.value||'Väljakutse akt'});
+    };
     document.body.appendChild(el);
     document.addEventListener('keydown',onKey);
     el.addEventListener('click',e=>{ if(e.target===el) cleanup(null); });
     el.querySelector('#completionCommentCancel')?.addEventListener('click',()=>cleanup(null));
     el.querySelector('#completionCommentForm')?.addEventListener('submit',e=>{
       e.preventDefault();
-      const value=String(input()?.value||'').trim();
-      if(value.length<5){ error()?.classList.remove('hidden'); input()?.focus(); return; }
-      cleanup({comment:value,actType:el.querySelector('#completionActType')?.value||'Väljakutse akt'});
+      submitCompletion();
+    });
+    el.querySelector('#completionCommentOk')?.addEventListener('click',e=>{
+      e.preventDefault();
+      submitCompletion();
     });
     input()?.addEventListener('input',()=>error()?.classList.add('hidden'));
     setTimeout(()=>input()?.focus(),0);
@@ -1929,14 +1939,15 @@ async function applyMobileWorkorderAction(action,workorderId){
     w.completionComment='';
   }else if(action==='finish'){
     const result=normalizeCompletionResult(await openCompletionCommentModal(w,completionCommentText(w)));
-    if(!result) return;
+    if(!result || !String(result.comment||'').trim()) return;
+    const comment=String(result.comment||'').trim();
     w.status='Lõpetatud';
-    w.completedAt=new Date().toISOString();
-    w.completedBy=completedByLabel(w);
-    w.completionComment=result.comment;
-    w.actType=result.actType;
-    w.done=result.comment;
-    w.workDone=result.comment;
+    w.completedAt=w.completedAt||new Date().toISOString();
+    w.completedBy=w.completedBy||completedByLabel(w);
+    w.completionComment=comment;
+    w.actType=result.actType||w.actType||'Väljakutse akt';
+    w.done=comment;
+    w.workDone=comment;
     ensureActForWorkorder(w.id);
   }else if(action==='reopen'){
     const ok=await openVecoConfirm({title:'Ava töö uuesti',message:'Kas soovid lõpetatud töö uuesti avada?',details:`<strong>${esc(w.id)}</strong><br>${esc(objectName(w.objectId))}<br>${esc(w.title)}`,confirmText:'Ava uuesti',cancelText:'Loobu'});
