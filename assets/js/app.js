@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260611_1313';
+const APP_BUILD='20260611_1323';
 
-// Build 20260611_1313: act period uses full end date/time and address removed from act.
+// Build 20260611_1323: act period uses full end date/time and address removed from act.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -1084,6 +1084,41 @@ function generateActFromWorkorder(workorderId){
   return a;
 }
 
+
+function splitSectionLines(text){
+  const raw=String(text||'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
+  if(raw.length<=1) return [];
+  return raw.map(x=>x.replace(/^[-•*]\s*/,''));
+}
+function sectionHtml(text,{bullets=false}={}){
+  const value=String(text||'').trim();
+  if(!value) return '';
+  const lines=bullets ? splitSectionLines(value) : [];
+  if(lines.length>1){
+    return `<ul class="act-bullets">${lines.map(line=>`<li>${esc(line)}</li>`).join('')}</ul>`;
+  }
+  return esc(value);
+}
+function canvasSectionLines(text,{bullets=false}={}){
+  const value=String(text||'').trim();
+  if(!value) return [];
+  const lines=bullets ? splitSectionLines(value) : [];
+  if(lines.length>1) return lines.map(line=>'• '+line);
+  return [value];
+}
+function wrapCanvasParagraphs(ctx,text,x,y,maxWidth,lineHeight,maxLines=99){
+  const paragraphs=Array.isArray(text)?text:String(text||'').replace(/\r/g,'').split('\n').map(t=>t.trim()).filter(Boolean);
+  let used=0;
+  for(const para of paragraphs){
+    if(used>=maxLines) break;
+    const nextY=wrapCanvasText(ctx,para,x,y,maxWidth,lineHeight,Math.max(1,maxLines-used));
+    const approx=Math.max(1,Math.round((nextY-y)/lineHeight));
+    used+=approx;
+    y=nextY+6;
+  }
+  return y;
+}
+
 function ensureActForWorkorder(workorderId){
   const w=byId(state.workorders,workorderId);
   if(!w) return null;
@@ -1134,8 +1169,8 @@ function actPrintHtml(actId,{autoPrint=false,autoPdf=false}={}){
   const autoScript=autoPrint?`<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>`:'';
   const helper=autoPrint?'Prindivaade avatakse automaatselt.':'Akti eelvaade.';
   return `<!doctype html><html lang="et"><head><meta charset="utf-8"><title>${esc(actNumber(a))} · ${esc(a.title||'Väljakutse akt')}</title><style>
-    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;font-size:12px;line-height:1.28;background:#fff}.actions{margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.act-head{display:grid;grid-template-columns:1fr 170px 1fr;gap:18px;align-items:start;margin-bottom:16px}.head-side{display:grid;gap:10px}.head-card{border:1px solid #d9dee7;border-radius:8px;min-height:42px;padding:7px 9px;background:#f7f9fc}.head-card .value{font-size:12px}.top{text-align:center;display:flex;align-items:flex-start;justify-content:center;min-height:118px;padding-top:10px}.logo-img{width:68px;height:68px;object-fit:contain;display:block;margin:0 auto}.muted{color:#555;font-size:11px}.meta{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.meta-item{border:1px solid #d9dee7;border-radius:8px;min-height:42px;padding:7px 9px;overflow:hidden;background:#f7f9fc}.label{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}.value{font-size:12px;font-weight:700;color:#0f172a;overflow-wrap:anywhere}.section-title{font-size:14px;font-weight:800;margin:24px 0 7px;border-bottom:1px solid #cbd5e1;padding-bottom:5px;letter-spacing:.02em}.section-title.desc{margin-top:22px}.box{border:1px solid #d9dee7;border-radius:8px;padding:9px 10px;white-space:pre-wrap;overflow-wrap:anywhere}.box.description{min-height:36px}.box.result{min-height:96px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #d9dee7;border-radius:8px;min-height:72px;padding:9px}.signature-line{border-top:1px solid #999;margin-top:24px;padding-top:5px;color:#555}@media(max-width:800px){.act-head{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}}@media print{.actions{display:none} body{margin:10mm}.act-head{grid-template-columns:1fr 150px 1fr;gap:12px;margin-bottom:14px}.top{min-height:116px;padding-top:8px}.logo-img{width:62px;height:62px}.head-card,.meta-item{min-height:38px;padding:5px 7px}.meta{gap:8px}.section-title{margin-top:20px}.section-title.desc{margin-top:20px}.box.description{min-height:30px}.box.result{min-height:90px}.signature{min-height:68px}}
-  </style>${autoScript}</head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi</button><button class="btn" onclick="window.close()">Sulge</button><span class="muted">${esc(helper)}</span></div><div class="act-head"><div class="head-side">${headerLeft.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="top"><img class="logo-img" src="${logoUrl}" alt="VECO"></div><div class="head-side">${headerRight.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div></div><div class="section-title">Üldandmed</div><div class="meta">${topItems.map(([k,v])=>`<div class="meta-item"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="section-title desc">Probleemi kirjeldus</div><div class="box description">${esc(actProblemDescriptionText(a,w)||'-')}</div><div class="section-title">Teostatud tööd</div><div class="box result">${esc(performed)}</div>${result?`<div class="section-title">Töö tulemus / märkused</div><div class="box result">${esc(result)}</div>`:''}${recommendations?`<div class="section-title">Soovitused / puudused</div><div class="box result">${esc(recommendations)}</div>`:''}${materials?`<div class="section-title">Materjalid</div><div class="box description">${esc(materials)}</div>`:''}<div class="section-title">Allkirjad</div><div class="signatures"><div class="signature"><strong>Teostaja</strong><div>${esc(workorderPeopleLabel(w))}</div><div class="signature-line">Allkiri / kuupäev</div></div><div class="signature"><strong>Tellija</strong><div>&nbsp;</div><div class="signature-line">Allkiri / kuupäev</div></div></div></body></html>`;
+    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;font-size:12px;line-height:1.28;background:#fff}.actions{margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.act-head{display:grid;grid-template-columns:1fr 170px 1fr;gap:18px;align-items:start;margin-bottom:16px}.head-side{display:grid;gap:10px}.head-card{border:1px solid #d9dee7;border-radius:8px;min-height:42px;padding:7px 9px;background:#f7f9fc}.head-card .value{font-size:12px}.top{text-align:center;display:flex;align-items:flex-start;justify-content:center;min-height:118px;padding-top:10px}.logo-img{width:68px;height:68px;object-fit:contain;display:block;margin:0 auto}.muted{color:#555;font-size:11px}.meta{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.meta-item{border:1px solid #d9dee7;border-radius:8px;min-height:42px;padding:7px 9px;overflow:hidden;background:#f7f9fc}.label{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}.value{font-size:12px;font-weight:700;color:#0f172a;overflow-wrap:anywhere}.content-start{margin-top:24px;padding-top:12px;border-top:1px solid #d9dee7}.section-title{font-size:14px;font-weight:800;margin:22px 0 7px;border-bottom:1px solid #cbd5e1;padding-bottom:5px;letter-spacing:.02em}.content-start .section-title{margin-top:0}.box{border:1px solid #d9dee7;border-radius:8px;padding:9px 10px;white-space:pre-wrap;overflow-wrap:anywhere}.box.description{min-height:36px}.box.result{min-height:96px}.act-bullets{margin:0;padding-left:18px;white-space:normal}.act-bullets li{margin:0 0 5px}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #d9dee7;border-radius:8px;min-height:72px;padding:9px}.signature-line{border-top:1px solid #999;margin-top:24px;padding-top:5px;color:#555}@media(max-width:800px){.act-head{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}}@media print{.actions{display:none} body{margin:10mm}.act-head{grid-template-columns:1fr 150px 1fr;gap:12px;margin-bottom:14px}.top{min-height:116px;padding-top:8px}.logo-img{width:62px;height:62px}.head-card,.meta-item{min-height:38px;padding:5px 7px}.meta{gap:8px}.content-start{margin-top:20px;padding-top:10px}.section-title{margin-top:18px}.content-start .section-title{margin-top:0}.box.description{min-height:30px}.box.result{min-height:90px}.signature{min-height:68px}}
+  </style>${autoScript}</head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi</button><button class="btn" onclick="window.close()">Sulge</button><span class="muted">${esc(helper)}</span></div><div class="act-head"><div class="head-side">${headerLeft.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="top"><img class="logo-img" src="${logoUrl}" alt="VECO"></div><div class="head-side">${headerRight.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div></div><div class="section-title">Üldandmed</div><div class="meta">${topItems.map(([k,v])=>`<div class="meta-item"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="content-start"><div class="section-title desc">Probleemi kirjeldus</div><div class="box description">${sectionHtml(actProblemDescriptionText(a,w)||'-')}</div><div class="section-title">Teostatud tööd</div><div class="box result">${sectionHtml(performed,{bullets:true})}</div>${result?`<div class="section-title">Töö tulemus / märkused</div><div class="box result">${sectionHtml(result)}</div>`:''}${recommendations?`<div class="section-title">Soovitused / puudused</div><div class="box result">${sectionHtml(recommendations,{bullets:true})}</div>`:''}${materials?`<div class="section-title">Materjalid</div><div class="box description">${sectionHtml(materials,{bullets:true})}</div>`:''}</div><div class="section-title">Allkirjad</div><div class="signatures"><div class="signature"><strong>Teostaja</strong><div>${esc(workorderPeopleLabel(w))}</div><div class="signature-line">Allkiri / kuupäev</div></div><div class="signature"><strong>Tellija</strong><div>&nbsp;</div><div class="signature-line">Allkiri / kuupäev</div></div></div></body></html>`;
 }
 function openActWindow(actId,mode='preview'){
   const html=actPrintHtml(actId,{autoPrint:mode==='print',autoPdf:mode==='pdf'});
@@ -1282,20 +1317,24 @@ async function renderActPdfCanvas(actId){
   ];
   cells.forEach((c,i)=>{ const x=left+(i%5)*(colW+gap); const yy=y+Math.floor(i/5)*74; drawInfoCell(ctx,c[0],c[1],x,yy,colW,58); });
   y+=Math.ceil(cells.length/5)*74;
+  y+=14;
+  ctx.strokeStyle='#d9dee7'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(canvas.width-left,y); ctx.stroke();
+  y+=32;
 
-  function section(title,body,minH,maxLines){
+  function section(title,body,minH,maxLines,opts={}){
     ctx.fillStyle='#0f172a'; ctx.font='800 22px Arial, Helvetica, sans-serif'; ctx.fillText(title.toUpperCase(),left,y);
     y+=16; ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(canvas.width-left,y); ctx.stroke(); y+=17;
     ctx.fillStyle='#fff'; ctx.strokeStyle='#d7dee8'; roundRectPath(ctx,left,y,canvas.width-left*2,minH,12); ctx.fill(); ctx.stroke();
     ctx.fillStyle='#111827'; ctx.font='21px Arial, Helvetica, sans-serif';
-    wrapCanvasText(ctx,body,left+20,y+34,canvas.width-left*2-40,29,maxLines || Math.floor((minH-38)/29));
+    const lines=canvasSectionLines(body,{bullets:!!opts.bullets});
+    wrapCanvasParagraphs(ctx,lines,left+20,y+34,canvas.width-left*2-40,29,maxLines || Math.floor((minH-38)/29));
     y+=minH+38;
   }
   section('Probleemi kirjeldus',d.description,62,2);
-  section('Teostatud tööd',d.performed,150,6);
+  section('Teostatud tööd',d.performed,150,6,{bullets:true});
   if(d.result) section('Töö tulemus / märkused',d.result,110,4);
-  if(d.recommendations) section('Soovitused / puudused',d.recommendations,110,4);
-  if(d.materials) section('Materjalid',d.materials,70,3);
+  if(d.recommendations) section('Soovitused / puudused',d.recommendations,110,4,{bullets:true});
+  if(d.materials) section('Materjalid',d.materials,70,3,{bullets:true});
 
   ctx.fillStyle='#0f172a'; ctx.font='800 22px Arial, Helvetica, sans-serif'; ctx.fillText('ALLKIRJAD',left,y); y+=18;
   ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(canvas.width-left,y); ctx.stroke(); y+=22;
