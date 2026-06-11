@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260611_1337';
+const APP_BUILD='20260611_1700';
 
-// Build 20260611_1337: act PDF spacing and field styling stabilized.
+// Build 20260611_1700: act PDF dynamic section heights and non-overlap spacing.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -1104,17 +1104,43 @@ function canvasSectionLines(text,{bullets=false}={}){
   if(!value) return [];
   return String(value).replace(/\r/g,'').split('\n').map(x=>x.trim().replace(/^[-•*]\s*/,'')).filter(Boolean);
 }
-function wrapCanvasParagraphs(ctx,text,x,y,maxWidth,lineHeight,maxLines=99){
+function measureCanvasWrappedLines(ctx,text,maxWidth){
   const paragraphs=Array.isArray(text)?text:String(text||'').replace(/\r/g,'').split('\n').map(t=>t.trim()).filter(Boolean);
+  const result=[];
+  paragraphs.forEach((para)=>{
+    const words=String(para||'').split(/\s+/).filter(Boolean);
+    const lines=[];
+    let line='';
+    for(const word of words){
+      const test=line?line+' '+word:word;
+      if(ctx.measureText(test).width>maxWidth && line){ lines.push(line); line=word; }
+      else line=test;
+    }
+    if(line) lines.push(line);
+    if(lines.length) result.push(lines);
+  });
+  return result;
+}
+function wrapCanvasParagraphs(ctx,text,x,y,maxWidth,lineHeight,maxLines=99){
+  const paragraphs=measureCanvasWrappedLines(ctx,text,maxWidth);
   let used=0;
-  for(const para of paragraphs){
-    if(used>=maxLines) break;
-    const nextY=wrapCanvasText(ctx,para,x,y,maxWidth,lineHeight,Math.max(1,maxLines-used));
-    const approx=Math.max(1,Math.round((nextY-y)/lineHeight));
-    used+=approx;
-    y=nextY+6;
-  }
+  paragraphs.forEach((lines,pidx)=>{
+    lines.forEach((ln)=>{
+      if(used>=maxLines) return;
+      ctx.fillText(ln,x,y);
+      y+=lineHeight;
+      used+=1;
+    });
+    if(pidx<paragraphs.length-1 && used<maxLines) y+=8;
+  });
   return y;
+}
+function canvasSectionHeight(ctx,text,maxWidth,minH,lineHeight=28){
+  const paragraphs=measureCanvasWrappedLines(ctx,text,maxWidth);
+  const lineCount=paragraphs.reduce((sum,p)=>sum+p.length,0);
+  const paragraphGaps=Math.max(0,paragraphs.length-1)*8;
+  const contentH=lineCount*lineHeight+paragraphGaps;
+  return Math.max(minH, contentH+52);
 }
 
 function ensureActForWorkorder(workorderId){
@@ -1167,7 +1193,7 @@ function actPrintHtml(actId,{autoPrint=false,autoPdf=false}={}){
   const autoScript=autoPrint?`<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>`:'';
   const helper=autoPrint?'Prindivaade avatakse automaatselt.':'Akti eelvaade.';
   return `<!doctype html><html lang="et"><head><meta charset="utf-8"><title>${esc(actNumber(a))} · ${esc(a.title||'Väljakutse akt')}</title><style>
-    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;font-size:12px;line-height:1.42;background:#fff}.actions{margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.act-head{display:grid;grid-template-columns:1fr 170px 1fr;gap:18px;align-items:start;margin-bottom:18px}.head-side{display:grid;gap:10px}.head-card{border:1.6px solid #94a3b8;border-radius:8px;min-height:48px;padding:9px 11px;background:#f3f7fb}.head-card .value{font-size:13px}.top{text-align:center;display:flex;align-items:flex-start;justify-content:center;min-height:118px;padding-top:10px}.logo-img{width:68px;height:68px;object-fit:contain;display:block;margin:0 auto}.muted{color:#555;font-size:11px}.meta{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.meta-item{border:1.6px solid #94a3b8;border-radius:8px;min-height:48px;padding:9px 11px;overflow:hidden;background:#f3f7fb}.label{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}.value{font-size:13px;font-weight:700;color:#0f172a;overflow-wrap:anywhere}.content-start{margin-top:26px;padding-top:16px;border-top:1.5px solid #94a3b8}.section-title{font-size:15px;font-weight:800;margin:24px 0 10px;border-bottom:1px solid #cbd5e1;padding-bottom:6px;letter-spacing:.02em}.content-start .section-title{margin-top:0}.box{border:1px solid #cbd5e1;border-radius:8px;padding:15px 16px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.48}.box.description{min-height:50px}.box.result{min-height:92px}.act-line{margin:0 0 9px}.act-line:last-child{margin-bottom:0}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #cbd5e1;border-radius:8px;min-height:80px;padding:12px 14px}.signature-line{border-top:1px solid #334155;margin-top:26px;padding-top:5px;color:#555}@media(max-width:800px){.act-head{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}}@media print{.actions{display:none} body{margin:10mm}.act-head{grid-template-columns:1fr 150px 1fr;gap:12px;margin-bottom:16px}.top{min-height:116px;padding-top:8px}.logo-img{width:62px;height:62px}.head-card,.meta-item{min-height:42px;padding:7px 9px}.meta{gap:8px}.content-start{margin-top:24px;padding-top:14px}.section-title{margin-top:22px;margin-bottom:9px}.content-start .section-title{margin-top:0}.box{padding:13px 14px}.box.description{min-height:44px}.box.result{min-height:84px}.signature{min-height:74px}}
+    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;font-size:12px;line-height:1.42;background:#fff}.actions{margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.act-head{display:grid;grid-template-columns:1fr 170px 1fr;gap:18px;align-items:start;margin-bottom:18px}.head-side{display:grid;gap:10px}.head-card{border:1.6px solid #94a3b8;border-radius:8px;min-height:48px;padding:9px 11px;background:#f3f7fb}.head-card .value{font-size:13px}.top{text-align:center;display:flex;align-items:flex-start;justify-content:center;min-height:118px;padding-top:10px}.logo-img{width:68px;height:68px;object-fit:contain;display:block;margin:0 auto}.muted{color:#555;font-size:11px}.meta{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.meta-item{border:1.6px solid #94a3b8;border-radius:8px;min-height:48px;padding:9px 11px;overflow:hidden;background:#f3f7fb}.label{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}.value{font-size:13px;font-weight:700;color:#0f172a;overflow-wrap:anywhere}.content-start{margin-top:26px;padding-top:16px;border-top:1.5px solid #94a3b8}.section-title{font-size:15px;font-weight:800;margin:24px 0 10px;border-bottom:1px solid #cbd5e1;padding-bottom:6px;letter-spacing:.02em}.content-start .section-title{margin-top:0}.box{border:1px solid #cbd5e1;border-radius:8px;padding:15px 16px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.42}.box.description{min-height:50px}.box.result{min-height:72px}.act-line{margin:0 0 7px}.act-line:last-child{margin-bottom:0}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #cbd5e1;border-radius:8px;min-height:80px;padding:12px 14px}.signature-line{border-top:1px solid #334155;margin-top:26px;padding-top:5px;color:#555}@media(max-width:800px){.act-head{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}}@media print{.actions{display:none} body{margin:10mm}.act-head{grid-template-columns:1fr 150px 1fr;gap:12px;margin-bottom:16px}.top{min-height:116px;padding-top:8px}.logo-img{width:62px;height:62px}.head-card,.meta-item{min-height:42px;padding:7px 9px}.meta{gap:8px}.content-start{margin-top:24px;padding-top:14px}.section-title{margin-top:22px;margin-bottom:9px}.content-start .section-title{margin-top:0}.box{padding:13px 14px;line-height:1.42}.box.description{min-height:44px}.box.result{min-height:72px}.signature{min-height:74px}}
   </style>${autoScript}</head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi</button><button class="btn" onclick="window.close()">Sulge</button><span class="muted">${esc(helper)}</span></div><div class="act-head"><div class="head-side">${headerLeft.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="top"><img class="logo-img" src="${logoUrl}" alt="VECO"></div><div class="head-side">${headerRight.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div></div><div class="section-title">Üldandmed</div><div class="meta">${topItems.map(([k,v])=>`<div class="meta-item"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="content-start"><div class="section-title desc">Probleemi kirjeldus</div><div class="box description">${sectionHtml(actProblemDescriptionText(a,w)||'-')}</div><div class="section-title">Teostatud tööd</div><div class="box result">${sectionHtml(performed)}</div>${result?`<div class="section-title">Töö tulemus / märkused</div><div class="box result">${sectionHtml(result)}</div>`:''}${recommendations?`<div class="section-title">Soovitused / puudused</div><div class="box result">${sectionHtml(recommendations)}</div>`:''}${materials?`<div class="section-title">Materjalid</div><div class="box description">${sectionHtml(materials)}</div>`:''}</div><div class="section-title">Allkirjad</div><div class="signatures"><div class="signature"><strong>Teostaja</strong><div>${esc(workorderPeopleLabel(w))}</div><div class="signature-line">Allkiri / kuupäev</div></div><div class="signature"><strong>Tellija</strong><div>&nbsp;</div><div class="signature-line">Allkiri / kuupäev</div></div></div></body></html>`;
 }
 function openActWindow(actId,mode='preview'){
@@ -1320,19 +1346,23 @@ async function renderActPdfCanvas(actId){
   y+=32;
 
   function section(title,body,minH,maxLines,opts={}){
+    const boxW=canvas.width-left*2;
+    const textX=left+22;
+    const textW=boxW-44;
+    ctx.font='20px Arial, Helvetica, sans-serif';
+    const boxH=canvasSectionHeight(ctx,body,textW,minH,29);
     ctx.fillStyle='#0f172a'; ctx.font='800 22px Arial, Helvetica, sans-serif'; ctx.fillText(title.toUpperCase(),left,y);
-    y+=16; ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(canvas.width-left,y); ctx.stroke(); y+=17;
-    ctx.fillStyle='#fff'; ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=1.5; roundRectPath(ctx,left,y,canvas.width-left*2,minH,12); ctx.fill(); ctx.stroke();
+    y+=18; ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(canvas.width-left,y); ctx.stroke(); y+=18;
+    ctx.fillStyle='#fff'; ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=1.5; roundRectPath(ctx,left,y,boxW,boxH,12); ctx.fill(); ctx.stroke();
     ctx.fillStyle='#111827'; ctx.font='20px Arial, Helvetica, sans-serif';
-    const lines=canvasSectionLines(body,{bullets:false});
-    wrapCanvasParagraphs(ctx,lines,left+22,y+36,canvas.width-left*2-44,30,maxLines || Math.floor((minH-40)/30));
-    y+=minH+44;
+    wrapCanvasParagraphs(ctx,body,textX,y+38,textW,29,999);
+    y+=boxH+46;
   }
-  section('Probleemi kirjeldus',d.description,62,2);
-  section('Teostatud tööd',d.performed,170,7);
-  if(d.result) section('Töö tulemus / märkused',d.result,110,4);
-  if(d.recommendations) section('Soovitused / puudused',d.recommendations,118,4);
-  if(d.materials) section('Materjalid',d.materials,80,3);
+  section('Probleemi kirjeldus',d.description,72);
+  section('Teostatud tööd',d.performed,150);
+  if(d.result) section('Töö tulemus / märkused',d.result,92);
+  if(d.recommendations) section('Soovitused / puudused',d.recommendations,100);
+  if(d.materials) section('Materjalid',d.materials,80);
 
   ctx.fillStyle='#0f172a'; ctx.font='800 22px Arial, Helvetica, sans-serif'; ctx.fillText('ALLKIRJAD',left,y); y+=18;
   ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(canvas.width-left,y); ctx.stroke(); y+=22;
