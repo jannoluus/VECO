@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260611_1202';
+const APP_BUILD='20260611_1222';
 
-// Build 20260611_1202: act content editing + reopen preserves act/work result.
+// Build 20260611_1222: stabilized acts, archive, pending logic and blank new act form.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -684,12 +684,29 @@ function renderWorkorders(){
 }
 function workorderDetailHtml(){
   const w=byId(state.workorders,selectedWorkorderId); if(!w) return detailHeader('Töökäsu detail')+`<div class="detail-body"><span class="muted">Vali töökäsk.</span></div>`;
-  const acts=state.acts.filter(a=>a.workorderId===w.id);
-  const body=`<div class="summary-grid">${summaryBox('Aktid',acts.length)}${summaryBox('Kuupäev',fmtActDate(w.date))}${summaryBox('Kell',w.time)}${summaryBox('Staatus',w.status)}</div>${card(w.title,[['Klient',clientName(objectClientId(w.objectId))],['Objekt',objectName(w.objectId)],['Projekt',projectName(w.projectId)],['Vastutaja',techName(workorderResponsibleId(w))],['Osalejad',workorderParticipantIds(w).map(techName).join(', ')||'-'],['Aeg',`${fmtActDate(w.date)} ${w.time}`]],w.status,`<div class="section-title">Kirjeldus</div><div class="muted">${esc(w.description)}</div>`)}<div class="section-title">Aktid</div><div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
-  const actButtonLabel=acts.length?'Ava akt':'＋ Loo akt';
-  return detailHeader('Töökäsu detail',`<button class="btn small" id="editWorkorderBtn">✎ Muuda</button><button class="btn small" id="copyWorkorderDetailBtn" type="button">⧉ Kopeeri</button><button class="btn small primary" id="createActBtn">${actButtonLabel}</button><button class="btn small" id="previewWorkorderActBtn" type="button">👁 Eelvaade</button><button class="btn small" id="printWorkorderActBtn" type="button">⎙ Prindi</button><button class="btn small" id="pdfWorkorderActBtn" type="button">⇩ Salvesta PDF</button><button class="btn small ghost" id="workorderDetailCloseBtn" type="button">× Sulge</button>`)+`<div class="detail-body">${body}</div>`;
+  const acts=(state.acts||[]).filter(a=>a.workorderId===w.id);
+  const activeAct=activeActForWorkorder(w.id);
+  const archivedAct=archivedActForWorkorder(w.id);
+  const actState=activeAct?'Aktiivne':(archivedAct?'Akt arhiveeritud':'Akt puudub');
+  const body=`<div class="summary-grid">${summaryBox('Aktid',acts.length)}${summaryBox('Kuupäev',fmtActDate(w.date))}${summaryBox('Kell',w.time)}${summaryBox('Staatus',w.status)}</div>${card(w.title,[['Klient',clientName(objectClientId(w.objectId))],['Objekt',objectName(w.objectId)],['Projekt',projectName(w.projectId)],['Vastutaja',techName(workorderResponsibleId(w))],['Osalejad',workorderParticipantIds(w).map(techName).join(', ')||'-'],['Aeg',`${fmtActDate(w.date)} ${w.time}`],['Akti seis',actState]],w.status,`<div class="section-title">Kirjeldus</div><div class="muted">${esc(w.description)}</div><div class="section-title">Töö tulemus</div><div class="muted">${esc(completionCommentText(w)||'-')}</div>`)}<div class="section-title">Aktid</div><div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="status ${statusClass(a.status)}">${esc(a.archived?'Arhiivis':a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
+  const actButtonLabel=activeAct?'Ava akt':(archivedAct?'Taasta akt':'＋ Loo akt');
+  const actButtonClass=archivedAct?'btn small warn':'btn small primary';
+  return detailHeader('Töökäsu detail',`<button class="btn small" id="editWorkorderBtn">✎ Muuda</button><button class="btn small" id="copyWorkorderDetailBtn" type="button">⧉ Kopeeri</button><button class="${actButtonClass}" id="createActBtn">${actButtonLabel}</button><button class="btn small" id="previewWorkorderActBtn" type="button">👁 Eelvaade</button><button class="btn small" id="printWorkorderActBtn" type="button">⎙ Prindi</button><button class="btn small" id="pdfWorkorderActBtn" type="button">⇩ Salvesta PDF</button><button class="btn small ghost" id="workorderDetailCloseBtn" type="button">× Sulge</button>`)+`<div class="detail-body">${body}</div>`;
 }
-function bindWorkorderDetail(){ $('#editWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal(selectedWorkorderId)); $('#copyWorkorderDetailBtn')?.addEventListener('click',()=>openWorkorderCopyModal(selectedWorkorderId)); $('#createActBtn')?.addEventListener('click',()=>{const a=generateActFromWorkorder(selectedWorkorderId); if(a){ selectedActId=a.id; window.location.href=pageFiles.acts; }}); $('#previewWorkorderActBtn')?.addEventListener('click',()=>openWorkorderActPrint(selectedWorkorderId)); $('#printWorkorderActBtn')?.addEventListener('click',()=>{const a=ensureActForWorkorder(selectedWorkorderId); if(a) printAct(a.id);}); $('#pdfWorkorderActBtn')?.addEventListener('click',()=>{const a=ensureActForWorkorder(selectedWorkorderId); if(a) saveActPdf(a.id);}); $('#workorderDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.workorders=false;renderWorkorders();}); }
+function bindWorkorderDetail(){
+  $('#editWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal(selectedWorkorderId));
+  $('#copyWorkorderDetailBtn')?.addEventListener('click',()=>openWorkorderCopyModal(selectedWorkorderId));
+  $('#createActBtn')?.addEventListener('click',()=>{
+    const archived=archivedActForWorkorder(selectedWorkorderId);
+    if(archived){ restoreAct(archived.id); selectedActId=archived.id; window.location.href=pageFiles.acts; return; }
+    const a=generateActFromWorkorder(selectedWorkorderId);
+    if(a){ selectedActId=a.id; window.location.href=pageFiles.acts; }
+  });
+  $('#previewWorkorderActBtn')?.addEventListener('click',()=>openWorkorderActPrint(selectedWorkorderId));
+  $('#printWorkorderActBtn')?.addEventListener('click',()=>{const a=ensureActForWorkorder(selectedWorkorderId); if(a) printAct(a.id);});
+  $('#pdfWorkorderActBtn')?.addEventListener('click',()=>{const a=ensureActForWorkorder(selectedWorkorderId); if(a) saveActPdf(a.id);});
+  $('#workorderDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.workorders=false;renderWorkorders();});
+}
 function workorderCopyDefaults(source){
   if(!source) return {};
   let nextDate=source.date||dateKeyFromDate(new Date());
@@ -974,12 +991,11 @@ function archivedActForWorkorder(workorderId){
   return archivedActs().find(a=>a.workorderId===workorderId)||null;
 }
 function actPendingWorkorders(){
-  return state.workorders
+  // Akti ootel tähendab ainult lõpetatud tööd, millel ei ole ühtegi seotud akti.
+  // Kui akt on aktiivne või arhiivis, ei tohi sama tööd uuesti akti ootele ega "Genereeri akt" nupu alla panna.
+  return (state.workorders||[])
     .filter(w=>isCompletedStatus(w.status))
-    .filter(w=>{
-      const a=activeActForWorkorder(w.id);
-      return !a || ['Mustand','Valmis'].includes(a.status);
-    })
+    .filter(w=>!actForWorkorder(w.id))
     .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')) || String(b.time||'').localeCompare(String(a.time||'')));
 }
 function generateActFromWorkorder(workorderId){
@@ -1032,10 +1048,10 @@ function actPrintHtml(actId,{autoPrint=false,autoPdf=false}={}){
   const materials=actMaterialsText(a,w);
   const logoUrl=new URL('assets/img/veco-act-logo.jpg', window.location.href).href;
   const headerLeft=[['Akt nr',actNumber(a)],['Kuupäev',fmtActDate(a.date||w.date||'')]];
-  const headerRight=[['Objekt',obj.name||''],['Töökäsk',w.id||a.workorderId]];
+  const headerRight=[['Objekt',obj.name||''],['Töö',w.title||a.title||'']];
   const topItems=[
     ['Klient',client.name||''],['Staatus',w.status||a.status],['Vastutaja',techName(workorderResponsibleId(w))],['Osalejad',workorderParticipantIds(w).map(techName).join(', ')||'-'],['Kestus',`${workorderHours(w)} h`],
-    ['Algus',fmtActDateTime(w.date||a.date||'',startTime)],['Lõpp',endTime],['Tüüp',a.type||'Väljakutse akt'],['Töökäsk',w.id||a.workorderId]
+    ['Algus',fmtActDateTime(w.date||a.date||'',startTime)],['Lõpp',endTime],['Tüüp',a.type||'Väljakutse akt']
   ];
   const autoScript=autoPrint?`<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>`:'';
   const helper=autoPrint?'Prindivaade avatakse automaatselt.':'Akti eelvaade.';
@@ -1263,11 +1279,7 @@ function renderActs(){
   const actions=archiveView==='active'?`<button class="btn primary" id="newActBtn">${icon('＋')}Lisa akt</button>`:`<button class="btn" id="backToActiveActsBtn" type="button">← Aktiivsed aktid</button>`;
   const rows=list.map(a=>{const w=byId(state.workorders,a.workorderId)||{}; const rowActions=archiveView==='archive'?`<button class="btn small" data-edit-act="${esc(a.id)}" type="button">Muuda</button><button class="btn small" data-restore-act="${esc(a.id)}" type="button">Taasta</button><button class="btn small danger" data-delete-act="${esc(a.id)}" type="button">Kustuta lõplikult</button>`:`<button class="btn small" data-edit-act="${esc(a.id)}" type="button">Muuda</button><button class="btn small" data-archive-act="${esc(a.id)}" type="button">Arhiveeri</button>`;return `<tr data-act-id="${a.id}" class="${detailOpen.acts&&a.id===selectedActId?'selected':''}"><td><strong>${esc(a.title)}</strong><div class="muted">${esc(a.id)}</div></td><td>${esc(fmtActDate(a.date))}</td><td>${esc(clientName(objectClientId(a.objectId)))}</td><td>${esc(objectName(a.objectId))}</td><td>${esc(w.title||a.workorderId)}</td><td><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></td><td class="row-actions">${rowActions}</td></tr>`});
   const pendingRows=pending.map(w=>{
-    const active=activeActForWorkorder(w.id);
-    const archived=archivedActForWorkorder(w.id);
-    const actState=active?`${active.status}`:(archived?'Akt arhiveeritud':'Akt puudub');
-    const actionLabel=active?'Ava akt':'Genereeri akt';
-    return `<tr><td><strong>${esc(objectName(w.objectId))}</strong><div class="muted">${esc(clientName(objectClientId(w.objectId)))}</div></td><td><strong>${esc(w.title||'-')}</strong><div class="muted">${esc(completionCommentText(w)||w.description||'')}</div></td><td>${esc(fmtActDate(w.date))} ${esc(w.time||'')}</td><td>${esc(workorderPeopleLabel(w))}</td><td><span class="status ${active?'warn':(archived?'red':'red')}">${esc(actState)}</span></td><td><button class="btn small primary" data-generate-act="${esc(w.id)}" type="button">${actionLabel}</button></td></tr>`;
+    return `<tr><td><strong>${esc(objectName(w.objectId))}</strong><div class="muted">${esc(clientName(objectClientId(w.objectId)))}</div></td><td><strong>${esc(w.title||'-')}</strong><div class="muted">${esc(completionCommentText(w)||w.description||'')}</div></td><td>${esc(fmtActDate(w.date))} ${esc(w.time||'')}</td><td>${esc(workorderPeopleLabel(w))}</td><td><span class="status red">Akt puudub</span></td><td><button class="btn small primary" data-generate-act="${esc(w.id)}" type="button">Genereeri akt</button></td></tr>`;
   }).join('');
   const pendingBlock=archiveView==='active'?`<div class="section-title">Akti ootel tööd</div>${pending.length?table(['Objekt','Töö','Kuupäev','Teostaja','Akti seis','Tegevus'],pendingRows):`<div class="empty-state"><strong>Akti ootel töid ei ole.</strong><div class="muted">Kui töökäsk märgitakse lõpetatuks, ilmub see siia akti loomiseks või avamiseks.</div></div>`}`:'';
   const archiveEmpty=archiveView==='archive' && !list.length?`<div class="empty-state"><strong>Arhiiv on tühi.</strong><div class="muted">Arhiveeritud aktid ilmuvad siia. Siit saab neid taastada või lõplikult kustutada.</div></div>`:'';
@@ -1304,18 +1316,19 @@ function actDetailHtml(){
 }
 function bindActDetail(){ $('#editActBtn')?.addEventListener('click',()=>openActModal(selectedActId)); $('#previewActBtn')?.addEventListener('click',()=>openActPreview(selectedActId)); $('#printActBtn')?.addEventListener('click',()=>printAct(selectedActId)); $('#pdfActBtn')?.addEventListener('click',()=>saveActPdf(selectedActId)); $('#markActSentBtn')?.addEventListener('click',()=>{const a=byId(state.acts,selectedActId); if(a){a.status='Saadetud'; save(); renderActs();}}); $('#archiveActBtn')?.addEventListener('click',()=>{archiveAct(selectedActId); renderActs();}); $('#restoreActBtn')?.addEventListener('click',()=>{restoreAct(selectedActId); renderActs();}); $('#deleteActBtn')?.addEventListener('click',()=>{deleteActPermanently(selectedActId); renderActs();}); $('#actDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.acts=false;renderActs();}); }
 function openActModal(id='',defaults={}){
-  const defaultWorkorder=byId(state.workorders,defaults.workorderId)||state.workorders[0]||{};
-  const a=id?byId(state.acts,id):{workorderId:defaults.workorderId||defaultWorkorder.id||'',objectId:defaults.objectId||defaultWorkorder.objectId||state.objects[0]?.id||'',date:defaultWorkorder.date||dateKeyFromDate(new Date()),title:defaultWorkorder.id?`${defaultWorkorder.actType||'Väljakutse akt'} - ${defaultWorkorder.title||objectName(defaultWorkorder.objectId)}`:'',status:'Mustand',type:defaultWorkorder.actType||'Väljakutse akt',performedWork:completionCommentText(defaultWorkorder)||'',workText:completionCommentText(defaultWorkorder)||'',resultNotes:'',recommendations:'',materials:''};
+  const defaultWorkorder=defaults.workorderId?byId(state.workorders,defaults.workorderId)||{}:{};
+  const isGeneratedFromWorkorder=!!defaults.workorderId && !!defaultWorkorder.id;
+  const a=id?byId(state.acts,id):{workorderId:isGeneratedFromWorkorder?defaultWorkorder.id:'',objectId:defaults.objectId||(isGeneratedFromWorkorder?defaultWorkorder.objectId:'')||'',date:isGeneratedFromWorkorder?(defaultWorkorder.date||dateKeyFromDate(new Date())):'',title:isGeneratedFromWorkorder?`${defaultWorkorder.actType||'Väljakutse akt'} - ${defaultWorkorder.title||objectName(defaultWorkorder.objectId)}`:'',status:'Mustand',type:isGeneratedFromWorkorder?(defaultWorkorder.actType||'Väljakutse akt'):'Väljakutse akt',performedWork:isGeneratedFromWorkorder?(completionCommentText(defaultWorkorder)||''):'',workText:isGeneratedFromWorkorder?(completionCommentText(defaultWorkorder)||''):'',resultNotes:'',recommendations:'',materials:'',archived:false};
   const w=byId(state.workorders,a?.workorderId)||defaultWorkorder||{};
-  normalizeActContentFromWorkorder(a,w);
-  openModal(`<form id="actForm"><div class="dialog-head"><h2>${id?'Muuda akti':'Lisa akt'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label class="full">Akti nimetus<input class="field" name="title" required value="${esc(a.title)}"></label><label>Töökäsk<select class="select" name="workorderId">${state.workorders.map(w=>`<option value="${w.id}" ${a.workorderId===w.id?'selected':''}>${esc(w.id)} · ${esc(w.title)}</option>`).join('')}</select></label><label>Objekt<select class="select" name="objectId">${state.objects.map(o=>`<option value="${o.id}" ${a.objectId===o.id?'selected':''}>${esc(o.name)}</option>`).join('')}</select></label><label>Kuupäev<input class="field" name="date" type="date" value="${esc(a.date)}"></label><label>Staatus<select class="select" name="status">${['Mustand','Valmis','Saadetud','Arhiveeritud'].map(s=>`<option ${a.status===s?'selected':''}>${s}</option>`).join('')}</select></label><label>Akti tüüp<select class="select" name="type"><option value="Väljakutse akt" ${a.type==='Väljakutse akt'?'selected':''}>Väljakutse akt</option></select></label><label class="full">Teostatud tööd<textarea name="performedWork" placeholder="Kirjelda teostatud tööd...">${esc(actPerformedText(a,w))}</textarea></label><label class="full">Töö tulemus / märkused<textarea name="resultNotes" placeholder="Lisa töö tulemus, kontrolli tulemused või märkused...">${esc(actResultText(a,w))}</textarea></label><label class="full">Soovitused / puudused<textarea name="recommendations" placeholder="Lisa puudused, remondivajadused või soovitused kliendile...">${esc(actRecommendationsText(a,w))}</textarea></label><label class="full">Materjalid<textarea name="materials" placeholder="Lisa kasutatud materjalid või kulumaterjalid...">${esc(actMaterialsText(a,w))}</textarea></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  if(id || isGeneratedFromWorkorder) normalizeActContentFromWorkorder(a,w);
+  openModal(`<form id="actForm"><div class="dialog-head"><h2>${id?'Muuda akti':'Lisa akt'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label class="full">Akti nimetus<input class="field" name="title" required value="${esc(a.title)}"></label><label>Töökäsk<select class="select" name="workorderId"><option value="" ${!a.workorderId?'selected':''}>Ilma töökäsuta</option>${state.workorders.map(w=>`<option value="${w.id}" ${a.workorderId===w.id?'selected':''}>${esc(w.title||w.id)} · ${esc(objectName(w.objectId))}</option>`).join('')}</select></label><label>Objekt<select class="select" name="objectId"><option value="" ${!a.objectId?'selected':''}>Vali objekt...</option>${state.objects.map(o=>`<option value="${o.id}" ${a.objectId===o.id?'selected':''}>${esc(o.name)}</option>`).join('')}</select></label><label>Kuupäev<input class="field" name="date" type="date" value="${esc(a.date)}"></label><label>Staatus<select class="select" name="status">${['Mustand','Valmis','Saadetud','Arhiveeritud'].map(s=>`<option ${a.status===s?'selected':''}>${s}</option>`).join('')}</select></label><label>Akti tüüp<select class="select" name="type"><option value="Väljakutse akt" ${a.type==='Väljakutse akt'?'selected':''}>Väljakutse akt</option></select></label><label class="full">Teostatud tööd<textarea name="performedWork" placeholder="Kirjelda teostatud tööd...">${esc(actPerformedText(a,w))}</textarea></label><label class="full">Töö tulemus / märkused<textarea name="resultNotes" placeholder="Lisa töö tulemus, kontrolli tulemused või märkused...">${esc(actResultText(a,w))}</textarea></label><label class="full">Soovitused / puudused<textarea name="recommendations" placeholder="Lisa puudused, remondivajadused või soovitused kliendile...">${esc(actRecommendationsText(a,w))}</textarea></label><label class="full">Materjalid<textarea name="materials" placeholder="Lisa kasutatud materjalid või kulumaterjalid...">${esc(actMaterialsText(a,w))}</textarea></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
   $('#actForm').elements.workorderId?.addEventListener('change',e=>{
     const wo=byId(state.workorders,e.target.value)||{};
     if(wo.objectId) $('#actForm').elements.objectId.value=wo.objectId;
     if(!$('#actForm').elements.performedWork.value.trim()) $('#actForm').elements.performedWork.value=completionCommentText(wo)||'';
   });
-  $('#actForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const newId=timestampActId();const next={id:id||newId,number:a.number||newId,workorderId:f.workorderId.value,objectId:f.objectId.value,date:f.date.value,title:f.title.value,status:f.status.value,type:f.type?.value||'Väljakutse akt',performedWork:f.performedWork.value,workText:f.performedWork.value,resultNotes:f.resultNotes.value,recommendations:f.recommendations.value,materials:f.materials.value,createdAt:a.createdAt||new Date().toISOString(),archived:a.archived===true}; if(id){Object.assign(a,next)}else{state.acts.push(next);selectedActId=next.id;detailOpen.acts=true} save();closeModal(); if(page==='workorders') renderWorkorders(); else renderActs();});
+  $('#actForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const newId=timestampActId();const next={id:id||newId,number:a.number||newId,workorderId:f.workorderId.value,objectId:f.objectId.value,date:f.date.value,title:f.title.value,status:f.status.value,type:f.type?.value||'Väljakutse akt',performedWork:f.performedWork.value,workText:f.performedWork.value,resultNotes:f.resultNotes.value,recommendations:f.recommendations.value,materials:f.materials.value,createdAt:a.createdAt||new Date().toISOString(),archived:(a.archived===true||f.status.value==='Arhiveeritud')}; if(id){Object.assign(a,next)}else{state.acts.push(next);selectedActId=next.id;detailOpen.acts=true} save();closeModal(); if(page==='workorders') renderWorkorders(); else renderActs();});
 }
 
 function renderPeople(){
@@ -1892,8 +1905,10 @@ function mobileCurrentUser(){
 }
 function mobileWorkflowButtons(w){
   if(isCompletedStatus(w.status)){
-    const act=actForWorkorder(w.id);
-    const actBtn=`<button class="btn" data-mobile-act="${w.id}" type="button">${act?'Ava akt':'Loo akt'}</button>`;
+    const active=activeActForWorkorder(w.id);
+    const archived=archivedActForWorkorder(w.id);
+    const actLabel=active?'Ava akt':(archived?'Taasta akt':'Loo akt');
+    const actBtn=`<button class="btn" data-mobile-act="${w.id}" type="button">${actLabel}</button>`;
     return `<button class="btn" data-mobile-edit="${w.id}" type="button">Ava / muuda</button>${actBtn}<button class="btn primary" data-mobile-action="reopen" data-workorder-id="${w.id}" type="button">↺ Ava uuesti</button>`;
   }
   if(String(w.status||'').trim()==='Töös'){
@@ -2067,7 +2082,13 @@ function renderMobile(){
   $$('[data-mobile-tab]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_mobile_active_tab',btn.dataset.mobileTab);renderMobile();}));
   $$('[data-mobile-action]').forEach(btn=>btn.addEventListener('click',()=>applyMobileWorkorderAction(btn.dataset.mobileAction,btn.dataset.workorderId)));
   $$('[data-mobile-edit]').forEach(btn=>btn.addEventListener('click',()=>openMobileWorkModal(btn.dataset.mobileEdit)));
-  $$('[data-mobile-act]').forEach(btn=>btn.addEventListener('click',()=>{const a=ensureActForWorkorder(btn.dataset.mobileAct); if(a){ selectedActId=a.id; openActPreview(a.id); }}));
+  $$('[data-mobile-act]').forEach(btn=>btn.addEventListener('click',()=>{
+    const workorderId=btn.dataset.mobileAct;
+    const archived=archivedActForWorkorder(workorderId);
+    if(archived){ restoreAct(archived.id); selectedActId=archived.id; window.location.href=pageFiles.acts; return; }
+    const a=generateActFromWorkorder(workorderId);
+    if(a){ selectedActId=a.id; window.location.href=pageFiles.acts; }
+  }));
 }
 
 function mobileObjectChoiceLabel(o){

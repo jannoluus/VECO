@@ -2395,11 +2395,11 @@ body.modal-open .modal *{
 .app-mobile .mobile-head-actions{justify-content:flex-end;}
 @media(max-width:560px){.mobile-head-split{display:grid!important;grid-template-columns:1fr!important}.app-mobile .mobile-head-actions{justify-content:flex-start;width:100%;}.mobile-theme-toggle{width:100%;}}
 
-/* V3 20260610_2205: unplanned maintenance import visibility */
+/* V3 20260611_1222: unplanned maintenance import visibility */
 .empty-state{display:grid;gap:8px;align-items:start;padding:12px 4px;}
 .empty-state .toolbar{margin-top:4px;}
 
-/* Build 20260611_1202: act detail text blocks preserve line breaks */
+/* Build 20260611_1222: act detail text blocks preserve line breaks */
 .preline{white-space:pre-wrap;overflow-wrap:anywhere;}
 #actForm textarea{min-height:96px;}
 #actForm label.full textarea[name="performedWork"]{min-height:140px;}
