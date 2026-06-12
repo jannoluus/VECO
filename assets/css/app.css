@@ -2681,3 +2681,58 @@ body:has(.app.page-calendar){
   .app.page-calendar .calendar-planner-grid{overflow-x:auto!important;overflow-y:hidden!important;}
   .app.page-calendar .calendar-planner-day{min-width:260px!important;}
 }
+
+
+/* Build 20260612_1500: Google Calendari-laadne 24h vertikaalne ajatelg.
+   Kalender renderdab 00:00-24:00 ja avamisel kerib 07:00 juurde. */
+.app.page-calendar .calendar-planner-wrap{
+  overflow:auto!important;
+  height:calc(100vh - 190px)!important;
+  max-height:calc(100vh - 190px)!important;
+  overscroll-behavior:contain!important;
+}
+.app.page-calendar .calendar-planner{
+  height:calc(40px + var(--calendar-body-height))!important;
+  min-height:calc(40px + var(--calendar-body-height))!important;
+  overflow:visible!important;
+}
+.app.page-calendar .calendar-hours{
+  height:100%!important;
+  min-height:calc(40px + var(--calendar-body-height))!important;
+  grid-template-rows:40px repeat(var(--calendar-hours-count), var(--calendar-hour-px))!important;
+  overflow:visible!important;
+}
+.app.page-calendar .calendar-hour-label{
+  height:var(--calendar-hour-px)!important;
+  min-height:var(--calendar-hour-px)!important;
+}
+.app.page-calendar .calendar-planner-grid{
+  height:calc(40px + var(--calendar-body-height))!important;
+  min-height:calc(40px + var(--calendar-body-height))!important;
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+}
+.app.page-calendar .calendar-planner-day{
+  height:calc(40px + var(--calendar-body-height))!important;
+  min-height:calc(40px + var(--calendar-body-height))!important;
+  grid-template-rows:40px var(--calendar-body-height)!important;
+  overflow:hidden!important;
+}
+.app.page-calendar .calendar-planner-lane{
+  height:var(--calendar-body-height)!important;
+  min-height:var(--calendar-body-height)!important;
+  max-height:none!important;
+  overflow:visible!important;
+  background-size:auto var(--calendar-hour-px)!important;
+}
+.app.page-calendar .calendar-slot{
+  height:var(--calendar-hour-px)!important;
+  min-height:var(--calendar-hour-px)!important;
+}
+@media(max-width:1120px){
+  .app.page-calendar .calendar-planner-wrap{
+    height:calc(100vh - 210px)!important;
+    max-height:calc(100vh - 210px)!important;
+    overflow:auto!important;
+  }
+}

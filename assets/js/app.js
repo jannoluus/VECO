@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260612_1428';
+const APP_BUILD='20260612_1500';
 
 // Build 20260612_1243: calendar scroll position is preserved across rerenders and laptop layouts use a stable inner scroll.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -2555,7 +2555,11 @@ function restoreCalendarScrollState(pos){
     const wrap=document.querySelector('.calendar-planner-wrap');
     const grid=document.querySelector('.calendar-planner-grid');
     if(wrap){
-      wrap.scrollTop=pos.wrapTop||0;
+      const planner=document.querySelector('.calendar-planner');
+      const initialHour=Number(planner?.dataset?.initialScrollHour||7);
+      const hourPx=parseFloat(getComputedStyle(planner||wrap).getPropertyValue('--calendar-hour-px'))||72;
+      const initialTop=Math.max(0,Math.round(initialHour*hourPx));
+      wrap.scrollTop=pos.hasWrap?(pos.wrapTop||0):initialTop;
       wrap.scrollLeft=pos.wrapLeft||0;
     }
     if(grid) grid.scrollLeft=pos.gridLeft||0;
@@ -2594,24 +2598,11 @@ function renderCalendar(){
     return dateInView(w)&&techOk&&statusOk;
   });
   const calendarWorkTimeBounds=(jobs,days)=>{
-    // Tööpäev on sisuliselt 08:00–17:00, kuid kalendris kuvame
-    // 1 tunni puhvrit mõlemal pool, et 08:00 ja 17:00 tööd ei jääks
-    // visuaalselt vastu kalendri serva. Kui töö jääb sellest vahemikust
-    // välja, laiendame vaadet samuti 1 h puhvriga.
-    let start=7;
-    let end=18;
-    (jobs||[]).forEach(w=>{
-      if(!days.some(date=>workorderOccursOnDate(w,date))) return;
-      const [hh,mm]=(w.time||'09:00').split(':').map(Number);
-      const st=((Number.isFinite(hh)?hh:9)+(Number.isFinite(mm)?mm:0)/60);
-      const dur=Math.max(0.25,Number(workorderHours(w))||1);
-      const en=st+dur;
-      start=Math.min(start,Math.floor(st)-1);
-      end=Math.max(end,Math.ceil(en)+1);
-    });
-    start=Math.max(0,Math.min(23,start));
-    end=Math.max(start+1,Math.min(24,end));
-    return {start,end};
+    // Google Calendari-laadne loogika: renderdame alati kogu 24 h
+    // ajatelje (00:00–24:00), aga avamisel kerime vaate tööaja
+    // alguse juurde. Nii saab kasutaja vajadusel üles varasemaks
+    // ja alla hilisemaks kerida ning tööpäeva lõppu ei lõigata ära.
+    return {start:0,end:24};
   };
   const filters=`<input class="field" id="calendarWeekStart" type="date" value="${esc(currentDate)}"><select class="select" id="calendarTechFilter"><option value="all">Kõik tehnikud</option>${state.people.map(p=>`<option value="${p.id}" ${techFilter===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select><select class="select" id="calendarViewMode"><option value="day" ${mode==='day'?'selected':''}>Päev</option><option value="week" ${mode==='week'?'selected':''}>Nädal</option><option value="month" ${mode==='month'?'selected':''}>Kuu</option><option value="year" ${mode==='year'?'selected':''}>Aasta</option></select><button class="btn ghost" id="calendarHideWeekend" type="button" data-hidden="${hideWeekend?'true':'false'}">▦ ${hideWeekend?'Näita L/P':'Peida L/P'}</button><select class="select" id="calendarStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Kalendri tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${workorderStatusOptions.map(s=>`<option value="${s}" ${statusFilter===s?'selected':''}>${s}</option>`).join('')}</select>`;
   const actions=`<button class="btn ghost" id="calendarImportWorkBtn" type="button">▧ Impordi töö</button><button class="btn ghost" id="calendarPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="calendarThisWeekBtn" type="button">⌖ Täna</button><button class="btn ghost" id="calendarNextWeekBtn" type="button">Järgmine ›</button><button class="btn primary" id="newCalendarWorkorderBtn" type="button">＋ Lisa töökäsk</button>`;
@@ -2729,7 +2720,7 @@ function renderCalendar(){
     }).join('');
     const nowLabel=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     const globalNowLine=showNowLine?`<div class="calendar-now-line calendar-now-line-global" style="top:calc(40px + (100% - 40px) * ${nowTopPct/100})"><span>${nowLabel}</span></div>`:'';
-    body=`<div class="calendar-planner" style="--calendar-hours-count:${hours.length}">${globalNowLine}<div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="--calendar-day-count:${visibleDays.length};grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}${multiDayOverlay}</div></div>`;
+    body=`<div class="calendar-planner" style="--calendar-hours-count:${hours.length};--calendar-hour-px:72px;--calendar-body-height:${hours.length*72}px" data-initial-scroll-hour="7">${globalNowLine}<div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="--calendar-day-count:${visibleDays.length};grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}${multiDayOverlay}</div></div>`;
   }else if(mode==='month'){
     body=`<div class="calendar-month-grid">${visibleDays.map(date=>{const jobs=filtered.filter(w=>workorderOccursOnDate(w,date)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const d=parseDateKey(date);const dayNote=calendarDayMarker(date);return `<div class="calendar-month-day ${date===today?'today':''} ${calendarDayClass(date)}" data-add-date="${date}"><div class="calendar-month-head"><strong>${d.getDate()}</strong><span>${dayNames[d.getDay()]}</span></div>${dayNote}${jobs.slice(0,4).map(w=>`<button class="calendar-mini-event" data-calendar-edit="${w.id}" type="button">${esc(w.time||'')} · ${esc(objectName(w.objectId))}${workorderDaySpan(w)>1?' · '+esc(daysBetweenKeys(w.date,date)+1)+'/'+esc(workorderDaySpan(w)):''}</button>`).join('')}${jobs.length>4?`<span class="muted">+${jobs.length-4} veel</span>`:''}</div>`}).join('')}</div>`;
   }else{
