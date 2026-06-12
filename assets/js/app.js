@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260612_1724';
+const APP_BUILD='20260612_1736';
 
-// Build 20260612_1243: calendar scroll position is preserved across rerenders and laptop layouts use a stable inner scroll.
+// Build 20260612_1736: clean sidebar modes without rail and sticky calendar day headers.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -273,7 +273,7 @@ function bindLocalPeerSync(){
 }
 function uid(prefix){return `${prefix}-${String(Date.now()).slice(-6)}`}
 function icon(i){return `<span class="icon">${i}</span>`}
-function nav(){
+function nav(sidebarMode='full'){
   const groups=[
     ['Töölaud',[['unplannedMaintenance','⚠'],['calendar','▦'],['team','◫'],['mobile','▤']]],
     ['Haldus',[['workorders','☑'],['acts','▧'],['oncall','☎'],['vacations','▤'],['people','☷'],['objects','⌂'],['clients','▥'],['projects','▣'],['ticker','▭']]],
@@ -296,7 +296,8 @@ function nav(){
     const isOpen=!!openGroups[title];
     return `<div class="nav-section ${isOpen?'open':'collapsed'}" data-nav-group="${esc(title)}"><button class="nav-section-title" type="button" data-nav-toggle="${esc(title)}" aria-expanded="${isOpen?'true':'false'}"><span>${isOpen?'▾':'▸'}</span>${title}</button><div class="nav-section-items">${items.map(navItem).join('')}</div></div>`;
   }).join('');
-  return `<aside class="sidebar"><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
+  const toggleTitle=sidebarMode==='hidden'?'Näita menüüd':(sidebarMode==='compact'?'Ava täismenüü':'Muuda menüü kompaktseks');
+  return `<aside class="sidebar"><div class="sidebar-actions"><button class="btn ghost sidebar-toggle" id="sidebarToggleBtn" type="button" title="${toggleTitle}" aria-label="${toggleTitle}">${icon('☰')}</button></div><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
 }
 function themeLogo(){
   return `<button class="brand-badge brand-theme-toggle" type="button" data-theme-toggle title="Vaheta hele/tume režiim" aria-label="Vaheta hele/tume režiim"><span class="brand-wordmark">VECO</span></button>`;
@@ -379,7 +380,7 @@ function shell(main,aside='',opts={}){
   }
   if(!['full','compact','hidden'].includes(sidebarMode)) sidebarMode='full';
   const sidebarClass=sidebarMode==='compact'?'sidebar-compact':(sidebarMode==='hidden'?'sidebar-hidden':'sidebar-full');
-  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav()}${page==='mobile'?'':`<div class="sidebar-rail"><button class="btn ghost sidebar-toggle" id="sidebarToggleBtn" type="button" title="Muuda menüü vaadet" aria-label="Muuda menüü vaadet">${icon(sidebarMode==='hidden'?'›':(sidebarMode==='compact'?'‹':'«'))}</button></div>`}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
+  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();
 }
 function activeThemeKey(){

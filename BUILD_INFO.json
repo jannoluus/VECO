@@ -1,0 +1,10 @@
+{
+  "build": "VECO_V3_20260612_1736",
+  "created_at": "2026-06-12T17:36:00+03:00",
+  "changes": [
+    "Eemaldatud eraldi menüü juht-riba; menüü olekud töötavad ChatGPT-stiilis ühe hamburgeri kaudu.",
+    "Täis / kompaktne / peidetud menüü: kompaktses vaates ainult ikoonid, peidetud vaates ainult kitsas hamburgeri ala.",
+    "Kalendri päeva/kuupäeva päis on sticky ja jääb 24h ajateljel skrollides nähtavale.",
+    "Kalendri raamistust puhastatud: vähem üleliigseid vertikaalseid/horisontaalseid jooni ja päise kaste."
+  ]
+}
