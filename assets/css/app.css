@@ -2502,7 +2502,7 @@ body.modal-open .modal *{
 .card.soft-warning strong{display:block;margin-bottom:4px;}
 .mobile-form-grid .card.soft-warning{grid-column:1/-1;}
 
-/* Build 20260612_1049: calendar vertical scale expanded for readable 1h cards */
+/* Build 20260612_1243: calendar uses stable inner scroll and preserves position on small laptop screens */
 .app.page-calendar{
   --calendar-hour-px:80px;
 }
@@ -2584,3 +2584,27 @@ body.modal-open .modal *{
 .check-card input{margin-top:3px;transform:scale(1.1);}
 .check-card span{display:block;}
 .check-card small{display:block;font-weight:500;color:var(--muted);margin-top:3px;line-height:1.35;}
+
+
+/* Build 20260612_1243: stabilise calendar scrolling on smaller laptop screens */
+.app.page-calendar .calendar-planner-wrap{
+  height:calc(100vh - 190px)!important;
+  max-height:calc(100vh - 190px)!important;
+  overflow:auto!important;
+  overscroll-behavior:contain!important;
+  scroll-behavior:auto!important;
+}
+.app.page-calendar .calendar-planner-grid{
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+}
+@media(max-width:1120px){
+  .app.page-calendar{height:100vh!important;overflow:hidden!important;}
+  .app.page-calendar > main{height:100vh!important;overflow:hidden!important;}
+  .app.page-calendar > main > .content{height:100vh!important;overflow:hidden!important;}
+  .app.page-calendar .panel{height:calc(100vh - 24px)!important;min-height:0!important;}
+  .app.page-calendar .calendar-planner-wrap{
+    height:calc(100vh - 210px)!important;
+    max-height:calc(100vh - 210px)!important;
+  }
+}

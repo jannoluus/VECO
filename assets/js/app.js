@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260612_1049';
+const APP_BUILD='20260612_1243';
 
-// Build 20260612_1049: calendar default workday 08-17 with dynamic expansion for early/late work.
+// Build 20260612_1243: calendar scroll position is preserved across rerenders and laptop layouts use a stable inner scroll.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -2518,7 +2518,35 @@ function formatViewPeriod(viewName,mode,days,startKey,opts={}){
 function calendarRangeLabel(mode,days,startKey){
   return formatViewPeriod('Kalender',mode,days,startKey,{noName:true});
 }
+
+function captureCalendarScrollState(){
+  const wrap=document.querySelector('.calendar-planner-wrap');
+  const grid=document.querySelector('.calendar-planner-grid');
+  return {
+    wrapTop:wrap?wrap.scrollTop:0,
+    wrapLeft:wrap?wrap.scrollLeft:0,
+    gridLeft:grid?grid.scrollLeft:0,
+    winY:window.scrollY||0,
+    winX:window.scrollX||0,
+    hasWrap:!!wrap
+  };
+}
+function restoreCalendarScrollState(pos){
+  if(!pos) return;
+  const apply=()=>{
+    const wrap=document.querySelector('.calendar-planner-wrap');
+    const grid=document.querySelector('.calendar-planner-grid');
+    if(wrap){
+      wrap.scrollTop=pos.wrapTop||0;
+      wrap.scrollLeft=pos.wrapLeft||0;
+    }
+    if(grid) grid.scrollLeft=pos.gridLeft||0;
+    if(pos.hasWrap || pos.winY || pos.winX) window.scrollTo(pos.winX||0,pos.winY||0);
+  };
+  requestAnimationFrame(()=>requestAnimationFrame(apply));
+}
 function renderCalendar(){
+  const calendarScrollState=captureCalendarScrollState();
   const storedDate=localStorage.getItem('veco_calendar_week')||weekStartKeyFrom('');
   const currentDate=storedDate;
   const techFilter=$('#calendarTechFilter')?.value||'all';
@@ -2688,6 +2716,7 @@ function renderCalendar(){
   window.__VECO_ONCALL_CONTEXT_DAYS__ = visibleDays;
   const main=header('Kalender',filters,actions,calendarRangeLabel(mode,visibleDays,currentDate))+`<div class="calendar-planner-wrap">${body}</div>`;
   shell(main,'',{wide:true});
+  restoreCalendarScrollState(calendarScrollState);
   $('#calendarWeekStart')?.addEventListener('change',e=>{localStorage.setItem('veco_calendar_week',e.target.value);renderCalendar();}); $('#calendarTechFilter')?.addEventListener('change',renderCalendar); $('#calendarStatusFilter')?.addEventListener('change',renderCalendar); $('#calendarViewMode')?.addEventListener('change',renderCalendar);
   $('#calendarHideWeekend')?.addEventListener('click',()=>{localStorage.setItem('veco_calendar_hide_weekend',hideWeekend?'false':'true');renderCalendar();});
   $('#calendarPrevWeekBtn')?.addEventListener('click',()=>{const base=parseDateKey(currentDate); let next;if(mode==='day') next=addDateDays(base,-1); else if(mode==='week') next=addDateDays(base,-7); else if(mode==='month') next=new Date(base.getFullYear(),base.getMonth()-1,1,12,0,0); else next=new Date(base.getFullYear()-1,0,1,12,0,0); localStorage.setItem('veco_calendar_week',dateKeyFromDate(next));renderCalendar();});
@@ -3742,3 +3771,5 @@ function activeActs(){ return (state.acts||[]).filter(a=>!a.archived); }
 function archivedActs(){ return (state.acts||[]).filter(a=>a.archived); }
 
 // Build 20260612_1049
+
+// Build 20260612_1243
