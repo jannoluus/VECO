@@ -1445,10 +1445,13 @@ async function renderActPdfCanvas(actId){
   if(d.recommendations) section('Soovitused / puudused',d.recommendations,100);
   if(d.materials) section('Materjalid',d.materials,80);
 
+  const minSignatureTop = canvas.height - 220;
+  if(y < minSignatureTop) y = minSignatureTop;
+
   ctx.fillStyle='#0f172a'; ctx.font='800 22px Arial, Helvetica, sans-serif'; ctx.fillText('ALLKIRJAD',left,y); y+=18;
   ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(canvas.width-left,y); ctx.stroke(); y+=22;
   const sigW=(canvas.width-left*2-gap)/2;
-  [['TEOSTAJA',d.technician],['TELLIJA','']].forEach((s,i)=>{
+  [[((d.technician||'').includes(',')?'TEOSTAJAD':'TEOSTAJA'),d.technician],['TELLIJA','']].forEach((s,i)=>{
     const x=left+i*(sigW+gap);
     ctx.fillStyle='#fff'; ctx.strokeStyle='#d7dee8'; roundRectPath(ctx,x,y,sigW,118,12); ctx.fill(); ctx.stroke();
     ctx.fillStyle='#64748b'; ctx.font='700 16px Arial'; ctx.fillText(s[0],x+18,y+28);
