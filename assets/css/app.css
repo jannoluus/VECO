@@ -2404,7 +2404,7 @@ body.modal-open .modal *{
 #actForm textarea{min-height:96px;}
 #actForm label.full textarea[name="performedWork"]{min-height:140px;}
 
-/* Build 20260612_0927: kalendri akti ikoon nähtav sõltumata akti staatusest */
+/* Build 20260612_0945: kalendri akti ikoon nähtav sõltumata akti staatusest */
 #completionCommentForm.confirm-dialog{
   width:min(560px,100%)!important;
   max-height:90vh!important;
@@ -2448,7 +2448,7 @@ body.modal-open .modal *{
 .calendar-act-panel .actions{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))!important;}
 
 
-/* Build 20260612_0927: calendar act indicator is a fixed overlay on the event card */
+/* Build 20260612_0945: calendar act indicator is a fixed overlay on the event card */
 .calendar-event .calendar-act-badge{
   position:absolute!important;
   top:30px!important;
@@ -2485,7 +2485,7 @@ body.modal-open .modal *{
 .calendar-act-archived{opacity:.9!important;}
 .calendar-act-missing{border-color:rgba(247,177,66,.9)!important;color:#ffd88a!important;}
 
-/* Build 20260612_0927: töökäsu/akti loogika ja tekstiväljade korrastus */
+/* Build 20260612_0945: töökäsu/akti loogika ja tekstiväljade korrastus */
 .dialog textarea{
   min-height:96px;
   overflow:hidden;
@@ -2501,3 +2501,81 @@ body.modal-open .modal *{
 }
 .card.soft-warning strong{display:block;margin-bottom:4px;}
 .mobile-form-grid .card.soft-warning{grid-column:1/-1;}
+
+/* Build 20260612_0945: calendar vertical scale expanded for readable 1h cards */
+.app.page-calendar{
+  --calendar-hour-px:80px;
+}
+.app.page-calendar .calendar-planner-wrap{
+  overflow:auto!important;
+  scrollbar-width:thin!important;
+}
+.app.page-calendar .calendar-planner{
+  height:auto!important;
+  min-height:calc(40px + (var(--calendar-hours-count) * var(--calendar-hour-px)))!important;
+  align-items:start!important;
+}
+.app.page-calendar .calendar-hours{
+  height:auto!important;
+  min-height:calc(40px + (var(--calendar-hours-count) * var(--calendar-hour-px)))!important;
+  grid-template-rows:40px repeat(var(--calendar-hours-count), var(--calendar-hour-px))!important;
+}
+.app.page-calendar .calendar-hour-label{
+  min-height:var(--calendar-hour-px)!important;
+  height:var(--calendar-hour-px)!important;
+}
+.app.page-calendar .calendar-planner-grid{
+  height:auto!important;
+  min-height:calc(40px + (var(--calendar-hours-count) * var(--calendar-hour-px)))!important;
+  overflow:visible!important;
+  align-items:start!important;
+}
+.app.page-calendar .calendar-planner-day{
+  height:calc(40px + (var(--calendar-hours-count) * var(--calendar-hour-px)))!important;
+  min-height:calc(40px + (var(--calendar-hours-count) * var(--calendar-hour-px)))!important;
+  grid-template-rows:40px calc(var(--calendar-hours-count) * var(--calendar-hour-px))!important;
+}
+.app.page-calendar .calendar-planner-lane{
+  height:calc(var(--calendar-hours-count) * var(--calendar-hour-px))!important;
+  min-height:calc(var(--calendar-hours-count) * var(--calendar-hour-px))!important;
+  overflow:visible!important;
+  background-size:auto var(--calendar-hour-px)!important;
+}
+.app.page-calendar .calendar-slot{
+  height:var(--calendar-hour-px)!important;
+  min-height:var(--calendar-hour-px)!important;
+}
+.app.page-calendar .calendar-event{
+  min-height:76px!important;
+  padding:8px!important;
+  gap:4px!important;
+  overflow:hidden!important;
+}
+.app.page-calendar .calendar-event.compact{
+  min-height:72px!important;
+  padding:7px!important;
+  gap:3px!important;
+}
+.app.page-calendar .calendar-event strong,
+.app.page-calendar .calendar-event small{
+  line-height:1.2!important;
+}
+.app.page-calendar .calendar-event .status{
+  font-size:10px!important;
+  padding:3px 6px!important;
+}
+.app.page-calendar .calendar-event .calendar-work-title{
+  display:-webkit-box!important;
+  -webkit-line-clamp:2!important;
+  -webkit-box-orient:vertical!important;
+  overflow:hidden!important;
+}
+.app.page-calendar .calendar-event .calendar-act-badge,
+.app.page-calendar .calendar-event .calendar-act-indicator{
+  top:28px!important;
+  right:8px!important;
+}
+@media(max-width:1120px){
+  .app.page-calendar{--calendar-hour-px:84px;}
+  .app.page-calendar .calendar-planner-day{min-width:270px!important;}
+}
