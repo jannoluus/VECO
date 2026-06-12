@@ -3718,3 +3718,5 @@ function deleteActPermanently(actId){
 }
 function activeActs(){ return (state.acts||[]).filter(a=>!a.archived); }
 function archivedActs(){ return (state.acts||[]).filter(a=>a.archived); }
+
+// Build 20260612_1015
