@@ -2403,3 +2403,46 @@ body.modal-open .modal *{
 .preline{white-space:pre-wrap;overflow-wrap:anywhere;}
 #actForm textarea{min-height:96px;}
 #actForm label.full textarea[name="performedWork"]{min-height:140px;}
+
+/* Build 20260611_2202: mobiili lõpetamise dialoog ja kalendri akti märgid */
+#completionCommentForm.confirm-dialog{
+  width:min(560px,100%)!important;
+  max-height:90vh!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+}
+#completionCommentForm .dialog-head{flex:0 0 auto!important;}
+#completionCommentForm .detail-body{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+  padding-bottom:18px!important;
+}
+#completionCommentForm .dialog-actions{
+  flex:0 0 auto!important;
+  position:sticky!important;
+  bottom:0!important;
+  z-index:3!important;
+  background:var(--panel)!important;
+  box-shadow:0 -10px 20px rgba(0,0,0,.14)!important;
+}
+@media(max-width:760px){
+  .confirm-modal{align-items:stretch!important;padding:10px!important;}
+  #completionCommentForm.confirm-dialog{width:100%!important;max-height:calc(100vh - 20px)!important;}
+  #completionCommentForm .dialog-actions{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;}
+  #completionCommentForm .dialog-actions .btn{width:100%!important;min-height:46px!important;}
+}
+.calendar-act-badge{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  margin-left:4px!important;
+  font-size:13px!important;
+  line-height:1!important;
+  vertical-align:middle!important;
+}
+.calendar-event.narrow .calendar-act-badge,
+.calendar-event.compact .calendar-act-badge{font-size:11px!important;margin-left:2px!important;}
+.calendar-act-panel .actions{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))!important;}

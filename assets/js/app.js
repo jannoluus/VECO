@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260611_1700';
+const APP_BUILD='20260611_2202';
 
-// Build 20260611_1700: act PDF dynamic section heights and non-overlap spacing.
+// Build 20260611_2202: mobile finish modal sticky actions and calendar act indicators.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -823,9 +823,11 @@ function openWorkorderModal(id='',defaults={}){
     <label>Kestus<div class="unit-field"><input class="field" name="plannedHours" type="number" min="1" max="16" step="1" value="${esc(currentHours)}"><span>h</span></div></label>
     <label class="full">Probleemi kirjeldus<textarea name="description" placeholder="Kirjelda kliendi pöördumist, probleemi või töö põhjust...">${esc(problemDescriptionText(w))}</textarea></label>
     ${isEdit&&isCompletedStatus(w.status)?`<label class="full">Teostatud tööd<textarea name="completionComment" placeholder="Kirjelda, mida tehnik objektil tegi...">${esc(performedWorkText(w))}</textarea></label><label class="full">Töö tulemus / märkused<textarea name="workResult" placeholder="Kirjelda tulemus või seis lahkumisel...">${esc(workResultText(w))}</textarea></label><label class="full">Soovitused / puudused<textarea name="recommendations" placeholder="Lisa puudused või soovitused...">${esc(workRecommendationsText(w))}</textarea></label><label class="full">Materjalid<textarea name="materials" placeholder="Lisa kasutatud materjalid...">${esc(workMaterialsText(w))}</textarea></label>`:''}
+    ${isEdit?workorderActPanelHtml(w):''}
     ${defaults.copiedFromId?`<div class="full muted">Kopeeritakse töökäsk ${esc(defaults.copiedFromId)}. Muuda kuupäeva, vastutajat, osalejaid või aega enne salvestamist.</div>`:(!isEdit?'<div class="full muted">Uue töökäsu loomisel klienti, objekti, projekti ega tehnikut automaatselt ei valita. Kuupäev ja kell võivad tulla kalendris klikitud ajast.</div>':'')}
   </div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Sulge</button>${isEdit?'<button type="button" class="btn" id="copyWorkorderBtn">⧉ Kopeeri</button><button type="button" class="btn danger" id="deleteWorkorderBtn">Kustuta</button>':''}<button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
+  if(isEdit) bindWorkorderActPanel(w);
   const form=$('#workorderForm');
   const participantPicker=$('#workorderParticipantPicker');
   let selectedParticipants=[];
@@ -1066,6 +1068,40 @@ function activeActForWorkorder(workorderId){
 }
 function archivedActForWorkorder(workorderId){
   return archivedActs().find(a=>a.workorderId===workorderId)||null;
+}
+function calendarActState(w){
+  const active=activeActForWorkorder(w.id);
+  if(active) return {state:'active',act:active,icon:active.status==='Allkirjastatud'?'✅📄':'📄',label:active.status||'Akt olemas'};
+  const archived=archivedActForWorkorder(w.id);
+  if(archived) return {state:'archived',act:archived,icon:'🗄️📄',label:'Akt arhiveeritud'};
+  if(isCompletedStatus(w.status)) return {state:'missing',act:null,icon:'⚠📄',label:'Akt puudub'};
+  return {state:'none',act:null,icon:'',label:''};
+}
+function calendarActBadgeHtml(w){
+  const info=calendarActState(w);
+  if(!info.icon) return '';
+  return `<span class="calendar-act-badge calendar-act-${esc(info.state)}" title="${esc(info.label)}" aria-label="${esc(info.label)}">${esc(info.icon)}</span>`;
+}
+function workorderActPanelHtml(w){
+  const info=calendarActState(w);
+  if(info.state==='active'&&info.act){
+    return `<div class="calendar-act-panel full"><div class="section-title">Akt</div><div class="card"><div class="card-top"><h3>${esc(info.act.title||'Väljakutse akt')}</h3><span class="status ${statusClass(info.act.status)}">${esc(info.act.status||'Mustand')}</span></div><div class="muted">${esc(fmtActDate(info.act.date||w.date))} · ${esc(actNumber(info.act))}</div><div class="actions"><button class="btn" type="button" id="calendarPreviewActBtn">👁 Ava eelvaade</button><button class="btn" type="button" id="calendarDownloadActBtn">⇩ Laadi PDF</button><button class="btn" type="button" id="calendarEditActBtn">✎ Muuda akti</button></div></div></div>`;
+  }
+  if(info.state==='archived'&&info.act){
+    return `<div class="calendar-act-panel full"><div class="section-title">Akt</div><div class="card"><div class="card-top"><h3>${esc(info.act.title||'Väljakutse akt')}</h3><span class="status warn">Arhiivis</span></div><div class="muted">${esc(fmtActDate(info.act.date||w.date))} · ${esc(actNumber(info.act))}</div><div class="actions"><button class="btn" type="button" id="calendarPreviewActBtn">👁 Ava eelvaade</button><button class="btn" type="button" id="calendarDownloadActBtn">⇩ Laadi PDF</button><button class="btn primary" type="button" id="calendarRestoreActBtn">Taasta akt</button></div></div></div>`;
+  }
+  if(isCompletedStatus(w.status)){
+    return `<div class="calendar-act-panel full"><div class="section-title">Akt</div><div class="card"><div class="card-top"><h3>Akti ei ole loodud</h3><span class="status red">Akt puudub</span></div><div class="muted">Lõpetatud töö vajab akti, kui töö tuleb kliendile dokumenteerida.</div><div class="actions"><button class="btn primary" type="button" id="calendarCreateActBtn">Loo akt</button></div></div></div>`;
+  }
+  return '';
+}
+function bindWorkorderActPanel(w){
+  const getAct=()=>actForWorkorder(w.id);
+  $('#calendarPreviewActBtn')?.addEventListener('click',()=>{const a=getAct(); if(a) openActPreview(a.id);});
+  $('#calendarDownloadActBtn')?.addEventListener('click',()=>{const a=getAct(); if(a) saveActPdf(a.id);});
+  $('#calendarEditActBtn')?.addEventListener('click',()=>{const a=getAct(); if(a) openActModal(a.id);});
+  $('#calendarRestoreActBtn')?.addEventListener('click',()=>{const a=archivedActForWorkorder(w.id); if(a){ restoreAct(a.id); closeModal(); if(page==='calendar') renderCalendar(); else if(page==='workorders') renderWorkorders(); }});
+  $('#calendarCreateActBtn')?.addEventListener('click',()=>{const a=ensureActForWorkorder(w.id); if(a){ closeModal(); selectedActId=a.id; detailOpen.acts=true; if(page==='calendar') renderCalendar(); else renderActs(); }});
 }
 function actPendingWorkorders(){
   // Akti ootel tähendab ainult lõpetatud tööd, millel ei ole ühtegi seotud akti.
@@ -2500,7 +2536,7 @@ function renderCalendar(){
       const objectText=objectName(w.objectId);
       const titleText=(w.title||objectText||'Töö').trim();
       const clientText=clientName(objectClientId(w.objectId));
-      return `<button class="calendar-event calendar-status-${statusSlug(w.status)}${compactClass}${overlap?' overlapping':''}${overlap&&overlap.columns>=3?' narrow':''}${totalSpan>1?' multi-day':''}${spanEvent?' calendar-span-event':''}" style="${style}" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" data-calendar-start="${esc(w.date||'')}" data-calendar-end="${esc(workorderEndDate(w))}" type="button" title="${esc(workorderCalendarTitle(w))}"><span class="calendar-span-continuation" aria-hidden="true"></span>${daySeparators}<span class="calendar-span-resize calendar-span-resize-left" data-calendar-span-resize="${w.id}" data-resize-side="left" title="Venita alguskuupäeva" aria-hidden="true"></span><span class="calendar-span-resize calendar-span-resize-right" data-calendar-span-resize="${w.id}" data-resize-side="right" title="Venita lõppkuupäeva" aria-hidden="true"></span><span class="calendar-time-resize calendar-time-resize-top" data-calendar-start-resize="${w.id}" title="Muuda alguskellaaega" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-left" title="Lohista vasakule / eelmisele päevale" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-right" title="Lohista paremale / järgmisele päevale" aria-hidden="true"></span><span class="calendar-event-head"><strong><b class="calendar-start-time">${esc(w.time||'')}</b> · ${esc(objectText)}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><b class="calendar-work-title">${esc(titleText)}</b>${workorderCalendarPeopleHtml(w)}<span class="calendar-event-footer" aria-label="Töö lõpp ja kestus"><b class="calendar-duration">${duration} h</b><b class="calendar-end-time">${esc(endLabel)}</b></span><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kellalist kestust" aria-hidden="true"></span></button>`;
+      return `<button class="calendar-event calendar-status-${statusSlug(w.status)}${compactClass}${overlap?' overlapping':''}${overlap&&overlap.columns>=3?' narrow':''}${totalSpan>1?' multi-day':''}${spanEvent?' calendar-span-event':''}" style="${style}" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" data-calendar-start="${esc(w.date||'')}" data-calendar-end="${esc(workorderEndDate(w))}" type="button" title="${esc(workorderCalendarTitle(w))}"><span class="calendar-span-continuation" aria-hidden="true"></span>${daySeparators}<span class="calendar-span-resize calendar-span-resize-left" data-calendar-span-resize="${w.id}" data-resize-side="left" title="Venita alguskuupäeva" aria-hidden="true"></span><span class="calendar-span-resize calendar-span-resize-right" data-calendar-span-resize="${w.id}" data-resize-side="right" title="Venita lõppkuupäeva" aria-hidden="true"></span><span class="calendar-time-resize calendar-time-resize-top" data-calendar-start-resize="${w.id}" title="Muuda alguskellaaega" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-left" title="Lohista vasakule / eelmisele päevale" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-right" title="Lohista paremale / järgmisele päevale" aria-hidden="true"></span><span class="calendar-event-head"><strong><b class="calendar-start-time">${esc(w.time||'')}</b> · ${esc(objectText)} ${calendarActBadgeHtml(w)}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span><b class="calendar-work-title">${esc(titleText)}</b>${workorderCalendarPeopleHtml(w)}<span class="calendar-event-footer" aria-label="Töö lõpp ja kestus"><b class="calendar-duration">${duration} h</b><b class="calendar-end-time">${esc(endLabel)}</b></span><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kellalist kestust" aria-hidden="true"></span></button>`;
     };
     const calendarEventMinutes=w=>{
       const [hh,mm]=(w.time||'09:00').split(':').map(Number);
