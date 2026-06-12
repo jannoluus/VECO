@@ -2404,7 +2404,7 @@ body.modal-open .modal *{
 #actForm textarea{min-height:96px;}
 #actForm label.full textarea[name="performedWork"]{min-height:140px;}
 
-/* Build 20260612_1005: kalendri akti ikoon nähtav sõltumata akti staatusest */
+/* Build 20260612_1049: kalendri akti ikoon nähtav sõltumata akti staatusest */
 #completionCommentForm.confirm-dialog{
   width:min(560px,100%)!important;
   max-height:90vh!important;
@@ -2448,7 +2448,7 @@ body.modal-open .modal *{
 .calendar-act-panel .actions{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))!important;}
 
 
-/* Build 20260612_1005: calendar act indicator is a fixed overlay on the event card */
+/* Build 20260612_1049: calendar act indicator is a fixed overlay on the event card */
 .calendar-event .calendar-act-badge{
   position:absolute!important;
   top:30px!important;
@@ -2485,7 +2485,7 @@ body.modal-open .modal *{
 .calendar-act-archived{opacity:.9!important;}
 .calendar-act-missing{border-color:rgba(247,177,66,.9)!important;color:#ffd88a!important;}
 
-/* Build 20260612_1005: töökäsu/akti loogika ja tekstiväljade korrastus */
+/* Build 20260612_1049: töökäsu/akti loogika ja tekstiväljade korrastus */
 .dialog textarea{
   min-height:96px;
   overflow:hidden;
@@ -2502,7 +2502,7 @@ body.modal-open .modal *{
 .card.soft-warning strong{display:block;margin-bottom:4px;}
 .mobile-form-grid .card.soft-warning{grid-column:1/-1;}
 
-/* Build 20260612_1005: calendar vertical scale expanded for readable 1h cards */
+/* Build 20260612_1049: calendar vertical scale expanded for readable 1h cards */
 .app.page-calendar{
   --calendar-hour-px:80px;
 }
@@ -2579,3 +2579,8 @@ body.modal-open .modal *{
   .app.page-calendar{--calendar-hour-px:84px;}
   .app.page-calendar .calendar-planner-day{min-width:270px!important;}
 }
+
+.check-card{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--soft);font-weight:700;color:var(--text);}
+.check-card input{margin-top:3px;transform:scale(1.1);}
+.check-card span{display:block;}
+.check-card small{display:block;font-weight:500;color:var(--muted);margin-top:3px;line-height:1.35;}

@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260612_1005';
+const APP_BUILD='20260612_1049';
 
-// Build 20260612_1005: calendar default workday 08-17 with dynamic expansion for early/late work.
+// Build 20260612_1049: calendar default workday 08-17 with dynamic expansion for early/late work.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -136,6 +136,17 @@ const projectWorkorders=(id)=>state.workorders.filter(w=>w.projectId===id);
 const projectActs=(id)=>state.acts.filter(a=>projectWorkorders(id).some(w=>w.id===a.workorderId));
 const completedStatuses=['Lõpetatud','Täidetud','Suletud','Arhiveeritud'];
 const isCompletedStatus=(s)=>completedStatuses.includes(String(s||'').trim());
+function inferActRequired(w){
+  const text=`${w?.title||''} ${w?.type||''} ${w?.actType||''}`.toLowerCase();
+  if(actForWorkorder(w?.id)) return true;
+  return text.includes('väljakutse') || text.includes('remont');
+}
+function workorderActRequired(w){
+  if(!w) return false;
+  if(w.actRequired===true || w.actRequired==='true' || w.actRequired==='on' || w.actRequired===1) return true;
+  if(w.actRequired===false || w.actRequired==='false' || w.actRequired===0) return false;
+  return inferActRequired(w);
+}
 const openWorkorders=()=>state.workorders.filter(w=>!isCompletedStatus(w.status));
 const workorderStatusOptions=['Planeeritud','Töös','Lõpetatud'];
 const completedByLabel=(w)=>techName(workorderResponsibleId(w))||'VECO';
@@ -730,7 +741,7 @@ function bindProjectDetail(){ $$('[data-project-tab]').forEach(b=>b.addEventList
 function openProjectModal(id=''){
   const p=id?byId(state.projects,id):{objectId:state.objects[0]?.id||'',name:'',responsibleTechId:state.people[0]?.id||'',status:'Planeeritud',deadline:'',description:''};
   openModal(`<form id="projectForm"><div class="dialog-head"><h2>${id?'Muuda projekti':'Lisa projekt'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label class="full">Projekti nimi<input class="field" name="name" required value="${esc(p.name)}"></label><label>Objekt<select class="select" name="objectId">${state.objects.map(o=>`<option value="${o.id}" ${p.objectId===o.id?'selected':''}>${esc(o.name)} · ${esc(clientName(o.clientId))}</option>`).join('')}</select></label><label>Vastutaja<select class="select" name="responsibleTechId">${state.people.map(t=>`<option value="${t.id}" ${p.responsibleTechId===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}</select></label><label>Staatus<select class="select" name="status">${['Planeeritud','Töös','Ootel','Pausil','Täidetud','Arhiveeritud'].map(s=>`<option ${p.status===s?'selected':''}>${s}</option>`).join('')}</select></label><label>Tähtaeg<input class="field" name="deadline" type="date" value="${esc(p.deadline)}"></label><label class="full">Kirjeldus<textarea name="description">${esc(p.description)}</textarea></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
-  bindClose(); $('#projectForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('PRJ'),objectId:f.objectId.value,name:f.name.value,responsibleTechId:f.responsibleTechId.value,status:f.status.value,deadline:f.deadline.value,description:f.description.value,problemDescription:f.description.value}; if(id){Object.assign(p,next)}else{state.projects.push(next);selectedProjectId=next.id;detailOpen.projects=true} save();closeModal();renderProjects();});
+  bindClose(); $('#projectForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('PRJ'),objectId:f.objectId.value,name:f.name.value,responsibleTechId:f.responsibleTechId.value,status:f.status.value,deadline:f.deadline.value,description:f.description.value,problemDescription:f.description.value,actRequired:!!f.actRequired?.checked}; if(id){Object.assign(p,next)}else{state.projects.push(next);selectedProjectId=next.id;detailOpen.projects=true} save();closeModal();renderProjects();});
 }
 
 function renderWorkorders(){
@@ -752,7 +763,7 @@ function workorderDetailHtml(){
   const activeAct=activeActForWorkorder(w.id);
   const archivedAct=archivedActForWorkorder(w.id);
   const actState=activeAct?'Aktiivne':(archivedAct?'Akt arhiveeritud':'Akt puudub');
-  const body=`<div class="summary-grid">${summaryBox('Aktid',acts.length)}${summaryBox('Kuupäev',fmtActDate(w.date))}${summaryBox('Kell',w.time)}${summaryBox('Staatus',w.status)}</div>${card(w.title,[['Klient',clientName(objectClientId(w.objectId))],['Objekt',objectName(w.objectId)],['Projekt',projectName(w.projectId)],['Vastutaja',techName(workorderResponsibleId(w))],['Osalejad',workorderParticipantIds(w).map(techName).join(', ')||'-'],['Aeg',`${fmtActDate(w.date)} ${w.time}`],['Akti seis',actState]],w.status,`<div class="section-title">Kirjeldus</div><div class="muted">${esc(problemDescriptionText(w))}</div><div class="section-title">Töö tulemus</div><div class="muted">${esc(completionCommentText(w)||'-')}</div>`)}<div class="section-title">Aktid</div><div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="status ${statusClass(a.status)}">${esc(a.archived?'Arhiivis':a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
+  const body=`<div class="summary-grid">${summaryBox('Aktid',acts.length)}${summaryBox('Kuupäev',fmtActDate(w.date))}${summaryBox('Kell',w.time)}${summaryBox('Staatus',w.status)}</div>${card(w.title,[['Klient',clientName(objectClientId(w.objectId))],['Objekt',objectName(w.objectId)],['Projekt',projectName(w.projectId)],['Vastutaja',techName(workorderResponsibleId(w))],['Osalejad',workorderParticipantIds(w).map(techName).join(', ')||'-'],['Aeg',`${fmtActDate(w.date)} ${w.time}`],['Akt vajalik',workorderActRequired(w)?'Jah':'Ei'],['Akti seis',actState]],w.status,`<div class="section-title">Kirjeldus</div><div class="muted">${esc(problemDescriptionText(w))}</div><div class="section-title">Töö tulemus</div><div class="muted">${esc(completionCommentText(w)||'-')}</div>`)}<div class="section-title">Aktid</div><div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="status ${statusClass(a.status)}">${esc(a.archived?'Arhiivis':a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
   const completed=isCompletedStatus(w.status);
   const actButtonLabel=activeAct?'Ava akt':(archivedAct?'Taasta akt':'＋ Loo akt');
   const actButtonClass=archivedAct?'btn small warn':'btn small primary';
@@ -823,7 +834,8 @@ function openWorkorderModal(id='',defaults={}){
     projectId:defaults.projectId||'',objectId:defaults.objectId||'',title:defaults.title||'',
     date:defaults.date||'',time:defaults.time||'',
     technicianId:defaults.technicianId||defaults.responsibleTechnicianId||'',responsibleTechnicianId:defaults.responsibleTechnicianId||defaults.technicianId||'',participantTechnicianIds:defaults.participantTechnicianIds||[],status:defaults.status||'Planeeritud',description:defaults.description||'',problemDescription:defaults.problemDescription||defaults.description||defaults.title||'',performedWork:defaults.performedWork||'',workResult:defaults.workResult||'',recommendations:defaults.recommendations||'',materials:defaults.materials||'',
-    plannedHours:defaults.plannedHours||2,durationHours:defaults.durationHours||2,hours:defaults.hours||2
+    plannedHours:defaults.plannedHours||2,durationHours:defaults.durationHours||2,hours:defaults.hours||2,
+    actRequired:defaults.actRequired!==undefined?defaults.actRequired:undefined
   };
   const currentObject=byId(state.objects,w.objectId)||null;
   const currentClient=byId(state.clients,currentObject?.clientId)||null;
@@ -844,6 +856,7 @@ function openWorkorderModal(id='',defaults={}){
     <label>Vastutaja<select class="select" name="responsibleTechnicianId"><option value="">Vali vastutaja...</option>${state.people.map(p=>`<option value="${p.id}" ${responsibleId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
     <label>Osalejad<div class="participant-picker" id="workorderParticipantPicker" data-selected="${participantJson}"><div class="participant-chips" id="participantChips"></div><div class="participant-add-row"><button type="button" class="btn small" id="addParticipantBtn">＋ Lisa osaleja</button><input class="field participant-search hidden" id="participantSearch" type="search" placeholder="Otsi tehnikut..." autocomplete="off"></div><div class="participant-dropdown hidden" id="participantDropdown"></div><input type="hidden" name="participantTechnicianIds" value="${participantIds.join(',')}"></div><span class="muted">Valitud osalejad kuvatakse loendina. Vastutajat osalejaks ei lisata.</span></label>
     <label>Staatus<select class="select" name="status">${workorderStatusOptions.map(s=>`<option ${w.status===s?'selected':''}>${s}</option>`).join('')}</select></label>
+    <label class="check-card"><input type="checkbox" name="actRequired" ${workorderActRequired(w)?'checked':''}> <span>Akt vajalik</span><small>Kui märgitud, tuleb töö lõpetamiseks koostada akt.</small></label>
     <label>Kuupäev<input class="field" name="date" type="date" value="${esc(w.date)}"></label>
     <label>Algusaeg<input class="field" name="time" type="time" value="${esc(w.time)}"></label>
     <label>Kestus<div class="unit-field"><input class="field" name="plannedHours" type="number" min="1" max="16" step="1" value="${esc(currentHours)}"><span>h</span></div></label>
@@ -1020,6 +1033,7 @@ function openWorkorderModal(id='',defaults={}){
       responsibleTechnicianId:f.responsibleTechnicianId.value,
       participantTechnicianIds:String(f.participantTechnicianIds?.value||'').split(',').map(x=>x.trim()).filter(id=>id&&id!==f.responsibleTechnicianId.value),
       status:nextStatus,
+      actRequired:!!f.actRequired?.checked,
       description:f.description.value,
       problemDescription:f.description.value,
       performedWork:existing?.performedWork||existing?.workPerformed||'',
@@ -1080,7 +1094,9 @@ function openWorkorderModal(id='',defaults={}){
       next.materials=existing?.materials||'';
     }
     if(isEdit){Object.assign(existing,next)}else{state.workorders.push(next);selectedWorkorderId=next.id;detailOpen.workorders=true}
-    save();closeModal();
+    save();
+    if(isCompletedStatus(next.status) && workorderActRequired(next) && !actForWorkorder(next.id)){ ensureActForWorkorder(next.id); }
+    closeModal();
     if(page==='calendar') renderCalendar(); else if(page==='projects') renderProjects(); else if(page==='objects') renderObjects(); else renderWorkorders();
   });
 }
@@ -1117,8 +1133,8 @@ function workorderActPanelHtml(w){
   if(info.state==='archived'&&info.act){
     return `<div class="calendar-act-panel full"><div class="section-title">Akt</div><div class="card"><div class="card-top"><h3>${esc(info.act.title||'Väljakutse akt')}</h3><span class="status warn">Arhiivis</span></div><div class="muted">${esc(fmtActDate(info.act.date||w.date))} · ${esc(actNumber(info.act))}</div><div class="actions"><button class="btn" type="button" id="calendarPreviewActBtn">👁 Ava eelvaade</button><button class="btn" type="button" id="calendarDownloadActBtn">⇩ Laadi PDF</button><button class="btn primary" type="button" id="calendarRestoreActBtn">Taasta akt</button></div></div></div>`;
   }
-  if(isCompletedStatus(w.status)){
-    return `<div class="calendar-act-panel full"><div class="section-title">Akt</div><div class="card"><div class="card-top"><h3>Akti ei ole loodud</h3><span class="status red">Akt puudub</span></div><div class="muted">Lõpetatud töö vajab akti, kui töö tuleb kliendile dokumenteerida.</div><div class="actions"><button class="btn primary" type="button" id="calendarCreateActBtn">Loo akt</button></div></div></div>`;
+  if(isCompletedStatus(w.status) && workorderActRequired(w)){
+    return `<div class="calendar-act-panel full"><div class="section-title">Akt</div><div class="card"><div class="card-top"><h3>Akti ei ole loodud</h3><span class="status red">Akt puudub</span></div><div class="muted">Sellele tööle on akt kohustuslik. Koosta akt töö lõpetamiseks/dokumenteerimiseks.</div><div class="actions"><button class="btn primary" type="button" id="calendarCreateActBtn">Loo akt</button></div></div></div>`;
   }
   return '';
 }
@@ -1135,6 +1151,7 @@ function actPendingWorkorders(){
   // Kui akt on aktiivne või arhiivis, ei tohi sama tööd uuesti akti ootele ega "Genereeri akt" nupu alla panna.
   return (state.workorders||[])
     .filter(w=>isCompletedStatus(w.status))
+    .filter(w=>workorderActRequired(w))
     .filter(w=>!actForWorkorder(w.id))
     .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')) || String(b.time||'').localeCompare(String(a.time||'')));
 }
@@ -1211,6 +1228,7 @@ function ensureActForWorkorder(workorderId){
   if(!w || !isCompletedStatus(w.status)) return null;
   let a=actForWorkorder(w.id);
   if(a) return normalizeActContentFromWorkorder(a,w);
+  if(!workorderActRequired(w)) return null;
   a={
     id:timestampActId(),
     number:timestampActId(),
@@ -2114,7 +2132,7 @@ function mobileWorkflowButtons(w){
     const active=activeActForWorkorder(w.id);
     const archived=archivedActForWorkorder(w.id);
     const actLabel=active?'Ava akt':(archived?'Taasta akt':'Loo akt');
-    const actBtn=`<button class="btn" data-mobile-act="${w.id}" type="button">${actLabel}</button>`;
+    const actBtn=(workorderActRequired(w)||active||archived)?`<button class="btn" data-mobile-act="${w.id}" type="button">${actLabel}</button>`:'';
     return `<button class="btn" data-mobile-edit="${w.id}" type="button">Muuda tööd</button>${actBtn}<button class="btn primary" data-mobile-action="reopen" data-workorder-id="${w.id}" type="button">↺ Ava uuesti</button>`;
   }
   if(String(w.status||'').trim()==='Töös'){
@@ -2148,6 +2166,10 @@ async function applyMobileWorkorderAction(action,workorderId){
     w.workResult=result.workResult||'';
     w.recommendations=result.recommendations||'';
     w.materials=result.materials||'';
+    if(workorderActRequired(w) && !actForWorkorder(w.id)){
+      save();
+      ensureActForWorkorder(w.id);
+    }
   }else if(action==='reopen'){
     const act=actForWorkorder(w.id);
     const ok=await openVecoConfirm({title:'Ava töö uuesti',message:'Kas soovid lõpetatud töö uuesti avada?',details:`<strong>${esc(objectName(w.objectId))}</strong><br>${esc(w.title)}${act?'<br><br><strong>Seotud akt säilitatakse.</strong> Vajadusel uuenda akti eraldi akti vaates.':''}`,confirmText:'Ava uuesti',cancelText:'Loobu'});
@@ -2204,7 +2226,7 @@ function mobileOncallForPerson(personId,todayKey){
   return {type:'none',label:'Valve puudub'};
 }
 function mobileNeedsAct(w){
-  if(!w || !isCompletedStatus(w.status)) return false;
+  if(!w || !isCompletedStatus(w.status) || !workorderActRequired(w)) return false;
   return !actForWorkorder(w.id);
 }
 function mobileActLabel(w){
@@ -2329,7 +2351,7 @@ function openMobileAddWorkModal(personId){
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=now.getMinutes()<30?'00':'30';
   const objectOptions=state.objects.map(o=>`<option value="${esc(mobileObjectChoiceLabel(o))}"></option>`).join('');
-  openModal(`<form id="mobileAddWorkForm"><div class="dialog-head"><h2>Lisa töö</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid mobile-form-grid"><label class="full">Objekt<input class="field" name="objectChoice" list="mobileObjectChoices" required autocomplete="off" placeholder="Vali objekt või kirjuta uus objekt..."><datalist id="mobileObjectChoices">${objectOptions}</datalist><span class="muted">Vali olemasolev objekt või kirjuta uue objekti nimi.</span></label><label class="full">Töö lühikirjeldus<input class="field" name="title" required placeholder="nt Telefonitellimus / rike"></label><label>Kuupäev<input class="field" name="date" type="date" required value="${today}"></label><label>Kell<input class="field" name="time" type="time" value="${hh}:${mm}"></label><label>Prioriteet<select class="select" name="priority"><option>Tavaline</option><option>Kõrge</option><option>Madal</option></select></label><label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${st==='Planeeritud'?'selected':''}>${st}</option>`).join('')}</select></label><label class="full">Märkus<textarea name="description" placeholder="Kes helistas, mida paluti, mis objektil juhtus?"></textarea></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta töö</button></div></form>`);
+  openModal(`<form id="mobileAddWorkForm"><div class="dialog-head"><h2>Lisa töö</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid mobile-form-grid"><label class="full">Objekt<input class="field" name="objectChoice" list="mobileObjectChoices" required autocomplete="off" placeholder="Vali objekt või kirjuta uus objekt..."><datalist id="mobileObjectChoices">${objectOptions}</datalist><span class="muted">Vali olemasolev objekt või kirjuta uue objekti nimi.</span></label><label class="full">Töö lühikirjeldus<input class="field" name="title" required placeholder="nt Telefonitellimus / rike"></label><label>Kuupäev<input class="field" name="date" type="date" required value="${today}"></label><label>Kell<input class="field" name="time" type="time" value="${hh}:${mm}"></label><label>Prioriteet<select class="select" name="priority"><option>Tavaline</option><option>Kõrge</option><option>Madal</option></select></label><label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${st==='Planeeritud'?'selected':''}>${st}</option>`).join('')}</select></label><label class="check-card"><input type="checkbox" name="actRequired"> <span>Akt vajalik</span></label><label class="full">Märkus<textarea name="description" placeholder="Kes helistas, mida paluti, mis objektil juhtus?"></textarea></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta töö</button></div></form>`);
   bindClose();
   $('#mobileAddWorkForm').addEventListener('submit',e=>{
     e.preventDefault();
@@ -2337,7 +2359,7 @@ function openMobileAddWorkModal(personId){
     const object=resolveMobileObjectChoice(f.objectChoice.value);
     if(!object){f.objectChoice.focus();return;}
     const project=state.projects.find(p=>p.objectId===object.id);
-    const next={id:uid('WO'),projectId:project?.id||'',objectId:object.id,title:f.title.value,date:f.date.value,time:f.time.value,technicianId:personId,responsibleTechnicianId:personId,participantTechnicianIds:[],status:f.status.value,priority:f.priority.value,description:f.description.value,problemDescription:f.description.value};
+    const next={id:uid('WO'),projectId:project?.id||'',objectId:object.id,title:f.title.value,date:f.date.value,time:f.time.value,technicianId:personId,responsibleTechnicianId:personId,participantTechnicianIds:[],status:f.status.value,priority:f.priority.value,description:f.description.value,problemDescription:f.description.value,actRequired:!!f.actRequired?.checked};
     state.workorders.push(next);
     selectedWorkorderId=next.id;
     save();
@@ -2350,9 +2372,9 @@ function openMobileWorkModal(id){
   const editCompletion=shouldEditCompletionInWorkorder(w);
   const actNotice=workorderActEditNotice(w);
   const completionFields=editCompletion?`<label class="full">Teostatud tööd<textarea name="done">${esc(performedWorkText(w))}</textarea></label><label class="full">Töö tulemus / märkused<textarea name="workResult">${esc(workResultText(w))}</textarea></label><label class="full">Soovitused / puudused<textarea name="recommendations">${esc(workRecommendationsText(w))}</textarea></label>`:`<input type="hidden" name="done" value="${esc(performedWorkText(w))}"><input type="hidden" name="workResult" value="${esc(workResultText(w))}"><input type="hidden" name="recommendations" value="${esc(workRecommendationsText(w))}">${actNotice}`;
-  openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Probleemi kirjeldus<textarea readonly>${esc(problemDescriptionText(w)||'-')}</textarea></label>${completionFields}<label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Foto lisamine tuleb järgmises etapis"></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Probleemi kirjeldus<textarea readonly>${esc(problemDescriptionText(w)||'-')}</textarea></label>${completionFields}<label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label class="check-card"><input type="checkbox" name="actRequired" ${workorderActRequired(w)?'checked':''}> <span>Akt vajalik</span></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Foto lisamine tuleb järgmises etapis"></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
-  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;const note=String(f.done.value||'').trim();if(nextStatus==='Lõpetatud'){const result=isCompletedStatus(w.status)?{comment:(note||performedWorkText(w)),performedWork:(note||performedWorkText(w)),workResult:String(f.workResult?.value||workResultText(w)||'').trim(),recommendations:String(f.recommendations?.value||workRecommendationsText(w)||'').trim(),materials:workMaterialsText(w),actType:w.actType||'Väljakutse akt'}:normalizeCompletionResult(await openCompletionCommentModal(w,note));if(!result||!result.comment)return;w.completedAt=w.completedAt||new Date().toISOString();w.completedBy=w.completedBy||completedByLabel(w);w.completionComment=result.comment;w.actType=result.actType;w.done=result.comment;w.workDone=result.comment;w.performedWork=result.performedWork||result.comment;w.workResult=result.workResult||'';w.recommendations=result.recommendations||'';w.materials=result.materials||'';}else{w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';w.workResult=String(f.workResult?.value||w.workResult||'').trim();w.recommendations=String(f.recommendations?.value||w.recommendations||'').trim(); if(!isCompletedStatus(w.status)){w.completedAt='';w.completedBy=''; if(!note) w.completionComment='';}}w.status=nextStatus;w.photoNote=f.photoNote.value;save();closeModal();state=window.VECO_STORAGE.load();renderMobile();});
+  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;const note=String(f.done.value||'').trim();if(nextStatus==='Lõpetatud'){const result=isCompletedStatus(w.status)?{comment:(note||performedWorkText(w)),performedWork:(note||performedWorkText(w)),workResult:String(f.workResult?.value||workResultText(w)||'').trim(),recommendations:String(f.recommendations?.value||workRecommendationsText(w)||'').trim(),materials:workMaterialsText(w),actType:w.actType||'Väljakutse akt'}:normalizeCompletionResult(await openCompletionCommentModal(w,note));if(!result||!result.comment)return;w.completedAt=w.completedAt||new Date().toISOString();w.completedBy=w.completedBy||completedByLabel(w);w.completionComment=result.comment;w.actType=result.actType;w.done=result.comment;w.workDone=result.comment;w.performedWork=result.performedWork||result.comment;w.workResult=result.workResult||'';w.recommendations=result.recommendations||'';w.materials=result.materials||'';}else{w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';w.workResult=String(f.workResult?.value||w.workResult||'').trim();w.recommendations=String(f.recommendations?.value||w.recommendations||'').trim(); if(!isCompletedStatus(w.status)){w.completedAt='';w.completedBy=''; if(!note) w.completionComment='';}}w.status=nextStatus;w.actRequired=!!f.actRequired?.checked;w.photoNote=f.photoNote.value;save();if(isCompletedStatus(w.status) && workorderActRequired(w) && !actForWorkorder(w.id)){ ensureActForWorkorder(w.id); }closeModal();state=window.VECO_STORAGE.load();renderMobile();});
 }
 function renderMobilePreview(){
   const devices=[['iPhone SE','320px','568px'],['Android 360','360px','740px'],['iPhone 14','390px','844px'],['Large phone','414px','896px'],['Tahvel','768px','1024px']];
@@ -3719,4 +3741,4 @@ function deleteActPermanently(actId){
 function activeActs(){ return (state.acts||[]).filter(a=>!a.archived); }
 function archivedActs(){ return (state.acts||[]).filter(a=>a.archived); }
 
-// Build 20260612_1015
+// Build 20260612_1049
