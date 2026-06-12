@@ -103,9 +103,68 @@
   align-items:center!important;
   overflow:hidden!important;
 }
-.app.sidebar-collapsed .sidebar-note,.app.sidebar-collapsed .nav{display:none!important;}
+.app.sidebar-collapsed .sidebar-note{display:none!important;}
 .app.sidebar-collapsed .sidebar-actions{justify-content:center!important;width:100%!important;min-height:44px!important;align-items:center!important;}
 .app.sidebar-collapsed #toggleSidebarBtn,.app.sidebar-collapsed #sidebarToggleBtn{position:static!important;display:inline-flex!important;}
+.app.sidebar-collapsed .nav{
+  display:grid!important;
+  width:100%!important;
+  gap:10px!important;
+  align-content:start!important;
+}
+.app.sidebar-collapsed .nav-section{
+  display:grid!important;
+  width:100%!important;
+  gap:6px!important;
+  padding-top:8px!important;
+  justify-items:center!important;
+}
+.app.sidebar-collapsed .nav-section+.nav-section{
+  border-top:1px solid var(--line)!important;
+  padding-top:10px!important;
+}
+.app.sidebar-collapsed .nav-section-title{
+  width:28px!important;
+  height:1px!important;
+  min-height:1px!important;
+  padding:0!important;
+  margin:0 auto 2px!important;
+  overflow:hidden!important;
+  opacity:.55!important;
+  background:var(--line)!important;
+  border:0!important;
+  color:transparent!important;
+  font-size:0!important;
+  pointer-events:none!important;
+}
+.app.sidebar-collapsed .nav-section-title span{display:none!important;}
+.app.sidebar-collapsed .nav-section-items{
+  display:grid!important;
+  gap:6px!important;
+  width:100%!important;
+  justify-items:center!important;
+}
+.app.sidebar-collapsed .nav a,.app.sidebar-collapsed .nav button,.app.sidebar-collapsed .nav-file-action{
+  width:44px!important;
+  min-width:44px!important;
+  height:40px!important;
+  min-height:40px!important;
+  padding:0!important;
+  justify-content:center!important;
+  align-items:center!important;
+  gap:0!important;
+  overflow:hidden!important;
+  font-size:0!important;
+  text-align:center!important;
+}
+.app.sidebar-collapsed .nav a .icon,.app.sidebar-collapsed .nav button .icon,.app.sidebar-collapsed .nav-file-action .icon{
+  font-size:17px!important;
+  line-height:1!important;
+  margin:0!important;
+}
+.app.sidebar-collapsed .nav a.active,.app.sidebar-collapsed .nav a:hover,.app.sidebar-collapsed .nav button.active,.app.sidebar-collapsed .nav button:hover,.app.sidebar-collapsed .nav-file-action:hover{
+  background:var(--sidebar-active)!important;
+}
 @media(max-width:1120px){
   .app{grid-template-columns:1fr!important;}
   .sidebar{position:sticky!important;top:0!important;z-index:10!important;width:auto!important;min-width:0!important;flex-direction:row!important;align-items:center!important;overflow-x:auto!important;padding:12px!important;}
@@ -121,3 +180,12 @@
 .app > main > .content{padding:20px 22px 30px!important;margin:0!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;}
 .app.sidebar-collapsed > main > .content{padding-left:22px!important;}
 @media(max-width:1120px){.app > main > .content{padding:12px!important;}}
+
+
+/* VECO_V3_20260612_1428: compact icon sidebar */
+.app.sidebar-collapsed .nav-section.collapsed .nav-section-items,
+.app.sidebar-collapsed .nav-section.open .nav-section-items{display:grid!important;}
+@media(min-width:1121px) and (max-width:1450px){
+  .app:not(.sidebar-expanded-manual){grid-template-columns:64px minmax(0,1fr)!important;}
+  .app:not(.sidebar-expanded-manual) .sidebar{width:64px!important;min-width:64px!important;padding:14px 10px!important;align-items:center!important;overflow:hidden!important;}
+}
