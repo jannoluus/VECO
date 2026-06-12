@@ -2404,7 +2404,7 @@ body.modal-open .modal *{
 #actForm textarea{min-height:96px;}
 #actForm label.full textarea[name="performedWork"]{min-height:140px;}
 
-/* Build 20260611_2202: mobiili lõpetamise dialoog ja kalendri akti märgid */
+/* Build 20260612_0854: kalendri akti ikoon nähtav sõltumata akti staatusest */
 #completionCommentForm.confirm-dialog{
   width:min(560px,100%)!important;
   max-height:90vh!important;
@@ -2446,3 +2446,41 @@ body.modal-open .modal *{
 .calendar-event.narrow .calendar-act-badge,
 .calendar-event.compact .calendar-act-badge{font-size:11px!important;margin-left:2px!important;}
 .calendar-act-panel .actions{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))!important;}
+
+
+/* Build 20260612_0854: calendar act indicator is a fixed overlay on the event card */
+.calendar-event .calendar-act-badge{
+  position:absolute!important;
+  top:30px!important;
+  right:8px!important;
+  z-index:8!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:24px!important;
+  height:24px!important;
+  padding:0!important;
+  margin:0!important;
+  border:1px solid rgba(205,220,238,.65)!important;
+  border-radius:8px!important;
+  background:rgba(10,20,31,.88)!important;
+  color:#eaf4ff!important;
+  font-size:14px!important;
+  line-height:1!important;
+  box-shadow:0 4px 10px rgba(0,0,0,.28)!important;
+  pointer-events:none!important;
+}
+.calendar-event.compact .calendar-act-badge,
+.calendar-event.narrow .calendar-act-badge{
+  top:28px!important;
+  right:6px!important;
+  width:21px!important;
+  height:21px!important;
+  font-size:12px!important;
+}
+.calendar-event .calendar-work-title{
+  padding-right:28px!important;
+}
+.calendar-act-active{border-color:rgba(73,174,255,.8)!important;}
+.calendar-act-archived{opacity:.9!important;}
+.calendar-act-missing{border-color:rgba(247,177,66,.9)!important;color:#ffd88a!important;}
