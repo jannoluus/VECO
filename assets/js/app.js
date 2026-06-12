@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260612_0945';
+const APP_BUILD='20260612_1005';
 
-// Build 20260612_0945: workorder/act logic cleanup - no duplicated act editing in workorder when act exists.
+// Build 20260612_1005: calendar default workday 08-17 with dynamic expansion for early/late work.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -2525,10 +2525,27 @@ function renderCalendar(){
     const hay=`${w.id} ${w.title} ${clientName(objectClientId(w.objectId))} ${objectName(w.objectId)} ${projectName(w.projectId)} ${workorderPeopleLabel(w)} ${w.status}`.toLowerCase();
     return dateInView(w)&&techOk&&statusOk;
   });
+  const calendarWorkTimeBounds=(jobs,days)=>{
+    let start=8;
+    let end=17;
+    (jobs||[]).forEach(w=>{
+      if(!days.some(date=>workorderOccursOnDate(w,date))) return;
+      const [hh,mm]=(w.time||'09:00').split(':').map(Number);
+      const st=((Number.isFinite(hh)?hh:9)+(Number.isFinite(mm)?mm:0)/60);
+      const dur=Math.max(0.25,Number(workorderHours(w))||1);
+      const en=st+dur;
+      start=Math.min(start,Math.floor(st));
+      end=Math.max(end,Math.ceil(en));
+    });
+    start=Math.max(0,Math.min(23,start));
+    end=Math.max(start+1,Math.min(24,end));
+    return {start,end};
+  };
   const filters=`<input class="field" id="calendarWeekStart" type="date" value="${esc(currentDate)}"><select class="select" id="calendarTechFilter"><option value="all">Kõik tehnikud</option>${state.people.map(p=>`<option value="${p.id}" ${techFilter===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select><select class="select" id="calendarViewMode"><option value="day" ${mode==='day'?'selected':''}>Päev</option><option value="week" ${mode==='week'?'selected':''}>Nädal</option><option value="month" ${mode==='month'?'selected':''}>Kuu</option><option value="year" ${mode==='year'?'selected':''}>Aasta</option></select><button class="btn ghost" id="calendarHideWeekend" type="button" data-hidden="${hideWeekend?'true':'false'}">▦ ${hideWeekend?'Näita L/P':'Peida L/P'}</button><select class="select" id="calendarStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Kalendri tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${workorderStatusOptions.map(s=>`<option value="${s}" ${statusFilter===s?'selected':''}>${s}</option>`).join('')}</select>`;
   const actions=`<button class="btn ghost" id="calendarImportWorkBtn" type="button">▧ Impordi töö</button><button class="btn ghost" id="calendarPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="calendarThisWeekBtn" type="button">⌖ Täna</button><button class="btn ghost" id="calendarNextWeekBtn" type="button">Järgmine ›</button><button class="btn primary" id="newCalendarWorkorderBtn" type="button">＋ Lisa töökäsk</button>`;
-  const calendarStartHour=6;
-  const calendarEndHour=22;
+  const calendarBounds=calendarWorkTimeBounds(filtered,visibleDays);
+  const calendarStartHour=calendarBounds.start;
+  const calendarEndHour=calendarBounds.end;
   const calendarHoursTotal=calendarEndHour-calendarStartHour;
   const workdayStartHour=8;
   const workdayEndHour=17;
@@ -2543,7 +2560,7 @@ function renderCalendar(){
   const today=dateKeyFromDate(new Date());
   const now=new Date();
   const nowHour=now.getHours()+now.getMinutes()/60;
-  const showNowLine=mode==='week'||mode==='day';
+  const showNowLine=(mode==='week'||mode==='day')&&visibleDays.includes(today)&&nowHour>=calendarStartHour&&nowHour<=calendarEndHour;
   const nowTopPct=Math.max(0,Math.min(100,((nowHour-calendarStartHour)/calendarHoursTotal)*100));
 
   let body='';
