@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260612_1500';
+const APP_BUILD='20260612_1706';
 
 // Build 20260612_1243: calendar scroll position is preserved across rerenders and laptop layouts use a stable inner scroll.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -282,10 +282,10 @@ function nav(){
     ['Arendus',[['mobilePreview','▧'],['demo','↺'],['diagnostics','◎']]]
   ];
   const activeGroupTitle=(groups.find(([_,items])=>items.some(([key])=>key===page))||groups[0])[0];
+  const storedNavOpenRaw=localStorage.getItem('veco_nav_open_groups');
   const openGroups=(()=>{
-    try{ return JSON.parse(localStorage.getItem('veco_nav_open_groups')||'null')||null; }catch(_){ return null; }
-  })() || {'Töölaud':true};
-  openGroups[activeGroupTitle]=true;
+    try{ return storedNavOpenRaw ? (JSON.parse(storedNavOpenRaw)||{}) : null; }catch(_){ return null; }
+  })() || {'Töölaud':true,[activeGroupTitle]:true};
   const navItem=([key,ic])=>{
     if(key==='system-database') return `<button type="button" id="databaseBtn" title="Andmebaas" aria-label="Andmebaas">${icon(ic)}Andmebaas: ${window.VECO_API?.modeLabel?.()||'lokaalne'}</button>`;
     if(key==='system-export') return `<button type="button" id="exportDataBtn" title="Varukoopia" aria-label="Varukoopia">${icon(ic)}Varukoopia</button>`;
@@ -372,8 +372,14 @@ function globalTicker(){
 }
 function shell(main,aside='',opts={}){
   applyTheme();
-  const collapsed=page!=='mobile'&&localStorage.getItem('veco_sidebar_collapsed')==='true';
-  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${collapsed?'sidebar-collapsed':''}">${page==='mobile'?'':nav()}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
+  let sidebarMode=page==='mobile' ? 'full' : (localStorage.getItem('veco_sidebar_mode')||'');
+  if(!sidebarMode){
+    sidebarMode=localStorage.getItem('veco_sidebar_collapsed')==='true' ? 'compact' : 'full';
+    localStorage.setItem('veco_sidebar_mode',sidebarMode);
+  }
+  if(!['full','compact','hidden'].includes(sidebarMode)) sidebarMode='full';
+  const sidebarClass=sidebarMode==='compact'?'sidebar-compact':(sidebarMode==='hidden'?'sidebar-hidden':'sidebar-full');
+  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav()}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();
 }
 function activeThemeKey(){
@@ -393,10 +399,12 @@ function bindGlobal(){
   $$('[data-theme-toggle]').forEach(btn=>btn.addEventListener('click',toggleTheme));
   $$('[data-mobile-theme-toggle]').forEach(btn=>btn.addEventListener('click',()=>{toggleTheme();renderMobile();}));
   $('#sidebarToggleBtn')?.addEventListener('click',()=>{
-    const app=$('.app');
-    const collapsed=!app.classList.contains('sidebar-collapsed');
-    app.classList.toggle('sidebar-collapsed',collapsed);
-    localStorage.setItem('veco_sidebar_collapsed',collapsed?'true':'false');
+    const modes=['full','compact','hidden'];
+    const current=localStorage.getItem('veco_sidebar_mode') || (localStorage.getItem('veco_sidebar_collapsed')==='true'?'compact':'full');
+    const next=modes[(Math.max(0,modes.indexOf(current))+1)%modes.length];
+    localStorage.setItem('veco_sidebar_mode',next);
+    localStorage.setItem('veco_sidebar_collapsed',next==='compact'?'true':'false');
+    renderCurrentPage();
   });
   $$('[data-nav-toggle]').forEach(btn=>btn.addEventListener('click',()=>{
     const title=btn.dataset.navToggle;
