@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260612_1333';
+const APP_BUILD='20260612_1402';
 
 // Build 20260612_1243: calendar scroll position is preserved across rerenders and laptop layouts use a stable inner scroll.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -2594,16 +2594,20 @@ function renderCalendar(){
     return dateInView(w)&&techOk&&statusOk;
   });
   const calendarWorkTimeBounds=(jobs,days)=>{
-    let start=8;
-    let end=17;
+    // Tööpäev on sisuliselt 08:00–17:00, kuid kalendris kuvame
+    // 1 tunni puhvrit mõlemal pool, et 08:00 ja 17:00 tööd ei jääks
+    // visuaalselt vastu kalendri serva. Kui töö jääb sellest vahemikust
+    // välja, laiendame vaadet samuti 1 h puhvriga.
+    let start=7;
+    let end=18;
     (jobs||[]).forEach(w=>{
       if(!days.some(date=>workorderOccursOnDate(w,date))) return;
       const [hh,mm]=(w.time||'09:00').split(':').map(Number);
       const st=((Number.isFinite(hh)?hh:9)+(Number.isFinite(mm)?mm:0)/60);
       const dur=Math.max(0.25,Number(workorderHours(w))||1);
       const en=st+dur;
-      start=Math.min(start,Math.floor(st));
-      end=Math.max(end,Math.ceil(en));
+      start=Math.min(start,Math.floor(st)-1);
+      end=Math.max(end,Math.ceil(en)+1);
     });
     start=Math.max(0,Math.min(23,start));
     end=Math.max(start+1,Math.min(24,end));
