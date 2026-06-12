@@ -2736,3 +2736,27 @@ body:has(.app.page-calendar){
     overflow:auto!important;
   }
 }
+
+/* VECO_V3_20260612_1724: sticky calendar day header while scrolling 24h timeline */
+.app.page-calendar .calendar-planner-day-head{
+  position:sticky!important;
+  top:0!important;
+  z-index:85!important;
+  min-height:40px!important;
+  background:rgba(255,255,255,.055)!important;
+  backdrop-filter:blur(6px)!important;
+}
+.theme-light .app.page-calendar .calendar-planner-day-head{background:rgba(238,243,245,.96)!important;}
+.app.page-calendar .calendar-hours-spacer{
+  position:sticky!important;
+  top:0!important;
+  z-index:86!important;
+  min-height:40px!important;
+  background:var(--panel)!important;
+}
+/* Ticker closed: only restore button remains; no reserved footer space */
+body:has(.global-ticker-restore) .app:not(.app-mobile) .global-ticker{display:none!important;}
+body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
+  height:calc(100vh - 156px)!important;
+  max-height:calc(100vh - 156px)!important;
+}

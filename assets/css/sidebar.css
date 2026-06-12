@@ -343,3 +343,45 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
 @media(min-width:1121px) and (max-width:1450px){
   .app:not(.sidebar-expanded-manual):not(.sidebar-full):not(.sidebar-hidden){grid-template-columns:64px minmax(0,1fr)!important;}
 }
+
+/* VECO_V3_20260612_1724: sidebar rail + cleaner hidden/compact menu */
+.app.sidebar-full{grid-template-columns:248px 32px minmax(0,1fr)!important;}
+.app.sidebar-compact{grid-template-columns:64px 32px minmax(0,1fr)!important;}
+.app.sidebar-hidden{grid-template-columns:0 32px minmax(0,1fr)!important;}
+.sidebar-rail{
+  width:32px!important;
+  min-width:32px!important;
+  background:var(--sidebar-bg)!important;
+  border-right:1px solid var(--line)!important;
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  padding-top:20px!important;
+  box-sizing:border-box!important;
+  z-index:80!important;
+}
+.sidebar-rail #sidebarToggleBtn{
+  width:28px!important;
+  min-width:28px!important;
+  height:42px!important;
+  border-radius:9px!important;
+  padding:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  background:rgba(255,255,255,.035)!important;
+  border:1px solid var(--line)!important;
+  color:var(--sidebar-ink)!important;
+  box-shadow:none!important;
+}
+.sidebar-rail #sidebarToggleBtn:hover{background:var(--sidebar-active)!important;}
+.app.sidebar-hidden .sidebar{display:block!important;width:0!important;min-width:0!important;padding:0!important;border:0!important;overflow:hidden!important;}
+.app.sidebar-hidden .sidebar-rail{border-left:0!important;}
+.app.sidebar-compact .nav-section{background:transparent!important;box-shadow:none!important;}
+.app.sidebar-compact .nav-section-title{background:var(--line)!important;box-shadow:none!important;border-radius:0!important;}
+.app.sidebar-compact .nav a,
+.app.sidebar-compact .nav button,
+.app.sidebar-compact .nav-file-action{background:transparent!important;box-shadow:none!important;}
+.app.sidebar-compact .nav a.active,
+.app.sidebar-compact .nav button.active{background:var(--sidebar-active)!important;}
+@media(max-width:1120px){.sidebar-rail{display:none!important;}.app.sidebar-full,.app.sidebar-compact,.app.sidebar-hidden{grid-template-columns:1fr!important;}}
