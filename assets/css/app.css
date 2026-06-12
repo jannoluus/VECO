@@ -2404,7 +2404,7 @@ body.modal-open .modal *{
 #actForm textarea{min-height:96px;}
 #actForm label.full textarea[name="performedWork"]{min-height:140px;}
 
-/* Build 20260612_0854: kalendri akti ikoon nähtav sõltumata akti staatusest */
+/* Build 20260612_0927: kalendri akti ikoon nähtav sõltumata akti staatusest */
 #completionCommentForm.confirm-dialog{
   width:min(560px,100%)!important;
   max-height:90vh!important;
@@ -2448,7 +2448,7 @@ body.modal-open .modal *{
 .calendar-act-panel .actions{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))!important;}
 
 
-/* Build 20260612_0854: calendar act indicator is a fixed overlay on the event card */
+/* Build 20260612_0927: calendar act indicator is a fixed overlay on the event card */
 .calendar-event .calendar-act-badge{
   position:absolute!important;
   top:30px!important;
@@ -2484,3 +2484,20 @@ body.modal-open .modal *{
 .calendar-act-active{border-color:rgba(73,174,255,.8)!important;}
 .calendar-act-archived{opacity:.9!important;}
 .calendar-act-missing{border-color:rgba(247,177,66,.9)!important;color:#ffd88a!important;}
+
+/* Build 20260612_0927: töökäsu/akti loogika ja tekstiväljade korrastus */
+.dialog textarea{
+  min-height:96px;
+  overflow:hidden;
+  resize:vertical;
+  line-height:1.45;
+}
+.dialog textarea[readonly]{
+  opacity:.92;
+}
+.card.soft-warning{
+  border-color:rgba(245,158,11,.45);
+  background:rgba(245,158,11,.08);
+}
+.card.soft-warning strong{display:block;margin-bottom:4px;}
+.mobile-form-grid .card.soft-warning{grid-column:1/-1;}

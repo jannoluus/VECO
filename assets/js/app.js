@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260612_0908';
+const APP_BUILD='20260612_0927';
 
-// Build 20260612_0908: act workflow variant A - acts only for completed workorders.
+// Build 20260612_0927: workorder/act logic cleanup - no duplicated act editing in workorder when act exists.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -438,6 +438,19 @@ function openModal(html){
     }
   };
   document.addEventListener('keydown',modalEscHandler);
+  setupAutoTextareas(modal);
+}
+function setupAutoTextareas(root=document){
+  const resize=(ta)=>{
+    if(!ta || ta.dataset.noAutoHeight==='1') return;
+    ta.style.height='auto';
+    const max=parseInt(getComputedStyle(ta).maxHeight||'0',10)||520;
+    ta.style.height=Math.min(ta.scrollHeight+2,max)+'px';
+  };
+  root.querySelectorAll?.('textarea').forEach(ta=>{
+    resize(ta);
+    ta.addEventListener('input',()=>resize(ta));
+  });
 }
 function closeModal(){
   const modal=$('#modal');
@@ -792,6 +805,17 @@ function openWorkorderCopyModal(id){
   if(!source) return;
   openWorkorderModal('',workorderCopyDefaults(source));
 }
+function shouldEditCompletionInWorkorder(w){
+  return !!(w && isCompletedStatus(w.status) && !actForWorkorder(w.id));
+}
+function workorderActEditNotice(w){
+  const info=calendarActState(w);
+  if(!isCompletedStatus(w?.status) || info.state==='missing') return '';
+  const text=info.state==='archived'
+    ? 'Selle töö akt on arhiivis. Töö sisutekste muuda pärast akti taastamist akti vaates.'
+    : 'Selle töö akt on juba loodud. Teostatud tööd, tulemused, soovitused ja materjalid muuda akti vaates.';
+  return `<div class="full card soft-warning"><strong>Töö sisu on seotud aktiga</strong><span class="muted">${esc(text)}</span></div>`;
+}
 function openWorkorderModal(id='',defaults={}){
   const isEdit=!!id;
   const existing=isEdit?byId(state.workorders,id):null;
@@ -824,7 +848,8 @@ function openWorkorderModal(id='',defaults={}){
     <label>Algusaeg<input class="field" name="time" type="time" value="${esc(w.time)}"></label>
     <label>Kestus<div class="unit-field"><input class="field" name="plannedHours" type="number" min="1" max="16" step="1" value="${esc(currentHours)}"><span>h</span></div></label>
     <label class="full">Probleemi kirjeldus<textarea name="description" placeholder="Kirjelda kliendi pöördumist, probleemi või töö põhjust...">${esc(problemDescriptionText(w))}</textarea></label>
-    ${isEdit&&isCompletedStatus(w.status)?`<label class="full">Teostatud tööd<textarea name="completionComment" placeholder="Kirjelda, mida tehnik objektil tegi...">${esc(performedWorkText(w))}</textarea></label><label class="full">Töö tulemus / märkused<textarea name="workResult" placeholder="Kirjelda tulemus või seis lahkumisel...">${esc(workResultText(w))}</textarea></label><label class="full">Soovitused / puudused<textarea name="recommendations" placeholder="Lisa puudused või soovitused...">${esc(workRecommendationsText(w))}</textarea></label><label class="full">Materjalid<textarea name="materials" placeholder="Lisa kasutatud materjalid...">${esc(workMaterialsText(w))}</textarea></label>`:''}
+    ${isEdit&&shouldEditCompletionInWorkorder(w)?`<label class="full">Teostatud tööd<textarea name="completionComment" placeholder="Kirjelda, mida tehnik objektil tegi...">${esc(performedWorkText(w))}</textarea></label><label class="full">Töö tulemus / märkused<textarea name="workResult" placeholder="Kirjelda tulemus või seis lahkumisel...">${esc(workResultText(w))}</textarea></label><label class="full">Soovitused / puudused<textarea name="recommendations" placeholder="Lisa puudused või soovitused...">${esc(workRecommendationsText(w))}</textarea></label><label class="full">Materjalid<textarea name="materials" placeholder="Lisa kasutatud materjalid...">${esc(workMaterialsText(w))}</textarea></label>`:''}
+    ${isEdit?workorderActEditNotice(w):''}
     ${isEdit?workorderActPanelHtml(w):''}
     ${defaults.copiedFromId?`<div class="full muted">Kopeeritakse töökäsk ${esc(defaults.copiedFromId)}. Muuda kuupäeva, vastutajat, osalejaid või aega enne salvestamist.</div>`:(!isEdit?'<div class="full muted">Uue töökäsu loomisel klienti, objekti, projekti ega tehnikut automaatselt ei valita. Kuupäev ja kell võivad tulla kalendris klikitud ajast.</div>':'')}
   </div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Sulge</button>${isEdit?'<button type="button" class="btn" id="copyWorkorderBtn">⧉ Kopeeri</button><button type="button" class="btn danger" id="deleteWorkorderBtn">Kustuta</button>':''}<button class="btn primary" type="submit">Salvesta</button></div></form>`);
@@ -2090,7 +2115,7 @@ function mobileWorkflowButtons(w){
     const archived=archivedActForWorkorder(w.id);
     const actLabel=active?'Ava akt':(archived?'Taasta akt':'Loo akt');
     const actBtn=`<button class="btn" data-mobile-act="${w.id}" type="button">${actLabel}</button>`;
-    return `<button class="btn" data-mobile-edit="${w.id}" type="button">Ava / muuda</button>${actBtn}<button class="btn primary" data-mobile-action="reopen" data-workorder-id="${w.id}" type="button">↺ Ava uuesti</button>`;
+    return `<button class="btn" data-mobile-edit="${w.id}" type="button">Muuda tööd</button>${actBtn}<button class="btn primary" data-mobile-action="reopen" data-workorder-id="${w.id}" type="button">↺ Ava uuesti</button>`;
   }
   if(String(w.status||'').trim()==='Töös'){
     return `<button class="btn" data-mobile-action="pause" data-workorder-id="${w.id}" type="button">⏸ Peata</button><button class="btn" data-mobile-edit="${w.id}" type="button">Täida</button><button class="btn primary" data-mobile-action="finish" data-workorder-id="${w.id}" type="button">✓ Lõpeta</button>`;
@@ -2124,7 +2149,8 @@ async function applyMobileWorkorderAction(action,workorderId){
     w.recommendations=result.recommendations||'';
     w.materials=result.materials||'';
   }else if(action==='reopen'){
-    const ok=await openVecoConfirm({title:'Ava töö uuesti',message:'Kas soovid lõpetatud töö uuesti avada?',details:`<strong>${esc(w.id)}</strong><br>${esc(objectName(w.objectId))}<br>${esc(w.title)}`,confirmText:'Ava uuesti',cancelText:'Loobu'});
+    const act=actForWorkorder(w.id);
+    const ok=await openVecoConfirm({title:'Ava töö uuesti',message:'Kas soovid lõpetatud töö uuesti avada?',details:`<strong>${esc(objectName(w.objectId))}</strong><br>${esc(w.title)}${act?'<br><br><strong>Seotud akt säilitatakse.</strong> Vajadusel uuenda akti eraldi akti vaates.':''}`,confirmText:'Ava uuesti',cancelText:'Loobu'});
     if(!ok) return;
     w.status='Töös';
     // Do not clear completion/result text or act link when reopening. Existing act must stay intact.
@@ -2321,7 +2347,10 @@ function openMobileAddWorkModal(personId){
 }
 function openMobileWorkModal(id){
   const w=byId(state.workorders,id); if(!w) return;
-  openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Probleemi kirjeldus<textarea readonly>${esc(problemDescriptionText(w)||'-')}</textarea></label><label class="full">Teostatud tööd<textarea name="done">${esc(performedWorkText(w))}</textarea></label><label class="full">Töö tulemus / märkused<textarea name="workResult">${esc(workResultText(w))}</textarea></label><label class="full">Soovitused / puudused<textarea name="recommendations">${esc(workRecommendationsText(w))}</textarea></label><label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Foto lisamine tuleb järgmises etapis"></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  const editCompletion=shouldEditCompletionInWorkorder(w);
+  const actNotice=workorderActEditNotice(w);
+  const completionFields=editCompletion?`<label class="full">Teostatud tööd<textarea name="done">${esc(performedWorkText(w))}</textarea></label><label class="full">Töö tulemus / märkused<textarea name="workResult">${esc(workResultText(w))}</textarea></label><label class="full">Soovitused / puudused<textarea name="recommendations">${esc(workRecommendationsText(w))}</textarea></label>`:`<input type="hidden" name="done" value="${esc(performedWorkText(w))}"><input type="hidden" name="workResult" value="${esc(workResultText(w))}"><input type="hidden" name="recommendations" value="${esc(workRecommendationsText(w))}">${actNotice}`;
+  openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Probleemi kirjeldus<textarea readonly>${esc(problemDescriptionText(w)||'-')}</textarea></label>${completionFields}<label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Foto lisamine tuleb järgmises etapis"></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
   $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;const note=String(f.done.value||'').trim();if(nextStatus==='Lõpetatud'){const result=isCompletedStatus(w.status)?{comment:(note||performedWorkText(w)),performedWork:(note||performedWorkText(w)),workResult:String(f.workResult?.value||workResultText(w)||'').trim(),recommendations:String(f.recommendations?.value||workRecommendationsText(w)||'').trim(),materials:workMaterialsText(w),actType:w.actType||'Väljakutse akt'}:normalizeCompletionResult(await openCompletionCommentModal(w,note));if(!result||!result.comment)return;w.completedAt=w.completedAt||new Date().toISOString();w.completedBy=w.completedBy||completedByLabel(w);w.completionComment=result.comment;w.actType=result.actType;w.done=result.comment;w.workDone=result.comment;w.performedWork=result.performedWork||result.comment;w.workResult=result.workResult||'';w.recommendations=result.recommendations||'';w.materials=result.materials||'';}else{w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';w.workResult=String(f.workResult?.value||w.workResult||'').trim();w.recommendations=String(f.recommendations?.value||w.recommendations||'').trim(); if(!isCompletedStatus(w.status)){w.completedAt='';w.completedBy=''; if(!note) w.completionComment='';}}w.status=nextStatus;w.photoNote=f.photoNote.value;save();closeModal();state=window.VECO_STORAGE.load();renderMobile();});
 }
