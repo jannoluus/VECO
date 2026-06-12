@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260612_1304';
+const APP_BUILD='20260612_1333';
 
 // Build 20260612_1243: calendar scroll position is preserved across rerenders and laptop layouts use a stable inner scroll.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
