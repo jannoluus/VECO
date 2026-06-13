@@ -1,15 +1,17 @@
 {
-  "build": "20260613_1330",
-  "build_name": "VECO_V3_20260613_1330",
-  "created_at": "2026-06-13 13:31",
+  "build": "20260613_1406",
+  "build_name": "VECO_V3_20260613_1406",
+  "created_at": "2026-06-13 14:06",
   "timezone": "Europe/Tallinn",
-  "version": "v3.19.4",
+  "version": "v3.19.5",
   "changes": [
-    "Kalendri E-P sticky päise joondus arvutatakse tegelike päevaveergude mõõtude järgi, et 100% ja 125% zoom ei tekitaks sub-pixel nihet.",
-    "Tööaja tsentreerimist ei muudetud."
+    "Kalendri tunni kõrgus suurendatud 72px -> 84px, et aktiivne tööala oleks nähtaval alal suurem.",
+    "24h ajatelg ja scroll jäid alles.",
+    "Vaikimisi algscroll on 06:00.",
+    "E-P sticky päise joondusloogikat ei muudetud."
   ],
   "notes": [
-    "Kontrollida: päise E-P veerud kattuvad allolevate päevaveergude vasaku serva ja laiusega.",
+    "Kontrollida: nähtav ala on ligikaudu 07:00-21:00 asemel tihedamalt tööpäeva ümber; 00:00 ja 23:00 on scrollides kättesaadavad.",
     "Buildi number, ZIP-faili nimi, BUILD_INFO ja APP_BUILD kasutavad Eesti ajavööndi aega."
   ]
 }

@@ -48,7 +48,7 @@ window.VECO_STORAGE={
     ['people','clients','objects','devices','projects','workorders','acts','absences','oncall','maintenanceNorms','maintenanceProfiles','granlundClassifiers'].forEach(key=>{
       result[key]=Array.isArray(result[key])?result[key]:[];
     });
-    result._meta={...(result._meta||{}),version:this.version,updatedAt:new Date().toISOString(),build:'VECO_V3_20260613_1325'};
+    result._meta={...(result._meta||{}),version:this.version,updatedAt:new Date().toISOString(),build:'VECO_V3_20260613_1406'};
     return result;
   },
   load(){
