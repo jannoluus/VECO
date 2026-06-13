@@ -1,6 +1,6 @@
 {
-  "build": "20260613_1259",
-  "build_name": "VECO_V3_20260613_1259",
+  "build": "20260613_1312",
+  "build_name": "VECO_V3_20260613_1312",
   "created_at": "2026-06-13 12:59",
   "timezone": "Europe/Tallinn",
   "version": "v3.19.3",
@@ -10,5 +10,11 @@
     "Tööaja tsentreerimist ega 24h ajatelge ei muudetud.",
     "Buildi number, ZIP-faili nimi, BUILD_INFO ja APP_BUILD kasutavad Eesti ajavööndi aega."
   ],
-  "notes": "Alignment-only correction; next step is visual check before worktime centering."
+  "notes": [
+    "Kalendri E-P päise joondus: kasutusel on sisemine sticky päevapäis, mis paikneb samas grid-is allolevate päevaveergudega.",
+    "Eraldi overlay-päis on peidetud, et vältida scrollbar/padding nihkeid.",
+    "24h ajatelge ja tööaja tsentreerimist ei muudetud.",
+    "Buildi number, ZIP-faili nimi, BUILD_INFO ja APP_BUILD kasutavad Eesti ajavööndi aega."
+  ],
+  "created_at_estonia": "2026-06-13T13:12:33+03:00"
 }

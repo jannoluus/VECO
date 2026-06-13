@@ -2968,3 +2968,56 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
   .app.page-calendar .calendar-date-sticky-header{grid-template-columns:44px repeat(var(--calendar-day-count,7),minmax(260px,1fr))!important;}
   .app.page-calendar .calendar-planner{grid-template-columns:44px minmax(0,1fr)!important;}
 }
+
+
+/* VECO_V3_20260613_1312: calendar header/body alignment fix
+   Kasutab sisemisi päeva päiseid, mis asuvad samas grid'is kui päevaveerud.
+   Eraldi overlay-päis on peidetud, et scrollbar/padding ei saaks tekitada nihkeid.
+   24h ajatelge ja tööaja tsentreerimist ei muuda. */
+.app.page-calendar .calendar-date-sticky-header{
+  display:none!important;
+}
+.app.page-calendar .calendar-planner{
+  grid-template-columns:54px minmax(0,1fr)!important;
+  gap:0!important;
+  column-gap:0!important;
+}
+.app.page-calendar .calendar-planner-grid{
+  gap:0!important;
+  column-gap:0!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+}
+.app.page-calendar .calendar-planner-day-head,
+.app.page-calendar .calendar-hours-spacer{
+  visibility:visible!important;
+  position:sticky!important;
+  top:0!important;
+  z-index:180!important;
+  height:40px!important;
+  min-height:40px!important;
+  box-sizing:border-box!important;
+  background:rgba(20,32,40,.985)!important;
+  border-bottom:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:0 8px 20px rgba(0,0,0,.18)!important;
+}
+.app.page-calendar .calendar-planner-day-head{
+  display:grid!important;
+  grid-template-columns:auto auto!important;
+  align-items:center!important;
+  gap:2px 8px!important;
+  padding:8px 10px!important;
+  border-left:1px solid rgba(255,255,255,.07)!important;
+}
+.app.page-calendar .calendar-planner-day-head strong{font-weight:800!important;}
+.app.page-calendar .calendar-planner-day-head span{justify-self:end!important;}
+.theme-light .app.page-calendar .calendar-planner-day-head,
+.theme-light .app.page-calendar .calendar-hours-spacer{
+  background:rgba(248,250,252,.985)!important;
+  border-bottom:1px solid rgba(20,33,44,.12)!important;
+  box-shadow:0 8px 18px rgba(20,33,44,.08)!important;
+}
+.theme-light .app.page-calendar .calendar-planner-day-head{border-left:1px solid rgba(20,33,44,.10)!important;}
+@media(max-width:1120px){
+  .app.page-calendar .calendar-planner{grid-template-columns:44px minmax(0,1fr)!important;}
+}
