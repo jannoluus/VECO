@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260612_1810';
+const APP_BUILD='20260613_0959';
 
-// Build 20260612_1810: ChatGPT-style sidebar modes, role-based navigation and sticky calendar headers.
+// Build 20260613_0959: kahe olekuga ChatGPT-stiilis peitmenüü, töörolli põhine navigeerimine ja sticky päevapäis.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -297,9 +297,8 @@ function nav(sidebarMode='full'){
     const isOpen=!!openGroups[title];
     return `<div class="nav-section ${isOpen?'open':'collapsed'}" data-nav-group="${esc(title)}"><button class="nav-section-title" type="button" data-nav-toggle="${esc(title)}" aria-expanded="${isOpen?'true':'false'}"><span>${isOpen?'▾':'▸'}</span>${title}</button><div class="nav-section-items">${items.map(navItem).join('')}</div></div>`;
   }).join('');
-  const toggleTitle=sidebarMode==='hidden'?'Ava menüü':(sidebarMode==='compact'?'Ava täismenüü':'Peida menüü');
-  const wordmark=sidebarMode==='full'?`<div class="sidebar-wordmark">VECO</div>`:'';
-  return `<aside class="sidebar"><div class="sidebar-actions"><button class="btn ghost sidebar-toggle" id="sidebarToggleBtn" type="button" title="${toggleTitle}" aria-label="${toggleTitle}">${icon('☰')}</button>${wordmark}</div><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
+  const toggleTitle=sidebarMode==='hidden'?'Ava menüü':'Peida menüü';
+  return `<aside class="sidebar"><div class="sidebar-actions"><button class="btn ghost sidebar-toggle" id="sidebarToggleBtn" type="button" title="${toggleTitle}" aria-label="${toggleTitle}">${icon('☰')}</button></div><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
 }
 function themeLogo(){
   return `<button class="brand-badge brand-theme-toggle" type="button" data-theme-toggle title="Vaheta hele/tume režiim" aria-label="Vaheta hele/tume režiim"><span class="brand-wordmark">VECO</span></button>`;
@@ -377,11 +376,14 @@ function shell(main,aside='',opts={}){
   applyTheme();
   let sidebarMode=page==='mobile' ? 'full' : (localStorage.getItem('veco_sidebar_mode')||'');
   if(!sidebarMode){
-    sidebarMode=localStorage.getItem('veco_sidebar_collapsed')==='true' ? 'compact' : 'full';
+    sidebarMode=localStorage.getItem('veco_sidebar_collapsed')==='true' ? 'hidden' : 'full';
     localStorage.setItem('veco_sidebar_mode',sidebarMode);
   }
-  if(!['full','compact','hidden'].includes(sidebarMode)) sidebarMode='full';
-  const sidebarClass=sidebarMode==='compact'?'sidebar-compact':(sidebarMode==='hidden'?'sidebar-hidden':'sidebar-full');
+  // Alates sellest buildist on ainult 2 olekut: täismenüü ja peidetud menüü.
+  // Vana 'compact' olek teisendatakse peidetuks, et ikoonivaade ei jääks kasutajale ette.
+  if(sidebarMode==='compact') sidebarMode='hidden';
+  if(!['full','hidden'].includes(sidebarMode)) sidebarMode='full';
+  const sidebarClass=sidebarMode==='hidden'?'sidebar-hidden':'sidebar-full';
   document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();
 }
@@ -402,11 +404,10 @@ function bindGlobal(){
   $$('[data-theme-toggle]').forEach(btn=>btn.addEventListener('click',toggleTheme));
   $$('[data-mobile-theme-toggle]').forEach(btn=>btn.addEventListener('click',()=>{toggleTheme();renderMobile();}));
   $('#sidebarToggleBtn')?.addEventListener('click',()=>{
-    const modes=['full','compact','hidden'];
-    const current=localStorage.getItem('veco_sidebar_mode') || (localStorage.getItem('veco_sidebar_collapsed')==='true'?'compact':'full');
-    const next=modes[(Math.max(0,modes.indexOf(current))+1)%modes.length];
+    const current=localStorage.getItem('veco_sidebar_mode') || (localStorage.getItem('veco_sidebar_collapsed')==='true'?'hidden':'full');
+    const next=current==='hidden'?'full':'hidden';
     localStorage.setItem('veco_sidebar_mode',next);
-    localStorage.setItem('veco_sidebar_collapsed',next==='compact'?'true':'false');
+    localStorage.setItem('veco_sidebar_collapsed',next==='hidden'?'true':'false');
     renderCurrentPage();
   });
   $$('[data-nav-toggle]').forEach(btn=>btn.addEventListener('click',()=>{

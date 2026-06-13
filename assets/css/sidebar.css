@@ -467,3 +467,40 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
   .sidebar .nav,.sidebar .sidebar-wordmark{display:none!important;}
   .sidebar-actions{justify-content:center!important;margin:0!important;}
 }
+
+
+/* VECO_V3_20260613_0959: 2-state ChatGPT-style sidebar cleanup */
+.app.sidebar-full{grid-template-columns:248px minmax(0,1fr)!important;}
+.app.sidebar-hidden{grid-template-columns:42px minmax(0,1fr)!important;}
+.app.sidebar-compact{grid-template-columns:42px minmax(0,1fr)!important;}
+.sidebar{box-shadow:none!important;}
+.sidebar-wordmark{display:none!important;}
+.app.sidebar-full .sidebar{width:248px!important;min-width:248px!important;padding:18px 14px!important;background:#071016!important;border-right:1px solid rgba(255,255,255,.08)!important;}
+.sidebar-actions{min-height:34px!important;margin:0 0 12px!important;gap:0!important;}
+#sidebarToggleBtn,.sidebar-toggle{
+  width:32px!important;min-width:32px!important;height:32px!important;
+  border-radius:8px!important;padding:0!important;
+  background:transparent!important;border:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:none!important;color:rgba(232,241,247,.88)!important;
+}
+#sidebarToggleBtn:hover,.sidebar-toggle:hover{background:rgba(255,255,255,.07)!important;color:#fff!important;}
+#sidebarToggleBtn .icon,.sidebar-toggle .icon{font-size:15px!important;line-height:1!important;}
+.app.sidebar-hidden .sidebar,
+.app.sidebar-compact .sidebar{
+  display:flex!important;width:42px!important;min-width:42px!important;padding:16px 5px!important;
+  background:transparent!important;border-right:0!important;box-shadow:none!important;align-items:center!important;overflow:hidden!important;
+}
+.app.sidebar-hidden .sidebar-actions,
+.app.sidebar-compact .sidebar-actions{width:100%!important;justify-content:center!important;margin:0!important;}
+.app.sidebar-hidden .nav,.app.sidebar-hidden #importDataFile,.app.sidebar-hidden .sidebar-wordmark,
+.app.sidebar-compact .nav,.app.sidebar-compact #importDataFile,.app.sidebar-compact .sidebar-wordmark{display:none!important;}
+.app.sidebar-hidden > main > .content,
+.app.sidebar-compact > main > .content{padding-left:8px!important;}
+.app.sidebar-hidden > main,
+.app.sidebar-compact > main{border-left:0!important;}
+@media(max-width:1120px){
+  .app.sidebar-full{grid-template-columns:1fr!important;}
+  .app.sidebar-hidden,.app.sidebar-compact{grid-template-columns:42px minmax(0,1fr)!important;}
+  .app.sidebar-full .sidebar{position:fixed!important;inset:0 auto 0 0!important;z-index:1200!important;width:248px!important;min-width:248px!important;}
+  .app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{position:sticky!important;top:0!important;width:42px!important;min-width:42px!important;padding:12px 5px!important;}
+}
