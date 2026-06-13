@@ -2737,7 +2737,7 @@ body:has(.app.page-calendar){
   }
 }
 
-/* VECO_V3_20260612_1736: sticky calendar day header while scrolling 24h timeline */
+/* VECO_V3_20260612_1810: sticky calendar day header while scrolling 24h timeline */
 .app.page-calendar .calendar-planner-day-head{
   position:sticky!important;
   top:0!important;
@@ -2761,7 +2761,7 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
   max-height:calc(100vh - 156px)!important;
 }
 
-/* VECO_V3_20260612_1736: cleaner calendar frame and sticky day/date header */
+/* VECO_V3_20260612_1810: cleaner calendar frame and sticky day/date header */
 .app.page-calendar > main > .content.wide{padding:16px 18px 14px!important;}
 .app.page-calendar .panel{border:1px solid var(--line)!important;border-radius:14px!important;background:var(--panel)!important;}
 .app.page-calendar .calendar-planner-wrap{padding:0 14px 8px!important;}
@@ -2777,3 +2777,12 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
 .app.page-calendar .calendar-hour-label{border-top:0!important;color:var(--muted)!important;}
 .app.page-calendar .calendar-planner-lane{background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--calendar-hour-px) - 1px),rgba(255,255,255,.035) var(--calendar-hour-px))!important;}
 .theme-light .app.page-calendar .calendar-planner-lane{background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--calendar-hour-px) - 1px),rgba(20,33,44,.06) var(--calendar-hour-px))!important;}
+
+/* VECO_V3_20260612_1810: reduce calendar chrome; keep day/date header sticky */
+.app.page-calendar .panel{border-color:rgba(255,255,255,.06)!important;background:rgba(16,27,35,.78)!important;}
+.app.page-calendar .calendar-planner{border:0!important;background:transparent!important;}
+.app.page-calendar .calendar-planner-day-head{position:sticky!important;top:0!important;z-index:150!important;background:rgba(20,32,40,.97)!important;backdrop-filter:blur(10px)!important;border-top:0!important;border-left:0!important;border-right:0!important;border-bottom:1px solid rgba(255,255,255,.08)!important;box-shadow:0 8px 20px rgba(0,0,0,.16)!important;}
+.app.page-calendar .calendar-hours-spacer{position:sticky!important;top:0!important;z-index:151!important;background:rgba(20,32,40,.97)!important;border-bottom:1px solid rgba(255,255,255,.08)!important;box-shadow:0 8px 20px rgba(0,0,0,.16)!important;}
+.app.page-calendar .calendar-planner-grid{border-left:0!important;border-right:0!important;}
+.app.page-calendar .calendar-planner-day{border-left:1px solid rgba(255,255,255,.07)!important;border-right:0!important;background:transparent!important;}
+.app.page-calendar .calendar-hour-row,.app.page-calendar .calendar-hour-line{border-color:rgba(255,255,255,.045)!important;}

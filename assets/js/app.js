@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260612_1736';
+const APP_BUILD='20260612_1810';
 
-// Build 20260612_1736: clean sidebar modes without rail and sticky calendar day headers.
+// Build 20260612_1810: ChatGPT-style sidebar modes, role-based navigation and sticky calendar headers.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -275,29 +275,31 @@ function uid(prefix){return `${prefix}-${String(Date.now()).slice(-6)}`}
 function icon(i){return `<span class="icon">${i}</span>`}
 function nav(sidebarMode='full'){
   const groups=[
-    ['Töölaud',[['unplannedMaintenance','⚠'],['calendar','▦'],['team','◫'],['mobile','▤']]],
-    ['Haldus',[['workorders','☑'],['acts','▧'],['oncall','☎'],['vacations','▤'],['people','☷'],['objects','⌂'],['clients','▥'],['projects','▣'],['ticker','▭']]],
-    ['Seaded',[['maintenanceNorms','≡'],['devices','▤'],['maintenanceProfiles','☑'],['granlundClassifier','⌁']]],
-    ['Süsteem',[['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
+    ['Tööjuht',[['calendar','▦'],['unplannedMaintenance','⚠'],['workorders','☑'],['acts','▧']]],
+    ['Tehnikud',[['mobile','▤'],['team','◫'],['people','☷'],['vacations','▤'],['oncall','☎']]],
+    ['Kliendid ja objektid',[['objects','⌂'],['clients','▥'],['projects','▣']]],
+    ['Hooldusinfo',[['devices','▤'],['maintenanceNorms','≡'],['maintenanceProfiles','☑'],['granlundClassifier','⌁']]],
+    ['Süsteem',[['ticker','▭'],['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
     ['Arendus',[['mobilePreview','▧'],['demo','↺'],['diagnostics','◎']]]
   ];
   const activeGroupTitle=(groups.find(([_,items])=>items.some(([key])=>key===page))||groups[0])[0];
   const storedNavOpenRaw=localStorage.getItem('veco_nav_open_groups');
   const openGroups=(()=>{
     try{ return storedNavOpenRaw ? (JSON.parse(storedNavOpenRaw)||{}) : null; }catch(_){ return null; }
-  })() || {'Töölaud':true,[activeGroupTitle]:true};
+  })() || {'Tööjuht':true,[activeGroupTitle]:true};
   const navItem=([key,ic])=>{
-    if(key==='system-database') return `<button type="button" id="databaseBtn" title="Andmebaas" aria-label="Andmebaas">${icon(ic)}Andmebaas: ${window.VECO_API?.modeLabel?.()||'lokaalne'}</button>`;
-    if(key==='system-export') return `<button type="button" id="exportDataBtn" title="Varukoopia" aria-label="Varukoopia">${icon(ic)}Varukoopia</button>`;
-    if(key==='system-import') return `<label class="nav-file-action" for="importDataFile" title="Taasta" aria-label="Taasta">${icon(ic)}Taasta</label>`;
-    return `<a class="${page===key?'active':''}" href="${pageFiles[key]}" title="${esc(pageTitles[key]||key)}" aria-label="${esc(pageTitles[key]||key)}">${icon(ic)}${pageTitles[key]}</a>`;
+    if(key==='system-database') return `<button type="button" id="databaseBtn" title="Andmebaas" aria-label="Andmebaas">${icon(ic)}<span class="nav-label">Andmebaas</span><small>${window.VECO_API?.modeLabel?.()||'lokaalne'}</small></button>`;
+    if(key==='system-export') return `<button type="button" id="exportDataBtn" title="Varukoopia" aria-label="Varukoopia">${icon(ic)}<span class="nav-label">Varukoopia</span></button>`;
+    if(key==='system-import') return `<label class="nav-file-action" for="importDataFile" title="Taasta" aria-label="Taasta">${icon(ic)}<span class="nav-label">Taasta</span></label>`;
+    return `<a class="${page===key?'active':''}" href="${pageFiles[key]}" title="${esc(pageTitles[key]||key)}" aria-label="${esc(pageTitles[key]||key)}">${icon(ic)}<span class="nav-label">${pageTitles[key]}</span></a>`;
   };
   const navGroups=groups.map(([title,items])=>{
     const isOpen=!!openGroups[title];
     return `<div class="nav-section ${isOpen?'open':'collapsed'}" data-nav-group="${esc(title)}"><button class="nav-section-title" type="button" data-nav-toggle="${esc(title)}" aria-expanded="${isOpen?'true':'false'}"><span>${isOpen?'▾':'▸'}</span>${title}</button><div class="nav-section-items">${items.map(navItem).join('')}</div></div>`;
   }).join('');
-  const toggleTitle=sidebarMode==='hidden'?'Näita menüüd':(sidebarMode==='compact'?'Ava täismenüü':'Muuda menüü kompaktseks');
-  return `<aside class="sidebar"><div class="sidebar-actions"><button class="btn ghost sidebar-toggle" id="sidebarToggleBtn" type="button" title="${toggleTitle}" aria-label="${toggleTitle}">${icon('☰')}</button></div><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
+  const toggleTitle=sidebarMode==='hidden'?'Ava menüü':(sidebarMode==='compact'?'Ava täismenüü':'Peida menüü');
+  const wordmark=sidebarMode==='full'?`<div class="sidebar-wordmark">VECO</div>`:'';
+  return `<aside class="sidebar"><div class="sidebar-actions"><button class="btn ghost sidebar-toggle" id="sidebarToggleBtn" type="button" title="${toggleTitle}" aria-label="${toggleTitle}">${icon('☰')}</button>${wordmark}</div><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
 }
 function themeLogo(){
   return `<button class="brand-badge brand-theme-toggle" type="button" data-theme-toggle title="Vaheta hele/tume režiim" aria-label="Vaheta hele/tume režiim"><span class="brand-wordmark">VECO</span></button>`;
