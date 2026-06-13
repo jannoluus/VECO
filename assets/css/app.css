@@ -2787,7 +2787,7 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
 .app.page-calendar .calendar-planner-day{border-left:1px solid rgba(255,255,255,.07)!important;border-right:0!important;background:transparent!important;}
 .app.page-calendar .calendar-hour-row,.app.page-calendar .calendar-hour-line{border-color:rgba(255,255,255,.045)!important;}
 
-/* VECO_V3_20260613_1008: calendar light/dark consistency fix */
+/* VECO_V3_20260613_1018: calendar light/dark consistency fix */
 body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 .theme-light .app.page-calendar .panel{
   background:var(--panel)!important;

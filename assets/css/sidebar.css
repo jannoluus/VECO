@@ -505,7 +505,7 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
   .app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{position:sticky!important;top:0!important;width:42px!important;min-width:42px!important;padding:12px 5px!important;}
 }
 
-/* VECO_V3_20260613_1008: final sidebar fix
+/* VECO_V3_20260613_1018: final sidebar fix
    - eemalda kompaktse ikoonimenüü võimalus visuaalselt
    - säilita ainult avatud/peidetud olek
    - ühtlusta hele/tume režiim külgmenüüga */
@@ -556,4 +556,88 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
   .app.sidebar-hidden,.app.sidebar-compact{grid-template-columns:42px minmax(0,1fr)!important;}
   .app.sidebar-full .sidebar{position:fixed!important;inset:0 auto 0 0!important;z-index:1200!important;width:248px!important;min-width:248px!important;}
   .app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{position:sticky!important;top:0!important;width:42px!important;min-width:42px!important;padding:12px 5px!important;}
+}
+
+/* VECO_V3_20260613_1018: sidebar rail instead of hamburger button
+   - ainult kaks olekut: avatud / peidetud
+   - hamburger-nupp eemaldatud
+   - vasakus servas on kitsas klikitav riba; hoveril ilmub nool */
+.app.sidebar-full{grid-template-columns:248px minmax(0,1fr)!important;}
+.app.sidebar-hidden,.app.sidebar-compact{grid-template-columns:14px minmax(0,1fr)!important;}
+.sidebar{position:relative!important;box-shadow:none!important;}
+.sidebar-actions,.sidebar-toggle,#sidebarToggleBtn{display:none!important;}
+.sidebar-toggle-rail{
+  appearance:none!important;
+  position:absolute!important;
+  top:0!important;
+  right:0!important;
+  width:14px!important;
+  height:100%!important;
+  min-height:100vh!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-left:1px solid color-mix(in srgb,var(--line) 45%,transparent)!important;
+  background:transparent!important;
+  color:var(--sidebar-muted)!important;
+  cursor:pointer!important;
+  z-index:25!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  opacity:.72!important;
+}
+.sidebar-toggle-rail:hover{
+  background:color-mix(in srgb,var(--sidebar-hover) 70%,transparent)!important;
+  color:var(--sidebar-ink)!important;
+  opacity:1!important;
+}
+.sidebar-toggle-rail::before{
+  content:'‹';
+  font-size:18px;
+  line-height:1;
+  opacity:0;
+  transform:translateX(1px);
+  transition:opacity .12s ease, transform .12s ease;
+}
+.sidebar-toggle-rail:hover::before{opacity:1;transform:translateX(0);}
+.app.sidebar-hidden .sidebar-toggle-rail,.app.sidebar-compact .sidebar-toggle-rail{
+  left:0!important;
+  right:auto!important;
+  width:14px!important;
+  border-left:0!important;
+  border-right:1px solid color-mix(in srgb,var(--line) 35%,transparent)!important;
+}
+.app.sidebar-hidden .sidebar-toggle-rail::before,.app.sidebar-compact .sidebar-toggle-rail::before{content:'›';}
+.app.sidebar-full .sidebar{
+  display:flex!important;
+  width:248px!important;
+  min-width:248px!important;
+  padding:18px 26px 18px 14px!important;
+  background:var(--sidebar-bg)!important;
+  color:var(--sidebar-ink)!important;
+  border-right:0!important;
+  overflow:auto!important;
+}
+.app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{
+  display:block!important;
+  width:14px!important;
+  min-width:14px!important;
+  padding:0!important;
+  background:transparent!important;
+  border-right:0!important;
+  overflow:hidden!important;
+}
+.app.sidebar-hidden .nav,.app.sidebar-hidden #importDataFile,.app.sidebar-hidden .sidebar-wordmark,
+.app.sidebar-compact .nav,.app.sidebar-compact #importDataFile,.app.sidebar-compact .sidebar-wordmark{display:none!important;}
+.app.sidebar-hidden > main > .content,
+.app.sidebar-compact > main > .content{padding-left:8px!important;}
+.app.sidebar-hidden > main,.app.sidebar-compact > main{border-left:0!important;}
+.theme-light .sidebar-toggle-rail{border-color:color-mix(in srgb,var(--line) 50%,transparent)!important;color:var(--muted)!important;}
+.theme-light .sidebar-toggle-rail:hover{background:rgba(23,105,170,.08)!important;color:var(--ink)!important;}
+@media(max-width:1120px){
+  .app.sidebar-full{grid-template-columns:1fr!important;}
+  .app.sidebar-hidden,.app.sidebar-compact{grid-template-columns:14px minmax(0,1fr)!important;}
+  .app.sidebar-full .sidebar{position:fixed!important;inset:0 auto 0 0!important;z-index:1200!important;width:248px!important;min-width:248px!important;}
+  .app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{position:sticky!important;top:0!important;width:14px!important;min-width:14px!important;padding:0!important;}
 }

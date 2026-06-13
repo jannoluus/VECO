@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260613_1008';
+const APP_BUILD='20260613_1018';
 
-// Build 20260613_1008: parandus - ainult avatud/peidetud menüü, kompaktvaate kustutamine, teema ühtlustus kalendris ja menüüs.
+// Build 20260613_1018: parandus - ainult avatud/peidetud menüü, kompaktvaate kustutamine, teema ühtlustus kalendris ja menüüs.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -298,7 +298,7 @@ function nav(sidebarMode='full'){
     return `<div class="nav-section ${isOpen?'open':'collapsed'}" data-nav-group="${esc(title)}"><button class="nav-section-title" type="button" data-nav-toggle="${esc(title)}" aria-expanded="${isOpen?'true':'false'}"><span>${isOpen?'▾':'▸'}</span>${title}</button><div class="nav-section-items">${items.map(navItem).join('')}</div></div>`;
   }).join('');
   const toggleTitle=sidebarMode==='hidden'?'Ava menüü':'Peida menüü';
-  return `<aside class="sidebar"><div class="sidebar-actions"><button class="btn ghost sidebar-toggle" id="sidebarToggleBtn" type="button" title="${toggleTitle}" aria-label="${toggleTitle}">${icon('☰')}</button></div><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
+  return `<aside class="sidebar" data-sidebar-state="${sidebarMode}"><button class="sidebar-toggle-rail" id="sidebarToggleRail" type="button" title="${toggleTitle}" aria-label="${toggleTitle}"></button><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
 }
 function themeLogo(){
   return `<button class="brand-badge brand-theme-toggle" type="button" data-theme-toggle title="Vaheta hele/tume režiim" aria-label="Vaheta hele/tume režiim"><span class="brand-wordmark">VECO</span></button>`;
@@ -405,13 +405,15 @@ function toggleTheme(){
 function bindGlobal(){
   $$('[data-theme-toggle]').forEach(btn=>btn.addEventListener('click',toggleTheme));
   $$('[data-mobile-theme-toggle]').forEach(btn=>btn.addEventListener('click',()=>{toggleTheme();renderMobile();}));
-  $('#sidebarToggleBtn')?.addEventListener('click',()=>{
+  const sidebarToggleHandler=()=>{
     const current=localStorage.getItem('veco_sidebar_mode') || (localStorage.getItem('veco_sidebar_collapsed')==='true'?'hidden':'full');
     const next=current==='hidden'?'full':'hidden';
     localStorage.setItem('veco_sidebar_mode',next);
     localStorage.setItem('veco_sidebar_collapsed',next==='hidden'?'true':'false');
     renderCurrentPage();
-  });
+  };
+  $('#sidebarToggleRail')?.addEventListener('click',sidebarToggleHandler);
+  $('#sidebarToggleBtn')?.addEventListener('click',sidebarToggleHandler);
   $$('[data-nav-toggle]').forEach(btn=>btn.addEventListener('click',()=>{
     const title=btn.dataset.navToggle;
     let open={};
