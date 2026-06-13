@@ -1,3 +1,14 @@
+Build: 20260613_1253
+
+# VECO V3
+
+Versioon: v3.19.2
+
+Muudatused:
+- Kalendri E–P sticky päise ja alumise kalendri vertikaaljoonte joondus parandatud.
+- Buildi timestamp ja failinimi on Eesti ajavööndi järgi.
+- Tööaja tsentreerimist ei muudetud.
+
 Build: 20260611_1139
 
 # VECO V3

@@ -2911,3 +2911,39 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
     column-gap:8px!important;
   }
 }
+
+
+/* VECO_V3_20260613_1253: calendar header/body alignment fix only
+   Päis ja kalender kasutavad sama veeruloogikat: 54px ajaveerg + 0px gap + N võrdset päevaveergu.
+   Ei lõika 24h ajatelge ega muuda tööaja tsentreerimist. */
+.app.page-calendar .calendar-planner{
+  grid-template-columns:54px minmax(0,1fr)!important;
+  column-gap:0!important;
+  gap:0!important;
+}
+.app.page-calendar .calendar-planner-grid{
+  column-gap:0!important;
+  gap:0!important;
+  scrollbar-gutter:stable!important;
+}
+.app.page-calendar .calendar-date-sticky-header{
+  grid-template-columns:54px minmax(0,1fr)!important;
+  column-gap:0!important;
+  gap:0!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+.app.page-calendar .calendar-date-sticky-days{
+  column-gap:0!important;
+  gap:0!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+.app.page-calendar .calendar-date-sticky-day{
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:1120px){
+  .app.page-calendar .calendar-planner{grid-template-columns:44px minmax(0,1fr)!important;}
+  .app.page-calendar .calendar-date-sticky-header{grid-template-columns:44px minmax(0,1fr)!important;}
+}
