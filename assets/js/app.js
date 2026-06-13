@@ -2,10 +2,10 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.18.0';
-const APP_BUILD='20260613_1138';
+const APP_VERSION='v3.19.0';
+const APP_BUILD='20260613_1220';
 
-// Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
+// Build 20260613_1220: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -38,6 +38,120 @@ function normalizeWorkorderContentFields(){
   });
 }
 normalizeWorkorderContentFields();
+
+
+// V3.19: lihtne lokaalne PIN-autentimine prototüübi ja sisekasutuse jaoks.
+const AUTH_SESSION_KEY='veco_auth_session_v1';
+const AUTH_ALLOWED={
+  Admin:null,
+  Tehnik:['mobile','team','calendar','workorders','acts']
+};
+function normalizeAuthFields(){
+  (state.people||[]).forEach(p=>{
+    if(typeof p.pinHash==='undefined') p.pinHash='';
+    if(typeof p.pinSetAt==='undefined') p.pinSetAt='';
+    if(typeof p.lastLoginAt==='undefined') p.lastLoginAt='';
+  });
+}
+normalizeAuthFields();
+function pinHash(personId,pin){
+  const input=`${personId}|${String(pin||'').trim()}|VECO-V3-PIN`;
+  let h=2166136261;
+  for(let i=0;i<input.length;i++){
+    h^=input.charCodeAt(i);
+    h=Math.imul(h,16777619);
+  }
+  return (h>>>0).toString(16).padStart(8,'0');
+}
+function readAuth(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(AUTH_SESSION_KEY)||'null');
+    if(!raw?.personId) return null;
+    const p=byId(state.people||[],raw.personId);
+    if(!p||!p.active) return null;
+    return {personId:p.id,name:p.name,role:p.role||'Tehnik',ts:raw.ts||Date.now()};
+  }catch(_){ return null; }
+}
+function writeAuth(person){
+  const auth={personId:person.id,name:person.name,role:person.role||'Tehnik',ts:Date.now()};
+  localStorage.setItem(AUTH_SESSION_KEY,JSON.stringify(auth));
+  person.lastLoginAt=new Date().toISOString();
+  save();
+  return auth;
+}
+function clearAuth(){ localStorage.removeItem(AUTH_SESSION_KEY); }
+function currentAuth(){ return readAuth(); }
+function isAdmin(){ return currentAuth()?.role==='Admin'; }
+function authCanOpen(pageKey){
+  const auth=currentAuth();
+  if(!auth) return false;
+  if(auth.role==='Admin') return true;
+  return (AUTH_ALLOWED[auth.role]||[]).includes(pageKey);
+}
+function activePeopleForLogin(){ return (state.people||[]).filter(p=>p.active!==false).sort((a,b)=>(a.role==='Admin'?-1:0)-(b.role==='Admin'?-1:0)||String(a.name).localeCompare(String(b.name),'et')); }
+function renderAuthScreen(message=''){
+  applyTheme();
+  const people=activePeopleForLogin();
+  const selectedId=localStorage.getItem('veco_last_login_person')||people[0]?.id||'';
+  const selected=byId(people,selectedId)||people[0]||{};
+  const needsPin=!!selected?.id && !selected.pinHash;
+  const mode=needsPin?'create':'login';
+  document.body.innerHTML=`<div class="auth-page"><div class="auth-card"><div class="auth-brand">VECO</div><h1>${mode==='create'?'Loo PIN':'Sisene PIN-koodiga'}</h1><p>${mode==='create'?'Kasutaja on olemas, kuid PIN on veel määramata.':'Vali kasutaja ja sisesta PIN.'}</p>${message?`<div class="auth-error">${esc(message)}</div>`:''}<form id="authForm" class="auth-form"><label>Kasutaja<select class="select" name="personId">${people.map(p=>`<option value="${esc(p.id)}" ${p.id===selected.id?'selected':''}>${esc(p.name)} · ${esc(p.role||'Tehnik')}</option>`).join('')}</select></label><label>${mode==='create'?'Uus PIN':'PIN'}<input class="field auth-pin" name="pin" inputmode="numeric" autocomplete="current-password" maxlength="6" minlength="4" pattern="[0-9]{4,6}" required placeholder="4–6 numbrit"></label>${mode==='create'?`<label>Korda PIN-i<input class="field auth-pin" name="pin2" inputmode="numeric" autocomplete="new-password" maxlength="6" minlength="4" pattern="[0-9]{4,6}" required placeholder="4–6 numbrit"></label>`:''}<button class="btn primary auth-submit" type="submit">${mode==='create'?'Salvesta PIN ja sisene':'Logi sisse'}</button></form><button class="btn ghost auth-theme" type="button" data-theme-toggle>Vaheta hele/tume</button><div class="auth-note">Prototüübi PIN salvestatakse lokaalselt. Päriskasutuseks tuleb see hiljem viia serveripõhise autentimise peale.</div></div></div>`;
+  $('[name="personId"]')?.addEventListener('change',e=>{localStorage.setItem('veco_last_login_person',e.target.value);renderAuthScreen();});
+  $('[data-theme-toggle]')?.addEventListener('click',()=>{toggleTheme();renderAuthScreen(message);});
+  $('#authForm')?.addEventListener('submit',e=>{
+    e.preventDefault();
+    const f=e.currentTarget.elements;
+    const person=byId(state.people,f.personId.value);
+    if(!person||person.active===false) return renderAuthScreen('Kasutaja ei ole aktiivne.');
+    const pin=String(f.pin.value||'').trim();
+    if(!/^\d{4,6}$/.test(pin)) return renderAuthScreen('PIN peab olema 4–6 numbrit.');
+    if(!person.pinHash){
+      if(pin!==String(f.pin2?.value||'').trim()) return renderAuthScreen('PIN-id ei kattu.');
+      person.pinHash=pinHash(person.id,pin);
+      person.pinSetAt=new Date().toISOString();
+      writeAuth(person);
+      localStorage.setItem('veco_last_login_person',person.id);
+      renderCurrentPage();
+      return;
+    }
+    if(person.pinHash!==pinHash(person.id,pin)) return renderAuthScreen('Vale PIN.');
+    writeAuth(person);
+    localStorage.setItem('veco_last_login_person',person.id);
+    renderCurrentPage();
+  });
+}
+function renderAccessDenied(){
+  const auth=currentAuth();
+  const main=header('Ligipääs puudub','','<button class="btn ghost" id="logoutBtn">Logi välja</button>','LUKUS')+`<div class="detail-body"><div class="empty-state"><strong>See vaade on admini õigustega kasutajale.</strong><span>Sisse logitud: ${esc(auth?.name||'-')} · ${esc(auth?.role||'-')}</span></div></div>`;
+  shell(main,'',{wide:true});
+}
+function pinStatusHtml(p){
+  return p.pinHash?`<span class="status ok">PIN määratud</span><div class="muted">${p.lastLoginAt?`Viimane: ${fmtShortDate(p.lastLoginAt.slice(0,10))}`:'Pole loginud'}</div>`:`<span class="status red">PIN puudub</span>`;
+}
+function resetPersonPin(personId){
+  if(!isAdmin()) return alert('PIN-i haldus nõuab admini õigust.');
+  const p=byId(state.people,personId);
+  if(!p) return;
+  p.pinHash='';
+  p.pinSetAt='';
+  p.lastLoginAt='';
+  if(currentAuth()?.personId===personId) clearAuth();
+  save();
+  renderPeople();
+}
+function setTemporaryPin(personId){
+  if(!isAdmin()) return alert('PIN-i haldus nõuab admini õigust.');
+  const p=byId(state.people,personId);
+  if(!p) return;
+  const pin=prompt(`Sisesta ajutine PIN kasutajale ${p.name} (4–6 numbrit)`,'1234');
+  if(pin===null) return;
+  if(!/^\d{4,6}$/.test(String(pin).trim())) return alert('PIN peab olema 4–6 numbrit.');
+  p.pinHash=pinHash(p.id,pin);
+  p.pinSetAt=new Date().toISOString();
+  save();
+  renderPeople();
+}
 
 function normalizeWorkorderPeople(){
   (state.workorders||[]).forEach(w=>{
@@ -276,10 +390,10 @@ function icon(i){return `<span class="icon">${i}</span>`}
 function nav(sidebarMode='full'){
   const groups=[
     ['Tööjuht',[['calendar','▦'],['unplannedMaintenance','⚠'],['workorders','☑'],['acts','▧']]],
-    ['Tehnikud',[['mobile','▤'],['team','◫'],['people','☷'],['vacations','▤'],['oncall','☎']]],
+    ['Tehnikud',[['mobile','▤'],['team','◫'],['vacations','▤'],['oncall','☎']]],
     ['Kliendid ja objektid',[['objects','⌂'],['clients','▥'],['projects','▣']]],
     ['Hooldusinfo',[['devices','▤'],['maintenanceNorms','≡'],['maintenanceProfiles','☑'],['granlundClassifier','⌁']]],
-    ['Süsteem',[['ticker','▭'],['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
+    ['Süsteem',[['people','☷'],['ticker','▭'],['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
     ['Arendus',[['mobilePreview','▧'],['demo','↺'],['diagnostics','◎']]]
   ];
   const activeGroupTitle=(groups.find(([_,items])=>items.some(([key])=>key===page))||groups[0])[0];
@@ -293,12 +407,17 @@ function nav(sidebarMode='full'){
     if(key==='system-import') return `<label class="nav-file-action" for="importDataFile" title="Taasta" aria-label="Taasta">${icon(ic)}<span class="nav-label">Taasta</span></label>`;
     return `<a class="${page===key?'active':''}" href="${pageFiles[key]}" title="${esc(pageTitles[key]||key)}" aria-label="${esc(pageTitles[key]||key)}">${icon(ic)}<span class="nav-label">${pageTitles[key]}</span></a>`;
   };
-  const navGroups=groups.map(([title,items])=>{
+  const visibleGroups=groups
+    .map(([title,items])=>[title,items.filter(([key])=>isAdmin() || authCanOpen(key))])
+    .filter(([_,items])=>items.length);
+  const navGroups=visibleGroups.map(([title,items])=>{
     const isOpen=!!openGroups[title];
     return `<div class="nav-section ${isOpen?'open':'collapsed'}" data-nav-group="${esc(title)}"><button class="nav-section-title" type="button" data-nav-toggle="${esc(title)}" aria-expanded="${isOpen?'true':'false'}"><span>${isOpen?'▾':'▸'}</span>${title}</button><div class="nav-section-items">${items.map(navItem).join('')}</div></div>`;
   }).join('');
   const toggleTitle=sidebarMode==='hidden'?'Ava menüü':'Peida menüü';
-  return `<aside class="sidebar" data-sidebar-state="${sidebarMode}"><button class="sidebar-toggle-rail" id="sidebarToggleRail" type="button" title="${toggleTitle}" aria-label="${toggleTitle}"></button><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
+  const auth=currentAuth();
+  const authBox=auth?`<div class="sidebar-auth"><strong>${esc(auth.name)}</strong><span>${esc(auth.role)}</span><button class="btn ghost small" id="logoutBtn" type="button">Logi välja</button></div>`:'';
+  return `<aside class="sidebar" data-sidebar-state="${sidebarMode}"><button class="sidebar-toggle-rail" id="sidebarToggleRail" type="button" title="${toggleTitle}" aria-label="${toggleTitle}"></button><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav>${authBox}</aside>`
 }
 function themeLogo(){
   return `<button class="brand-badge brand-theme-toggle" type="button" data-theme-toggle title="Vaheta hele/tume režiim" aria-label="Vaheta hele/tume režiim"><span class="brand-wordmark">VECO</span></button>`;
@@ -447,6 +566,7 @@ function bindGlobal(){
   });
   $('#tickerCloseBtn')?.addEventListener('click',()=>{localStorage.setItem('veco_ticker_hidden','true');renderCurrentPage();});
   $('#tickerRestoreBtn')?.addEventListener('click',()=>{localStorage.setItem('veco_ticker_hidden','false');renderCurrentPage();});
+  $('#logoutBtn')?.addEventListener('click',()=>{clearAuth();renderAuthScreen();});
 }
 function card(title,rows=[],status='',extra=''){
   return `<div class="card"><div class="card-top"><h3>${esc(title)}</h3>${status?`<span class="status ${statusClass(status)}">${esc(status)}</span>`:''}</div>${rows.map(([k,v])=>`<div class="kv"><span>${esc(k)}</span><strong>${esc(v||'-')}</strong></div>`).join('')}${extra}</div>`
@@ -1601,8 +1721,8 @@ function renderPeople(){
   const filters=`<input class="field" id="peopleSearch" placeholder="Otsi kasutajat..." value="${esc(q)}"><select class="select" id="peopleStatusFilter"><option value="active" ${status==='active'?'selected':''}>Aktiivsed</option><option value="inactive" ${status==='inactive'?'selected':''}>Deaktiveeritud</option><option value="all" ${status==='all'?'selected':''}>Kõik kasutajad</option></select>`;
   const actions=`<button class="btn primary" id="newPersonBtn">${icon('＋')}Lisa kasutaja</button>`;
   const today=dateKeyFromDate(new Date());
-  const rows=list.map(p=>`<tr data-person-id="${p.id}"><td><strong>${esc(p.name)}</strong><div class="muted">${esc(p.id)}</div></td><td>${esc(p.role||'-')}</td><td>${availabilityBadgesHtml(p.id,today,{empty:true})}</td><td>${esc(p.phone||'-')}</td><td>${esc(p.email||'-')}</td><td>${esc(p.region||'-')}</td><td><button class="status ${p.onCallActive?'ok':'red'}" data-toggle-oncall-person="${p.id}" type="button" title="Lisa/eemalda valvegraafikust">${p.onCallActive?'Aktiivne':'Ei osale'}</button><div class="muted">Jrk ${Number(p.onCallOrder||0)||'-'}</div></td><td><span class="status ${p.active?'ok':'red'}">${p.active?'Aktiivne':'Deaktiveeritud'}</span></td><td><button class="btn small" data-edit-person="${p.id}" type="button">Muuda</button> <button class="btn small ${p.active?'danger':'primary'}" data-toggle-person="${p.id}" type="button">${p.active?'Deaktiveeri':'Aktiveeri'}</button> <button class="btn small danger" data-delete-person="${p.id}" type="button">Kustuta</button></td></tr>`).join('');
-  const main=header('Tehnikute administreerimine',filters,actions,'TEHNIKUD')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Kasutajaid',state.people.length)}${summaryBox('Aktiivseid',state.people.filter(p=>p.active).length)}${summaryBox('Tehnikuid',state.people.filter(p=>p.role==='Tehnik').length)}${summaryBox('Valve aktiivsed',state.people.filter(p=>p.onCallActive).length)}</div>${table(['Nimi','Roll','Saadavus täna','Telefon','E-post','Piirkond','Valvegraafik','Staatus','Tegevused'],rows)}</div>`;
+  const rows=list.map(p=>`<tr data-person-id="${p.id}"><td><strong>${esc(p.name)}</strong><div class="muted">${esc(p.id)}</div></td><td>${esc(p.role||'-')}</td><td>${availabilityBadgesHtml(p.id,today,{empty:true})}</td><td>${esc(p.phone||'-')}</td><td>${esc(p.email||'-')}</td><td>${esc(p.region||'-')}</td><td><button class="status ${p.onCallActive?'ok':'red'}" data-toggle-oncall-person="${p.id}" type="button" title="Lisa/eemalda valvegraafikust">${p.onCallActive?'Aktiivne':'Ei osale'}</button><div class="muted">Jrk ${Number(p.onCallOrder||0)||'-'}</div></td><td>${pinStatusHtml(p)}</td><td><span class="status ${p.active?'ok':'red'}">${p.active?'Aktiivne':'Deaktiveeritud'}</span></td><td><button class="btn small" data-edit-person="${p.id}" type="button">Muuda</button> <button class="btn small" data-temp-pin="${p.id}" type="button">Ajutine PIN</button> <button class="btn small danger" data-reset-pin="${p.id}" type="button">Nulli PIN</button> <button class="btn small ${p.active?'danger':'primary'}" data-toggle-person="${p.id}" type="button">${p.active?'Deaktiveeri':'Aktiveeri'}</button> <button class="btn small danger" data-delete-person="${p.id}" type="button">Kustuta</button></td></tr>`).join('');
+  const main=header('Tehnikute administreerimine',filters,actions,'TEHNIKUD')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Kasutajaid',state.people.length)}${summaryBox('Aktiivseid',state.people.filter(p=>p.active).length)}${summaryBox('Tehnikuid',state.people.filter(p=>p.role==='Tehnik').length)}${summaryBox('Valve aktiivsed',state.people.filter(p=>p.onCallActive).length)}</div>${table(['Nimi','Roll','Saadavus täna','Telefon','E-post','Piirkond','Valvegraafik','PIN','Staatus','Tegevused'],rows)}</div>`;
   shell(main,'',{wide:true});
   $('#peopleSearch')?.addEventListener('input',renderPeople);
   $('#peopleStatusFilter')?.addEventListener('change',renderPeople);
@@ -1611,6 +1731,8 @@ function renderPeople(){
   $$('[data-toggle-oncall-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.toggleOncallPerson);if(p){p.onCallActive=!p.onCallActive;if(p.onCallActive&&!p.onCallOrder){p.onCallOrder=nextOncallOrder();}save();renderPeople();}}));
   $$('[data-edit-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openPersonModal(btn.dataset.editPerson);}))
   $$('[data-toggle-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.togglePerson);if(p){p.active=!p.active;save();renderPeople();}}));
+  $$('[data-reset-pin]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();resetPersonPin(btn.dataset.resetPin);}));
+  $$('[data-temp-pin]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();setTemporaryPin(btn.dataset.tempPin);}));
   $$('[data-delete-person]').forEach(btn=>btn.addEventListener('click',async e=>{
     e.stopPropagation();
     const id=btn.dataset.deletePerson;
@@ -3741,6 +3863,9 @@ function renderDiagnostics(){
 }
 
 function renderCurrentPage(){
+  normalizeAuthFields();
+  if(!currentAuth()) return renderAuthScreen();
+  if(!authCanOpen(page)) return renderAccessDenied();
   ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,unplannedMaintenance:renderUnplannedMaintenance,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
 }
 async function bootstrapApp(){
