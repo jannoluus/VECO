@@ -1,11 +1,5 @@
-Build: 20260613_1312
+Build: 20260613_1319
 
-# VECO V3
+VECO V3 build 20260613_1319.
 
-Versioon: v3.19.3
-
-Muudatused:
-- Kalendri E–P sticky päis pandud otse sama grid-loogika peale: 54 px ajaveerg + päevaveerud.
-- Eemaldatud nested päise vahekiht, mis võis tekitada nihke alumise gridiga.
-- Tööaja tsentreerimist ei muudetud.
-- Buildi timestamp ja failinimi on Eesti ajavööndi järgi.
+Muudatus: kalendri E–P sticky päis jääb scrollimisel nähtavale; tööaja tsentreerimist ei muudetud.
