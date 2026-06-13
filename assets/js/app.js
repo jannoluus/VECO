@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260613_1018';
+const APP_BUILD='20260613_1040';
 
-// Build 20260613_1018: parandus - ainult avatud/peidetud menüü, kompaktvaate kustutamine, teema ühtlustus kalendris ja menüüs.
+// Build 20260613_1040: laiem ühendatud menüü servariba, topeltjoonte eemaldus ja suurem hover/click ala.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');

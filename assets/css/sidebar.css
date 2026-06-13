@@ -641,3 +641,86 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
   .app.sidebar-full .sidebar{position:fixed!important;inset:0 auto 0 0!important;z-index:1200!important;width:248px!important;min-width:248px!important;}
   .app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{position:sticky!important;top:0!important;width:14px!important;min-width:14px!important;padding:0!important;}
 }
+
+
+/* VECO_V3_20260613_1040: wider unified edge rail
+   - menüü avamine/sulgemine toimub ühe laiema servariba kaudu
+   - eemaldatud topelt vertikaaljooned
+   - hover/click ala ulatub vasakust servast kuni kalendri sisuni */
+:root{--sidebar-rail-width:24px;}
+.app.sidebar-full{grid-template-columns:248px minmax(0,1fr)!important;}
+.app.sidebar-hidden,.app.sidebar-compact{grid-template-columns:var(--sidebar-rail-width) minmax(0,1fr)!important;}
+.sidebar{position:relative!important;box-shadow:none!important;}
+.sidebar-actions,.sidebar-toggle,#sidebarToggleBtn{display:none!important;}
+.sidebar-toggle-rail{
+  appearance:none!important;
+  position:absolute!important;
+  top:0!important;
+  right:0!important;
+  width:var(--sidebar-rail-width)!important;
+  height:100%!important;
+  min-height:100vh!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  background:transparent!important;
+  color:var(--sidebar-muted)!important;
+  cursor:pointer!important;
+  z-index:40!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  opacity:.62!important;
+}
+.sidebar-toggle-rail:hover{
+  background:color-mix(in srgb,var(--sidebar-hover) 64%,transparent)!important;
+  color:var(--sidebar-ink)!important;
+  opacity:1!important;
+}
+.sidebar-toggle-rail::before{
+  content:'‹';
+  font-size:19px;
+  line-height:1;
+  opacity:0;
+  transform:translateX(2px);
+  transition:opacity .12s ease, transform .12s ease;
+}
+.sidebar-toggle-rail:hover::before{opacity:1;transform:translateX(0);}
+.app.sidebar-hidden .sidebar-toggle-rail,.app.sidebar-compact .sidebar-toggle-rail{
+  left:0!important;
+  right:auto!important;
+  width:var(--sidebar-rail-width)!important;
+}
+.app.sidebar-hidden .sidebar-toggle-rail::before,.app.sidebar-compact .sidebar-toggle-rail::before{content:'›';}
+.app.sidebar-full .sidebar{
+  display:flex!important;
+  width:248px!important;
+  min-width:248px!important;
+  padding:18px calc(var(--sidebar-rail-width) + 14px) 18px 14px!important;
+  background:var(--sidebar-bg)!important;
+  color:var(--sidebar-ink)!important;
+  border-right:0!important;
+  overflow:auto!important;
+}
+.app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{
+  display:block!important;
+  width:var(--sidebar-rail-width)!important;
+  min-width:var(--sidebar-rail-width)!important;
+  padding:0!important;
+  background:transparent!important;
+  border-right:0!important;
+  overflow:hidden!important;
+}
+.app.sidebar-hidden .nav,.app.sidebar-hidden #importDataFile,.app.sidebar-hidden .sidebar-wordmark,
+.app.sidebar-compact .nav,.app.sidebar-compact #importDataFile,.app.sidebar-compact .sidebar-wordmark{display:none!important;}
+.app.sidebar-hidden > main > .content,.app.sidebar-compact > main > .content{padding-left:0!important;}
+.app.sidebar-hidden > main,.app.sidebar-compact > main{border-left:0!important;}
+.app.sidebar-hidden .panel,.app.sidebar-compact .panel{border-left-color:color-mix(in srgb,var(--line) 45%,transparent)!important;}
+.theme-light .sidebar-toggle-rail{color:var(--muted)!important;}
+.theme-light .sidebar-toggle-rail:hover{background:rgba(23,105,170,.08)!important;color:var(--ink)!important;}
+@media(max-width:1120px){
+  .app.sidebar-full{grid-template-columns:1fr!important;}
+  .app.sidebar-hidden,.app.sidebar-compact{grid-template-columns:var(--sidebar-rail-width) minmax(0,1fr)!important;}
+  .app.sidebar-full .sidebar{position:fixed!important;inset:0 auto 0 0!important;z-index:1200!important;width:248px!important;min-width:248px!important;}
+  .app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{position:sticky!important;top:0!important;width:var(--sidebar-rail-width)!important;min-width:var(--sidebar-rail-width)!important;padding:0!important;}
+}
