@@ -2947,3 +2947,24 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
   .app.page-calendar .calendar-planner{grid-template-columns:44px minmax(0,1fr)!important;}
   .app.page-calendar .calendar-date-sticky-header{grid-template-columns:44px minmax(0,1fr)!important;}
 }
+
+
+/* VECO_V3_20260613_1259: calendar sticky header direct-grid alignment only
+   Sticky E-P päis kasutab nüüd otse sama grid'i: 54px ajaveerg + N päevaveergu.
+   .calendar-date-sticky-days vahekiht on eemaldatud JS-ist; 24h ajatelge ja tööaja tsentreerimist ei muudetud. */
+.app.page-calendar .calendar-date-sticky-header{
+  display:grid!important;
+  grid-template-columns:54px repeat(var(--calendar-day-count,7),minmax(150px,1fr))!important;
+  gap:0!important;
+  column-gap:0!important;
+  align-items:stretch!important;
+}
+.app.page-calendar .calendar-date-sticky-days{display:contents!important;}
+.app.page-calendar .calendar-date-sticky-spacer,
+.app.page-calendar .calendar-date-sticky-day{height:40px!important;min-height:40px!important;box-sizing:border-box!important;}
+.app.page-calendar .calendar-planner{grid-template-columns:54px minmax(0,1fr)!important;gap:0!important;column-gap:0!important;}
+.app.page-calendar .calendar-planner-grid{gap:0!important;column-gap:0!important;}
+@media(max-width:1120px){
+  .app.page-calendar .calendar-date-sticky-header{grid-template-columns:44px repeat(var(--calendar-day-count,7),minmax(260px,1fr))!important;}
+  .app.page-calendar .calendar-planner{grid-template-columns:44px minmax(0,1fr)!important;}
+}

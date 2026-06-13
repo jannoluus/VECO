@@ -1,28 +1,11 @@
-Build: 20260613_1253
+Build: 20260613_1259
 
 # VECO V3
 
-Versioon: v3.19.2
+Versioon: v3.19.3
 
 Muudatused:
-- Kalendri E–P sticky päise ja alumise kalendri vertikaaljoonte joondus parandatud.
-- Buildi timestamp ja failinimi on Eesti ajavööndi järgi.
+- Kalendri E–P sticky päis pandud otse sama grid-loogika peale: 54 px ajaveerg + päevaveerud.
+- Eemaldatud nested päise vahekiht, mis võis tekitada nihke alumise gridiga.
 - Tööaja tsentreerimist ei muudetud.
-
-Build: 20260611_1139
-
-# VECO V3
-
-Versioon: v3.16.0
-
-Muudatused:
-- Lisatud Seaded → Seadmed admin-vaade.
-- Seadmete tabel: objekt, tähis, nimetus, liik, asukoht, staatus.
-- Lisatud seadme lisamine, muutmine, peitmine/aktiveerimine ja kustutamine.
-- Lisatud filtrid: objekt, liik, staatus ja otsing.
-- Seadmete andmemudel valmistatud ette hooldusprofiili ja hooldusmahu arvutuse jaoks.
-
-## V3.16.0 / 20260611_1139
-- Seaded → Seadmed admin-vaade seadmeregistri korrastamiseks.
-- CRUD, filtrid ja tulevase hooldusprofiili alusväljad.
-
+- Buildi timestamp ja failinimi on Eesti ajavööndi järgi.
