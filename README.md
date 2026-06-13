@@ -7,3 +7,5 @@ Muudatused:
 - 24h ajatelg ja scroll jäävad alles.
 - Vaikimisi algscroll 06:00.
 - E-P joondusloogikat ei muudetud.
+
+Build: VECO_V3_20260613_1459

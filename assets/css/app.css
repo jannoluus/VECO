@@ -3155,17 +3155,48 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 .theme-light .app.page-calendar .calendar-date-sticky-day{border-left:1px solid rgba(20,33,44,.10)!important;color:var(--ink)!important;}
 
 
-/* Today highlight v1448 */
-.app.page-calendar .calendar-date-sticky-day.today{
-  background:rgba(59,130,246,.22)!important;
-  box-shadow: inset 0 -2px 0 rgba(59,130,246,.95)!important;
-  border-radius:8px 8px 0 0!important;
+/* Today highlight D variant - build 20260613_1459
+   Header gets a calm blue emphasis; planner column gets a thin blue rectangle.
+   Keeps weekend background and does not color event cards. */
+.app.page-calendar .calendar-date-sticky-day.today {
+  position:relative!important;
+  background:linear-gradient(180deg, rgba(47,111,219,.36), rgba(47,111,219,.22))!important;
+  color:var(--ink)!important;
+  box-shadow:inset 0 -2px 0 rgba(47,111,219,.95)!important;
 }
-.calendar-planner-day.today{
-  border-color:rgba(59,130,246,.85)!important;
-  background:rgba(255,255,255,.02)!important;
+.app.page-calendar .calendar-date-sticky-day.today strong,
+.app.page-calendar .calendar-date-sticky-day.today span {
+  color:#fff!important;
 }
-.calendar-planner-day.today::after{
-  border:1px solid rgba(59,130,246,.95)!important;
-  box-shadow:0 0 0 1px rgba(59,130,246,.18)!important;
+.app.page-calendar .calendar-planner-day.today {
+  position:relative!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+.app.page-calendar .calendar-planner-day.today::after {
+  content:""!important;
+  display:block!important;
+  position:absolute!important;
+  inset:0!important;
+  border:1px solid rgba(47,111,219,.95)!important;
+  box-shadow:0 0 0 1px rgba(47,111,219,.22), 0 0 18px rgba(47,111,219,.10)!important;
+  border-radius:10px!important;
+  pointer-events:none!important;
+  z-index:95!important;
+}
+.app.page-calendar .calendar-month-day.today {
+  position:relative!important;
+  border-color:rgba(47,111,219,.95)!important;
+  box-shadow:0 0 0 1px rgba(47,111,219,.22), 0 0 18px rgba(47,111,219,.10)!important;
+}
+.app.page-calendar .calendar-month-day.today::after {
+  content:""!important;
+  display:block!important;
+  position:absolute!important;
+  inset:0!important;
+  border:1px solid rgba(47,111,219,.95)!important;
+  border-radius:var(--radius)!important;
+  pointer-events:none!important;
+  z-index:10!important;
 }
