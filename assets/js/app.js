@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260613_0959';
+const APP_BUILD='20260613_1008';
 
-// Build 20260613_0959: kahe olekuga ChatGPT-stiilis peitmenüü, töörolli põhine navigeerimine ja sticky päevapäis.
+// Build 20260613_1008: parandus - ainult avatud/peidetud menüü, kompaktvaate kustutamine, teema ühtlustus kalendris ja menüüs.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -383,6 +383,8 @@ function shell(main,aside='',opts={}){
   // Vana 'compact' olek teisendatakse peidetuks, et ikoonivaade ei jääks kasutajale ette.
   if(sidebarMode==='compact') sidebarMode='hidden';
   if(!['full','hidden'].includes(sidebarMode)) sidebarMode='full';
+  localStorage.setItem('veco_sidebar_mode',sidebarMode);
+  localStorage.setItem('veco_sidebar_collapsed',sidebarMode==='hidden'?'true':'false');
   const sidebarClass=sidebarMode==='hidden'?'sidebar-hidden':'sidebar-full';
   document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();

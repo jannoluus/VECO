@@ -1,5 +1,5 @@
 {
-  "build": "VECO_V3_20260613_0959",
+  "build": "20260613_1008",
   "created_at": "2026-06-13T09:59:49.208388+03:00",
   "changes": [
     "Menüü lihtsustatud kahe olekuga töövoole: avatud töörolli menüü ja peidetud menüü.",
@@ -7,5 +7,7 @@
     "VECO logo eemaldatud külgmenüüst; logo jääb ainult päisesse.",
     "Hamburgeri nupp tehtud väiksemaks ja vähem domineerivaks.",
     "Peidetud menüüs eemaldatud üleliigsed vertikaalsed eraldusjooned ning vähendatud tühja vasakut ala."
-  ]
+  ],
+  "version": "v3.18.0",
+  "notes": "Parandatud: ikoon-kompaktmenüü eemaldatud, külgmenüü ainult avatud/peidetud, hele/tume režiim ühtlustatud kalendri ja menüü vahel."
 }

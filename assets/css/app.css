@@ -2786,3 +2786,33 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
 .app.page-calendar .calendar-planner-grid{border-left:0!important;border-right:0!important;}
 .app.page-calendar .calendar-planner-day{border-left:1px solid rgba(255,255,255,.07)!important;border-right:0!important;background:transparent!important;}
 .app.page-calendar .calendar-hour-row,.app.page-calendar .calendar-hour-line{border-color:rgba(255,255,255,.045)!important;}
+
+/* VECO_V3_20260613_1008: calendar light/dark consistency fix */
+body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
+.theme-light .app.page-calendar .panel{
+  background:var(--panel)!important;
+  border-color:var(--line)!important;
+  box-shadow:var(--shadow)!important;
+}
+.theme-light .app.page-calendar .calendar-planner,
+.theme-light .app.page-calendar .calendar-planner-grid,
+.theme-light .app.page-calendar .calendar-planner-day,
+.theme-light .app.page-calendar .calendar-hours{
+  background:transparent!important;
+}
+.theme-light .app.page-calendar .calendar-planner-day-head,
+.theme-light .app.page-calendar .calendar-hours-spacer{
+  background:rgba(238,243,245,.96)!important;
+  color:var(--ink)!important;
+  border-bottom:1px solid var(--line)!important;
+  box-shadow:0 8px 18px rgba(20,33,44,.08)!important;
+}
+.theme-light .app.page-calendar .calendar-planner-day{border-left:1px solid rgba(20,33,44,.10)!important;}
+.theme-light .app.page-calendar .calendar-hour-row,
+.theme-light .app.page-calendar .calendar-hour-line{border-color:rgba(20,33,44,.08)!important;}
+.theme-light .app.page-calendar .calendar-planner-lane{background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--calendar-hour-px) - 1px),rgba(20,33,44,.06) var(--calendar-hour-px))!important;}
+.theme-light .app.page-calendar .calendar-workday-shade{background:rgba(23,105,170,.035)!important;}
+.theme-light .app.page-calendar .calendar-offday{background:rgba(255,107,107,.10)!important;}
+.theme-light .context-pill{background:#eef3f7!important;color:var(--ink)!important;}
+.theme-light .brand-badge{background:#eef6ff!important;color:#1769aa!important;border-color:var(--line)!important;}
+.theme-light .global-ticker{background:#f8fafb!important;color:var(--ink)!important;border-color:var(--line)!important;}
