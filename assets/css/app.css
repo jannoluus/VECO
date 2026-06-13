@@ -3153,3 +3153,19 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 .theme-light .app.page-calendar .calendar-date-sticky-day{background:rgba(248,250,252,.985)!important;}
 .theme-light .app.page-calendar .calendar-date-sticky-header{border-bottom:1px solid rgba(20,33,44,.12)!important;box-shadow:0 8px 18px rgba(20,33,44,.08)!important;}
 .theme-light .app.page-calendar .calendar-date-sticky-day{border-left:1px solid rgba(20,33,44,.10)!important;color:var(--ink)!important;}
+
+
+/* Today highlight v1448 */
+.app.page-calendar .calendar-date-sticky-day.today{
+  background:rgba(59,130,246,.22)!important;
+  box-shadow: inset 0 -2px 0 rgba(59,130,246,.95)!important;
+  border-radius:8px 8px 0 0!important;
+}
+.calendar-planner-day.today{
+  border-color:rgba(59,130,246,.85)!important;
+  background:rgba(255,255,255,.02)!important;
+}
+.calendar-planner-day.today::after{
+  border:1px solid rgba(59,130,246,.95)!important;
+  box-shadow:0 0 0 1px rgba(59,130,246,.18)!important;
+}

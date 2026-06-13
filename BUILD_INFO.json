@@ -1,17 +1,17 @@
 {
-  "build": "20260613_1406",
+  "build": "VECO_V3_20260613_1448",
   "build_name": "VECO_V3_20260613_1406",
   "created_at": "2026-06-13 14:06",
   "timezone": "Europe/Tallinn",
   "version": "v3.19.5",
   "changes": [
-    "Kalendri tunni kõrgus suurendatud 72px -> 84px, et aktiivne tööala oleks nähtaval alal suurem.",
-    "24h ajatelg ja scroll jäid alles.",
+    "Kalendri tunni k\u00f5rgus suurendatud 72px -> 84px, et aktiivne t\u00f6\u00f6ala oleks n\u00e4htaval alal suurem.",
+    "24h ajatelg ja scroll j\u00e4id alles.",
     "Vaikimisi algscroll on 06:00.",
-    "E-P sticky päise joondusloogikat ei muudetud."
+    "E-P sticky p\u00e4ise joondusloogikat ei muudetud."
   ],
   "notes": [
-    "Kontrollida: nähtav ala on ligikaudu 07:00-21:00 asemel tihedamalt tööpäeva ümber; 00:00 ja 23:00 on scrollides kättesaadavad.",
-    "Buildi number, ZIP-faili nimi, BUILD_INFO ja APP_BUILD kasutavad Eesti ajavööndi aega."
+    "Kontrollida: n\u00e4htav ala on ligikaudu 07:00-21:00 asemel tihedamalt t\u00f6\u00f6p\u00e4eva \u00fcmber; 00:00 ja 23:00 on scrollides k\u00e4ttesaadavad.",
+    "Buildi number, ZIP-faili nimi, BUILD_INFO ja APP_BUILD kasutavad Eesti ajav\u00f6\u00f6ndi aega."
   ]
 }
