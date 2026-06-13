@@ -2816,3 +2816,68 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 .theme-light .context-pill{background:#eef3f7!important;color:var(--ink)!important;}
 .theme-light .brand-badge{background:#eef6ff!important;color:#1769aa!important;border-color:var(--line)!important;}
 .theme-light .global-ticker{background:#f8fafb!important;color:var(--ink)!important;border-color:var(--line)!important;}
+
+
+/* VECO_V3_20260613_1138: persistent sticky day/date header for 24h calendar scroll */
+.app.page-calendar .calendar-planner-wrap{
+  position:relative!important;
+}
+.app.page-calendar .calendar-date-sticky-header{
+  position:sticky!important;
+  top:0!important;
+  z-index:260!important;
+  display:grid!important;
+  grid-template-columns:54px minmax(0,1fr)!important;
+  height:40px!important;
+  min-height:40px!important;
+  margin-bottom:-40px!important;
+  pointer-events:none!important;
+  background:rgba(20,32,40,.985)!important;
+  border-bottom:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:0 8px 20px rgba(0,0,0,.18)!important;
+  backdrop-filter:blur(10px)!important;
+}
+.app.page-calendar .calendar-date-sticky-spacer{
+  height:40px!important;
+  background:rgba(20,32,40,.985)!important;
+}
+.app.page-calendar .calendar-date-sticky-days{
+  display:grid!important;
+  min-width:0!important;
+  height:40px!important;
+}
+.app.page-calendar .calendar-date-sticky-day{
+  display:grid!important;
+  grid-template-columns:auto auto!important;
+  align-items:center!important;
+  gap:2px 8px!important;
+  min-width:0!important;
+  height:40px!important;
+  padding:8px 10px!important;
+  border-left:1px solid rgba(255,255,255,.07)!important;
+  color:var(--ink)!important;
+  background:transparent!important;
+  font-size:13px!important;
+}
+.app.page-calendar .calendar-date-sticky-day strong{font-weight:800!important;}
+.app.page-calendar .calendar-date-sticky-day span{justify-self:end!important;color:var(--ink)!important;}
+.app.page-calendar .calendar-date-sticky-day .calendar-day-note{grid-column:1 / -1!important;font-size:10px!important;color:var(--muted)!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;}
+/* Internal headers still reserve vertical space for correct card positioning, but the visible header is the sticky overlay above. */
+.app.page-calendar .calendar-planner-day-head,
+.app.page-calendar .calendar-hours-spacer{
+  visibility:hidden!important;
+  box-shadow:none!important;
+}
+.theme-light .app.page-calendar .calendar-date-sticky-header,
+.theme-light .app.page-calendar .calendar-date-sticky-spacer{
+  background:rgba(248,250,252,.985)!important;
+  border-bottom:1px solid rgba(20,33,44,.12)!important;
+  box-shadow:0 8px 18px rgba(20,33,44,.08)!important;
+}
+.theme-light .app.page-calendar .calendar-date-sticky-day{
+  border-left:1px solid rgba(20,33,44,.10)!important;
+  color:var(--ink)!important;
+}
+@media(max-width:1120px){
+  .app.page-calendar .calendar-date-sticky-header{grid-template-columns:44px minmax(0,1fr)!important;}
+}

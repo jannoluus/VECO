@@ -1,12 +1,12 @@
 {
-  "build": "20260613_1116",
-  "created_at": "2026-06-13 11:16",
+  "build": "20260613_1138",
+  "created_at": "2026-06-13 11:38",
   "changes": [
-    "Menüü servariba hover-toon muudetud õrnaks sinakashalliks tumedas ja heledas režiimis.",
-    "Heleda režiimi vasaku menüü tekst ja ikoonid muudetud kontrastsemaks.",
-    "Aktiivne menüüpunkt jääb siniseks, mitteaktiivsed read on heledas režiimis selgelt loetavad.",
-    "Funktsionaalset menüüloogikat ei muudetud."
+    "Kalendri päeva/kuupäeva päis on tehtud eraldi sticky overlay-na.",
+    "Päise rida jääb nähtavale ka siis, kui 24h ajateljel keritakse aktiivsesse tööalasse.",
+    "Sisemised päevapäised jäeti ruumi hoidma, kuid peideti visuaalselt, et töökaartide paigutus ei muutuks.",
+    "Cache/timestamp uuendatud."
   ],
   "version": "v3.18.0",
-  "notes": "Väike visuaalne parandus: serva hover on tagasihoidlikum ning hele režiim on menüüs parema loetavusega."
+  "notes": "Parandus kalendrivaatele: päeva/kuupäeva päis püsib nähtaval kogu vertikaalse scrolli ajal."
 }
