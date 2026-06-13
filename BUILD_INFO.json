@@ -1,23 +1,15 @@
 {
-  "build": "20260613_1319",
-  "build_name": "VECO_V3_20260613_1319",
-  "created_at": "2026-06-13 12:59",
+  "build": "20260613_1330",
+  "build_name": "VECO_V3_20260613_1330",
+  "created_at": "2026-06-13 13:31",
   "timezone": "Europe/Tallinn",
-  "version": "v3.19.3",
+  "version": "v3.19.4",
   "changes": [
-    "E–P sticky päis jääb nähtavale kalendri vertikaalsel scrollimisel; admin/sessiooniriba ei kata seda.",
-    "Tööaja tsentreerimist ei muudetud.",
-    "Parandatud kalendri E–P sticky päise joondus otse sama grid mudeli peale: 54 px ajaveerg + N päevaveergu.",
-    "Eemaldatud päise nested-days joondusriski koht; headeri päevad on nüüd sticky-headeri otsesed grid elemendid.",
-    "Tööaja tsentreerimist ega 24h ajatelge ei muudetud.",
-    "Buildi number, ZIP-faili nimi, BUILD_INFO ja APP_BUILD kasutavad Eesti ajavööndi aega."
+    "Kalendri E-P sticky päise joondus arvutatakse tegelike päevaveergude mõõtude järgi, et 100% ja 125% zoom ei tekitaks sub-pixel nihet.",
+    "Tööaja tsentreerimist ei muudetud."
   ],
   "notes": [
-    "Kalendri E-P päise joondus: kasutusel on sisemine sticky päevapäis, mis paikneb samas grid-is allolevate päevaveergudega.",
-    "Eraldi overlay-päis on peidetud, et vältida scrollbar/padding nihkeid.",
-    "24h ajatelge ja tööaja tsentreerimist ei muudetud.",
+    "Kontrollida: päise E-P veerud kattuvad allolevate päevaveergude vasaku serva ja laiusega.",
     "Buildi number, ZIP-faili nimi, BUILD_INFO ja APP_BUILD kasutavad Eesti ajavööndi aega."
-  ],
-  "created_at_estonia": "2026-06-13T13:12:33+03:00",
-  "created_at_est": "2026-06-13T13:19:32+03:00"
+  ]
 }

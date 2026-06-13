@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260613_1319';
+const APP_BUILD='20260613_1330';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -2714,6 +2714,49 @@ function restoreCalendarScrollState(pos){
   };
   requestAnimationFrame(()=>requestAnimationFrame(apply));
 }
+
+
+// Build 20260613_1330: robust calendar sticky header alignment.
+// The visible E-P header is positioned from the actual rendered day-column
+// measurements, so browser zoom/sub-pixel rounding cannot desync header/body.
+function syncCalendarStickyHeader(){
+  const header=document.querySelector('.calendar-date-sticky-header');
+  const planner=document.querySelector('.calendar-planner');
+  const hours=document.querySelector('.calendar-hours');
+  const days=[...document.querySelectorAll('.calendar-planner-grid > .calendar-planner-day')];
+  if(!header||!planner||!hours||!days.length) return false;
+  const plannerRect=planner.getBoundingClientRect();
+  const hoursRect=hours.getBoundingClientRect();
+  header.style.setProperty('--calendar-sticky-left','0px');
+  header.style.setProperty('--calendar-sticky-width',`${Math.round(plannerRect.width)}px`);
+  const spacer=header.querySelector('.calendar-date-sticky-spacer');
+  if(spacer){
+    spacer.style.left=`${Math.round(hoursRect.left-plannerRect.left)}px`;
+    spacer.style.width=`${Math.round(hoursRect.width)}px`;
+  }
+  const headerDays=[...header.querySelectorAll('.calendar-date-sticky-day')];
+  days.forEach((day,i)=>{
+    const h=headerDays[i];
+    if(!h) return;
+    const r=day.getBoundingClientRect();
+    h.style.left=`${Math.round(r.left-plannerRect.left)}px`;
+    h.style.width=`${Math.round(r.width)}px`;
+  });
+  header.dataset.synced='true';
+  return true;
+}
+function scheduleCalendarStickyHeaderSync(){
+  const run=()=>syncCalendarStickyHeader();
+  requestAnimationFrame(()=>requestAnimationFrame(run));
+  setTimeout(run,120);
+  setTimeout(run,360);
+}
+if(!window.__VECO_CALENDAR_STICKY_SYNC_BOUND__){
+  window.__VECO_CALENDAR_STICKY_SYNC_BOUND__=true;
+  window.addEventListener('resize',()=>scheduleCalendarStickyHeaderSync(),{passive:true});
+  window.addEventListener('orientationchange',()=>scheduleCalendarStickyHeaderSync(),{passive:true});
+}
+
 function renderCalendar(){
   const calendarScrollState=captureCalendarScrollState();
   const storedDate=localStorage.getItem('veco_calendar_week')||weekStartKeyFrom('');
@@ -2881,6 +2924,9 @@ function renderCalendar(){
   const main=header('Kalender',filters,actions,calendarRangeLabel(mode,visibleDays,currentDate))+`<div class="calendar-planner-wrap">${scopeNotice()}${body}</div>`;
   shell(main,'',{wide:true});
   restoreCalendarScrollState(calendarScrollState);
+  scheduleCalendarStickyHeaderSync();
+  document.querySelector('.calendar-planner-grid')?.addEventListener('scroll',()=>syncCalendarStickyHeader(),{passive:true});
+  document.querySelector('.calendar-planner-wrap')?.addEventListener('scroll',()=>syncCalendarStickyHeader(),{passive:true});
   $('#calendarWeekStart')?.addEventListener('change',e=>{localStorage.setItem('veco_calendar_week',e.target.value);renderCalendar();}); $('#calendarTechFilter')?.addEventListener('change',renderCalendar); $('#calendarStatusFilter')?.addEventListener('change',renderCalendar); $('#calendarViewMode')?.addEventListener('change',renderCalendar);
   $('#calendarHideWeekend')?.addEventListener('click',()=>{localStorage.setItem('veco_calendar_hide_weekend',hideWeekend?'false':'true');renderCalendar();});
   $('#calendarPrevWeekBtn')?.addEventListener('click',()=>{const base=parseDateKey(currentDate); let next;if(mode==='day') next=addDateDays(base,-1); else if(mode==='week') next=addDateDays(base,-7); else if(mode==='month') next=new Date(base.getFullYear(),base.getMonth()-1,1,12,0,0); else next=new Date(base.getFullYear()-1,0,1,12,0,0); localStorage.setItem('veco_calendar_week',dateKeyFromDate(next));renderCalendar();});
