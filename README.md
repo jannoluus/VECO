@@ -8,4 +8,4 @@ Muudatused:
 - Vaikimisi algscroll 06:00.
 - E-P joondusloogikat ei muudetud.
 
-Build: VECO_V3_20260613_1541
+Build: VECO_V3_20260613_1831
