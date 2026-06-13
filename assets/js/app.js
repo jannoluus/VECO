@@ -2746,11 +2746,10 @@ function renderCalendar(){
     return dateInView(w)&&techOk&&statusOk;
   });
   const calendarWorkTimeBounds=(jobs,days)=>{
-    // Google Calendari-laadne loogika: renderdame alati kogu 24 h
-    // ajatelje (00:00–24:00), aga avamisel kerime vaate tööaja
-    // alguse juurde. Nii saab kasutaja vajadusel üles varasemaks
-    // ja alla hilisemaks kerida ning tööpäeva lõppu ei lõigata ära.
-    return {start:0,end:24};
+    // Build 20260613_1405: nädal/päev vaate vaikimisi tööaken.
+    // Eesmärk: 08:00–17:00 täidab nähtava kalendri kõrguse ning
+    // 17:00-järgne tühi ala ei söö tööala ära.
+    return {start:8,end:17};
   };
   const calendarPeople=visiblePeopleForCurrentScope();
   const calendarTechFilterHtml=scopedId?`<select class="select" id="calendarTechFilter" disabled><option value="${esc(scopedId)}">${esc(scopedPerson()?.name||'Minu kalender')}</option></select>`:`<select class="select" id="calendarTechFilter"><option value="all">Kõik tehnikud</option>${calendarPeople.map(p=>`<option value="${p.id}" ${techFilter===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`;
@@ -2871,7 +2870,7 @@ function renderCalendar(){
     const nowLabel=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     const globalNowLine=showNowLine?`<div class="calendar-now-line calendar-now-line-global" style="top:calc(40px + (100% - 40px) * ${nowTopPct/100})"><span>${nowLabel}</span></div>`:'';
     const stickyDateHeader=`<div class="calendar-date-sticky-header" aria-hidden="true"><div class="calendar-date-sticky-spacer"></div><div class="calendar-date-sticky-days" style="grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${visibleDays.map(date=>{const d=parseDateKey(date);const dayNote=calendarDayMarker(date);return `<div class="calendar-date-sticky-day ${date===today?'today':''} ${calendarDayClass(date)}"><strong>${dayNames[d.getDay()]}</strong><span>${esc(fmtShortDate(date,true))}</span>${dayNote}</div>`;}).join('')}</div></div>`;
-    body=`${stickyDateHeader}<div class="calendar-planner" style="--calendar-hours-count:${hours.length};--calendar-hour-px:72px;--calendar-body-height:${hours.length*72}px" data-initial-scroll-hour="7">${globalNowLine}<div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="--calendar-day-count:${visibleDays.length};grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}${multiDayOverlay}</div></div>`;
+    body=`${stickyDateHeader}<div class="calendar-planner" style="--calendar-hours-count:${hours.length};--calendar-hour-px:72px;--calendar-body-height:${hours.length*72}px" data-initial-scroll-hour="8">${globalNowLine}<div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="--calendar-day-count:${visibleDays.length};grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}${multiDayOverlay}</div></div>`;
   }else if(mode==='month'){
     body=`<div class="calendar-month-grid">${visibleDays.map(date=>{const jobs=filtered.filter(w=>workorderOccursOnDate(w,date)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const d=parseDateKey(date);const dayNote=calendarDayMarker(date);return `<div class="calendar-month-day ${date===today?'today':''} ${calendarDayClass(date)}" data-add-date="${date}"><div class="calendar-month-head"><strong>${d.getDate()}</strong><span>${dayNames[d.getDay()]}</span></div>${dayNote}${jobs.slice(0,4).map(w=>`<button class="calendar-mini-event" data-calendar-edit="${w.id}" type="button">${esc(w.time||'')} · ${esc(objectName(w.objectId))}${workorderDaySpan(w)>1?' · '+esc(daysBetweenKeys(w.date,date)+1)+'/'+esc(workorderDaySpan(w)):''}</button>`).join('')}${jobs.length>4?`<span class="muted">+${jobs.length-4} veel</span>`:''}</div>`}).join('')}</div>`;
   }else{
