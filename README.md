@@ -15,6 +15,3 @@ Muudatused:
 - Seaded → Seadmed admin-vaade seadmeregistri korrastamiseks.
 - CRUD, filtrid ja tulevase hooldusprofiili alusväljad.
 
-
-
-Build 20260613_1405: calendar alignment + 08:00-17:00 viewport.

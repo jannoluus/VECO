@@ -2892,41 +2892,22 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 .scope-notice{margin:0 0 12px 0;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--panel-soft);color:var(--muted);font-size:13px;}
 .scope-notice strong{color:var(--text);}
 
-
-/* Build 20260613_1405: calendar header/grid alignment + 08-17 viewport */
-.app.page-calendar .calendar-planner{
-  grid-template-columns:54px minmax(0,1fr)!important;
-  gap:8px!important;
-}
-.app.page-calendar .calendar-planner-grid{
-  gap:8px!important;
-  grid-auto-rows:1fr!important;
-}
+/* Build 20260613_1410: calendar header/body vertical alignment only
+   Päise overlay kasutab sama vasaku ajaveeru + vahe + päevade struktuuri,
+   mis alumine kalender. Ei muuda 24h ajatelge ega tööaja skaleerimist. */
 .app.page-calendar .calendar-date-sticky-header{
   grid-template-columns:54px minmax(0,1fr)!important;
   column-gap:8px!important;
 }
 .app.page-calendar .calendar-date-sticky-days{
-  gap:8px!important;
+  column-gap:8px!important;
 }
 .app.page-calendar .calendar-date-sticky-day{
   box-sizing:border-box!important;
-  border-left:1px solid rgba(255,255,255,.07)!important;
-  border-right:0!important;
 }
-.app.page-calendar .calendar-planner-day{
-  box-sizing:border-box!important;
-}
-.app.page-calendar .calendar-planner-lane{
-  background-size:auto calc(100% / var(--calendar-hours-count))!important;
-}
-.app.page-calendar .calendar-workday-shade{
-  top:0!important;
-  height:100%!important;
-}
-.app.page-calendar .calendar-workday-start{top:0!important;}
-.app.page-calendar .calendar-workday-end{top:100%!important;}
 @media(max-width:1120px){
-  .app.page-calendar .calendar-planner{grid-template-columns:44px minmax(0,1fr)!important;}
-  .app.page-calendar .calendar-date-sticky-header{grid-template-columns:44px minmax(0,1fr)!important;}
+  .app.page-calendar .calendar-date-sticky-header{
+    grid-template-columns:44px minmax(0,1fr)!important;
+    column-gap:8px!important;
+  }
 }

@@ -1,13 +1,11 @@
 {
-  "build": "20260613_1405",
-  "created_at": "2026-06-13 11:38",
+  "build": "20260613_1410",
+  "created_at": "2026-06-13 14:10",
   "changes": [
-    "Kalendri päeva/kuupäeva päis on tehtud eraldi sticky overlay-na.",
-    "Päise rida jääb nähtavale ka siis, kui 24h ajateljel keritakse aktiivsesse tööalasse.",
-    "Sisemised päevapäised jäeti ruumi hoidma, kuid peideti visuaalselt, et töökaartide paigutus ei muutuks.",
-    "Cache/timestamp uuendatud."
+    "Kalendri E–P sticky päise ja alumise kalendri veergude joondus parandatud.",
+    "Sticky päis arvestab nüüd sama 54 px ajaveergu ja 8 px veergude vahet nagu kalendri body.",
+    "Tööaja tsentreerimist ega 24h ajatelje lõikamist selles buildis ei muudetud."
   ],
-  "version": "v3.19.1",
-  "notes": "Calendar header/body grid alignment and default 08:00-17:00 workday viewport.",
-  "label": "VECO_V3_20260613_1405"
+  "version": "v3.19.2",
+  "notes": "Alignment-only build from 1345 baseline; calendar centering intentionally deferred."
 }
