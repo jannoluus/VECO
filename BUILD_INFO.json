@@ -1,7 +1,7 @@
 {
-  "build": "VECO_V3_20260613_1459",
+  "build": "VECO_V3_20260613_1523",
   "build_name": "VECO_V3_20260613_1406",
-  "created_at": "2026-06-13 14:06",
+  "created_at": "2026-06-13T15:23:46.169401+03:00",
   "timezone": "Europe/Tallinn",
   "version": "v3.19.5",
   "changes": [
@@ -13,5 +13,6 @@
     "Buildi number, ZIP-faili nimi, BUILD_INFO ja APP_BUILD kasutavad Eesti ajavööndi aega."
   ],
   "buildNumber": "20260613_1459",
-  "createdAt": "2026-06-13T14:59:00+03:00"
+  "createdAt": "2026-06-13T14:59:00+03:00",
+  "build_number": "20260613_1523"
 }

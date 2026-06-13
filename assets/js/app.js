@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260613_1459';
+const APP_BUILD='20260613_1523';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -2721,27 +2721,52 @@ function restoreCalendarScrollState(pos){
 // measurements, so browser zoom/sub-pixel rounding cannot desync header/body.
 function syncCalendarStickyHeader(){
   const header=document.querySelector('.calendar-date-sticky-header');
+  const wrap=document.querySelector('.calendar-planner-wrap');
   const planner=document.querySelector('.calendar-planner');
   const hours=document.querySelector('.calendar-hours');
+  const grid=document.querySelector('.calendar-planner-grid');
   const days=[...document.querySelectorAll('.calendar-planner-grid > .calendar-planner-day')];
   if(!header||!planner||!hours||!days.length) return false;
+
   const plannerRect=planner.getBoundingClientRect();
+  const wrapRect=wrap?wrap.getBoundingClientRect():plannerRect;
   const hoursRect=hours.getBoundingClientRect();
+  const gridRect=grid?grid.getBoundingClientRect():null;
+
+  // Build 20260613_1522: use sub-pixel values, not rounded px.
+  // This keeps the P header and the P body column in sync at 100%, 125% and other zoom levels.
+  const headerWidth=Math.max(plannerRect.width, wrapRect.right-plannerRect.left);
   header.style.setProperty('--calendar-sticky-left','0px');
-  header.style.setProperty('--calendar-sticky-width',`${Math.round(plannerRect.width)}px`);
+  header.style.setProperty('--calendar-sticky-width',`${headerWidth.toFixed(3)}px`);
+
   const spacer=header.querySelector('.calendar-date-sticky-spacer');
   if(spacer){
-    spacer.style.left=`${Math.round(hoursRect.left-plannerRect.left)}px`;
-    spacer.style.width=`${Math.round(hoursRect.width)}px`;
+    spacer.style.left=`${(hoursRect.left-plannerRect.left).toFixed(3)}px`;
+    spacer.style.width=`${hoursRect.width.toFixed(3)}px`;
   }
+
   const headerDays=[...header.querySelectorAll('.calendar-date-sticky-day')];
+  let lastRight=0;
   days.forEach((day,i)=>{
     const h=headerDays[i];
     if(!h) return;
     const r=day.getBoundingClientRect();
-    h.style.left=`${Math.round(r.left-plannerRect.left)}px`;
-    h.style.width=`${Math.round(r.width)}px`;
+    const left=r.left-plannerRect.left;
+    let width=r.width;
+
+    // Make the last day header end exactly where the rendered day grid ends.
+    // This removes the subtle P-column mismatch caused by scrollbar/sub-pixel rounding.
+    if(i===days.length-1 && gridRect){
+      width=Math.max(width, gridRect.right-r.left);
+    }
+
+    h.style.left=`${left.toFixed(3)}px`;
+    h.style.width=`${width.toFixed(3)}px`;
+    lastRight=Math.max(lastRight,left+width);
   });
+
+  const gutter=Math.max(0,headerWidth-lastRight);
+  header.style.setProperty('--calendar-sticky-gutter',`${gutter.toFixed(3)}px`);
   header.dataset.synced='true';
   return true;
 }

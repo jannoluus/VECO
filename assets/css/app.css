@@ -3200,3 +3200,31 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
   pointer-events:none!important;
   z-index:10!important;
 }
+
+
+/* VECO_V3_20260613_1523: calendar header edge cleanup
+   - P header width is driven by rendered day-column measurements in JS.
+   - Right upper corner uses the same quiet tone as the time-axis header. */
+.app.page-calendar .calendar-date-sticky-header,
+.app.page-calendar .calendar-date-sticky-spacer {
+  background:#0f1720!important;
+}
+.app.page-calendar .calendar-date-sticky-header::after {
+  content:""!important;
+  position:absolute!important;
+  top:0!important;
+  right:0!important;
+  width:var(--calendar-sticky-gutter,0px)!important;
+  height:40px!important;
+  background:#0f1720!important;
+  pointer-events:none!important;
+  z-index:1!important;
+}
+.app.page-calendar .calendar-date-sticky-day {
+  z-index:2!important;
+}
+.theme-light .app.page-calendar .calendar-date-sticky-header,
+.theme-light .app.page-calendar .calendar-date-sticky-spacer,
+.theme-light .app.page-calendar .calendar-date-sticky-header::after {
+  background:#f8fafc!important;
+}
