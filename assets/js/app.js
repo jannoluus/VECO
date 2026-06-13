@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.18.0';
-const APP_BUILD='20260613_1055';
+const APP_BUILD='20260613_1116';
 
-// Build 20260613_1055: peidetud menüüs kogu vasak tume serv toimib menüü avamise alana; eemaldatud üleliigne topeltjoon.
+// Build 20260613_1116: peidetud menüüs kogu vasak tume serv toimib menüü avamise alana; eemaldatud üleliigne topeltjoon.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');

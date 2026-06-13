@@ -1,13 +1,12 @@
 {
-  "build": "20260613_1055",
-  "created_at": "2026-06-13 10:55",
+  "build": "20260613_1116",
+  "created_at": "2026-06-13 11:16",
   "changes": [
-    "Peidetud menüü olekus kasutatakse kogu vasakut tumedat serva menüü avamise hover/click alana.",
-    "Menüü avamise ala laiendatud 48 px peale, et seda oleks mugavam tabada.",
-    "Eemaldatud topelt vertikaaljoon raili ja kalendri paneeli vasaku serva vahel.",
-    "Avatud menüüs jääb paremasse serva tagasihoidlik sulgemisriba.",
-    "Säilitatud ainult kaks menüü olekut: avatud ja peidetud."
+    "Menüü servariba hover-toon muudetud õrnaks sinakashalliks tumedas ja heledas režiimis.",
+    "Heleda režiimi vasaku menüü tekst ja ikoonid muudetud kontrastsemaks.",
+    "Aktiivne menüüpunkt jääb siniseks, mitteaktiivsed read on heledas režiimis selgelt loetavad.",
+    "Funktsionaalset menüüloogikat ei muudetud."
   ],
   "version": "v3.18.0",
-  "notes": "Menüü servariba parandatud: peidetud vaates kogu vasak tume ala toimib ühe klikitava servana, ilma eraldi kitsaste joonte ja topeltpiirideta."
+  "notes": "Väike visuaalne parandus: serva hover on tagasihoidlikum ning hele režiim on menüüs parema loetavusega."
 }

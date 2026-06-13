@@ -726,7 +726,7 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
 }
 
 
-/* VECO_V3_20260613_1055: hidden sidebar uses full dark edge rail
+/* VECO_V3_20260613_1116: hidden sidebar uses full dark edge rail
    - peidetud olekus kogu vasak tume ala on hover/click ala
    - eemaldab visuaalse topeltjoone raili ja kalendri vasaku ääre vahel
    - avatud menüüs jääb menüü paremas servas tagasihoidlik sulgemisriba */
@@ -778,4 +778,91 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
 @media(max-width:1120px){
   .app.sidebar-hidden,.app.sidebar-compact{grid-template-columns:var(--sidebar-rail-hidden-width) minmax(0,1fr)!important;}
   .app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{width:var(--sidebar-rail-hidden-width)!important;min-width:var(--sidebar-rail-hidden-width)!important;}
+}
+
+
+/* VECO_V3_20260613_1116: sidebar edge hover tone + light mode readability
+   - menüü serva hover on õrn, mitte agressiivne
+   - heleda režiimi vasak menüü tekst/ikoonid on parema kontrastiga */
+:root{
+  --sidebar-rail-hover-dark:rgba(59,130,246,.08);
+  --sidebar-rail-hover-light:rgba(37,99,235,.06);
+}
+
+/* Rail hover: subtle indication only */
+.sidebar-toggle-rail{
+  transition:background-color .14s ease,color .14s ease,opacity .14s ease!important;
+}
+.app.sidebar-hidden .sidebar-toggle-rail:hover,
+.app.sidebar-compact .sidebar-toggle-rail:hover,
+.app.sidebar-full .sidebar-toggle-rail:hover{
+  background:var(--sidebar-rail-hover-dark)!important;
+  color:#d9ecff!important;
+  opacity:1!important;
+}
+.theme-light .app.sidebar-hidden .sidebar-toggle-rail:hover,
+.theme-light .app.sidebar-compact .sidebar-toggle-rail:hover,
+.theme-light .app.sidebar-full .sidebar-toggle-rail:hover{
+  background:var(--sidebar-rail-hover-light)!important;
+  color:#1d4ed8!important;
+}
+.theme-light .sidebar-toggle-rail{
+  color:#64748b!important;
+}
+.theme-light .sidebar-toggle-rail::before{
+  color:inherit!important;
+}
+
+/* Light mode sidebar contrast */
+.theme-light .sidebar{
+  --sidebar-bg:#f8fafc;
+  --sidebar-ink:#1f2937;
+  --sidebar-muted:#475569;
+  --sidebar-hover:rgba(37,99,235,.08);
+  --sidebar-active:#2b7fd3;
+  background:#f8fafc!important;
+  color:#1f2937!important;
+  border-right-color:#d7e0e8!important;
+}
+.theme-light .nav-section-title{
+  color:#334155!important;
+  opacity:1!important;
+}
+.theme-light .nav-section-title:hover{
+  background:rgba(37,99,235,.07)!important;
+  color:#0f172a!important;
+}
+.theme-light .nav a,
+.theme-light .nav button,
+.theme-light .nav-file-action{
+  color:#1f2937!important;
+  opacity:1!important;
+}
+.theme-light .nav a .icon,
+.theme-light .nav button .icon,
+.theme-light .nav-file-action .icon{
+  color:#334155!important;
+  opacity:1!important;
+}
+.theme-light .nav a:hover,
+.theme-light .nav button:hover,
+.theme-light .nav-file-action:hover{
+  background:rgba(37,99,235,.07)!important;
+  color:#0f172a!important;
+}
+.theme-light .nav a.active,
+.theme-light .nav button.active{
+  background:#2b7fd3!important;
+  color:#ffffff!important;
+}
+.theme-light .nav a.active .icon,
+.theme-light .nav button.active .icon{
+  color:#ffffff!important;
+}
+.theme-light .nav-section + .nav-section{
+  border-top-color:#d7e0e8!important;
+}
+.theme-light .app.sidebar-hidden .sidebar,
+.theme-light .app.sidebar-compact .sidebar{
+  background:#f8fafc!important;
 }
