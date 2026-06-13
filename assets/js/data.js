@@ -1,19 +1,19 @@
 window.VECO_DATA={
   people:[
     {id:'U-JANNO',name:'Janno',role:'Admin',phone:'',email:'janno@veco.ee',region:'Tallinn / Harjumaa',skills:'Hooldusjuht, planeerimine',active:true,onCallActive:false,onCallOrder:1},
-    {id:'U-ALEKSEI',name:'Aleksei',role:'Tehnik',phone:'+372 5551 1001',email:'aleksei@veco.ee',region:'Tallinn',skills:'HVAC, automaatika',active:true,onCallActive:false,onCallOrder:2},
+    {id:'U-ALEKSEI',name:'Aleksei Aleksandrov',role:'Tehnik',phone:'+372 5551 1001',email:'aleksei@veco.ee',region:'Tallinn',skills:'HVAC, automaatika',active:true,onCallActive:false,onCallOrder:2},
     {id:'U-RICHARD',name:'Richard Pärni',role:'Tehnik',phone:'',email:'',region:'Tallinn / Harjumaa',skills:'',active:true,onCallActive:true,onCallOrder:1},
     {id:'U-ROMET',name:'Romet Liiv',role:'Tehnik',phone:'',email:'',region:'Tallinn / Harjumaa',skills:'',active:true,onCallActive:true,onCallOrder:2},
     {id:'U-SERGEI',name:'Sergei Sokolov',role:'Tehnik',phone:'',email:'',region:'Tallinn / Harjumaa',skills:'',active:true,onCallActive:true,onCallOrder:3},
     {id:'U-ARTEM',name:'Artem Kalenjuk',role:'Tehnik',phone:'',email:'',region:'Tallinn / Harjumaa',skills:'',active:true,onCallActive:false,onCallOrder:4}
   ],
   clients:[
-    {id:'C-01',name:'OÜ Vamos Automaatika',regNo:'12345678',contact:'Aleksei',phone:'+372 5551 2211',email:'vamos@example.ee',invoiceEmail:'arved@vamos.ee',active:true,notes:'Peamine hooldusklient. Aiandi 13A objekt ja seotud hooldusprojektid.'},
+    {id:'C-01',name:'OÜ Vamos Automaatika',regNo:'12345678',contact:'Aleksei Aleksandrov',phone:'+372 5551 2211',email:'vamos@example.ee',invoiceEmail:'arved@vamos.ee',active:true,notes:'Peamine hooldusklient. Aiandi 13A objekt ja seotud hooldusprojektid.'},
     {id:'C-02',name:'OÜ Kapitel Logistics',regNo:'11223344',contact:'Kaur Lepp',phone:'+372 5666 9080',email:'kaur@kapitel.ee',invoiceEmail:'invoice@kapitel.ee',active:true,notes:'Logistika- ja laohooned. Vana-Narva maantee objektid.'},
     {id:'C-03',name:'Bauhof Group AS',regNo:'10998877',contact:'Liina Saar',phone:'+372 5888 1020',email:'liina@bauhof.ee',invoiceEmail:'raamatupidamine@bauhof.ee',active:true,notes:'Väiksemad hooldused ja remondid.'}
   ],
   objects:[
-    {id:'O-01',clientId:'C-01',name:'Aiandi 13A',address:'Aiandi 13A, Tallinn',mainContact:'Aleksei',responsibleTechId:'U-JANNO',contract:'Jah',status:'active',notes:'Fookusobjekt. Ventilatsioon, jahutus ja hoolduskava tööd.',contacts:[{name:'Aleksei',role:'Objekti kontakt',phone:'+372 5551 2211',email:'aleksei@example.ee'}]},
+    {id:'O-01',clientId:'C-01',name:'Aiandi 13A',address:'Aiandi 13A, Tallinn',mainContact:'Aleksei Aleksandrov',responsibleTechId:'U-JANNO',contract:'Jah',status:'active',notes:'Fookusobjekt. Ventilatsioon, jahutus ja hoolduskava tööd.',contacts:[{name:'Aleksei Aleksandrov',role:'Objekti kontakt',phone:'+372 5551 2211',email:'aleksei@example.ee'}]},
     {id:'O-02',clientId:'C-02',name:'Vana-Narva mnt 30/1',address:'Vana-Narva maantee 30/1, Maardu',mainContact:'Kaur Lepp',responsibleTechId:'U-JANNO',contract:'Jah',status:'active',notes:'Elektrikäidu ja tehnosüsteemide hooldustööd.',contacts:[{name:'Kaur Lepp',role:'Haldur',phone:'+372 5666 9080',email:'kaur@kapitel.ee'}]},
     {id:'O-03',clientId:'C-03',name:'Bauhof',address:'Tallinn / Harjumaa',mainContact:'Liina Saar',responsibleTechId:'U-ALEKSEI',contract:'Ei',status:'active',notes:'Väike hulk hooldusi ja üks remonditöö.',contacts:[{name:'Liina Saar',role:'Kontakt',phone:'+372 5888 1020',email:'liina@bauhof.ee'}]}
   ],

@@ -2818,7 +2818,7 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 .theme-light .global-ticker{background:#f8fafb!important;color:var(--ink)!important;border-color:var(--line)!important;}
 
 
-/* VECO_V3_20260613_1220: persistent sticky day/date header for 24h calendar scroll */
+/* VECO_V3_20260613_1138: persistent sticky day/date header for 24h calendar scroll */
 .app.page-calendar .calendar-planner-wrap{
   position:relative!important;
 }
@@ -2882,8 +2882,7 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
   .app.page-calendar .calendar-date-sticky-header{grid-template-columns:44px minmax(0,1fr)!important;}
 }
 
-/* V3.19: PIN login */
-.auth-page{min-height:100vh;display:grid;place-items:center;padding:22px;background:var(--bg);color:var(--ink)}
-.auth-card{width:min(420px,100%);border:1px solid var(--line);border-radius:18px;background:var(--panel);box-shadow:0 24px 80px rgba(0,0,0,.24);padding:26px;display:grid;gap:14px}
-.auth-brand{font-size:26px;font-weight:950;letter-spacing:.08em;color:var(--blue)}
-.auth-card h1{margin:0;font-size:24px;line-height:1.1}.auth-card p{margin:0;color:var(--muted);font-weight:750;line-height:1.4}.auth-form{display:grid;gap:12px}.auth-form label{display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}.auth-pin{font-size:24px;text-align:center;letter-spacing:.2em}.auth-submit{min-height:44px}.auth-error{border:1px solid rgba(220,38,38,.35);background:rgba(220,38,38,.12);color:#ffb4b4;border-radius:10px;padding:10px 12px;font-weight:850}.theme-light .auth-error{color:#991b1b;background:#fee2e2}.auth-note{font-size:12px;color:var(--muted);line-height:1.35;border-top:1px solid var(--line);padding-top:12px}.auth-theme{justify-self:start}.sidebar-auth{margin-top:auto;border-top:1px solid var(--line);padding:12px 8px 0;display:grid;gap:4px}.sidebar-auth strong{font-size:13px;color:var(--sidebar-ink)}.sidebar-auth span{font-size:12px;color:var(--sidebar-muted);font-weight:800}.app.sidebar-hidden .sidebar-auth{display:none!important}.empty-state{display:grid;gap:8px;place-items:start;border:1px dashed var(--line);border-radius:12px;padding:20px;color:var(--muted)}.empty-state strong{color:var(--ink);font-size:18px}
+/* V3.19 PIN-auth */
+.auth-page{min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg);color:var(--ink)}
+.auth-card{width:min(440px,100%);display:grid;gap:14px;border:1px solid var(--line);border-radius:18px;background:var(--panel);box-shadow:var(--shadow);padding:24px}
+.auth-card h1{margin:0;font-size:24px;letter-spacing:-.03em}.auth-brand{width:max-content;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-weight:950;letter-spacing:.12em}.auth-message{border:1px solid rgba(217,119,6,.45);background:rgba(217,119,6,.12);border-radius:10px;padding:10px;font-size:13px;font-weight:800}.auth-links{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.auth-new-pin.hidden{display:none}.auth-user-pill{border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);padding:8px 11px;font-size:12px;font-weight:900;cursor:pointer}.auth-user-pill:hover{color:var(--ink);border-color:var(--blue)}.auth-admin-panel{border:1px solid var(--line);border-radius:var(--radius);background:rgba(255,255,255,.025);padding:14px;margin-bottom:12px;display:grid;gap:10px}.theme-light .auth-admin-panel{background:#f8fafb}.auth-admin-panel h3{margin:0;font-size:15px}.auth-admin-panel .kv{max-width:520px}

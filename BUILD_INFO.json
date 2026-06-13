@@ -1,13 +1,12 @@
 {
-  "name": "VECO V3",
-  "version": "v3.19.0",
-  "build": "20260613_1220",
-  "baseBuild": "20260613_1138",
+  "build": "VECO_V3_20260613_1325",
+  "created_at": "2026-06-13 11:38",
   "changes": [
-    "Lisatud lihtne lokaalne PIN-autentimine",
-    "Tehnik saab olemasolevale kasutajale PIN-i luua",
-    "Admin saab kasutajate lehel PIN-i nullida või ajutise PIN-i määrata",
-    "Admini vaated on PIN-sessioonita lukus",
-    "Rollipõhine vasak navigatsioon: Admin näeb kõike, Tehnik piiratud töövaateid"
-  ]
+    "Kalendri päeva/kuupäeva päis on tehtud eraldi sticky overlay-na.",
+    "Päise rida jääb nähtavale ka siis, kui 24h ajateljel keritakse aktiivsesse tööalasse.",
+    "Sisemised päevapäised jäeti ruumi hoidma, kuid peideti visuaalselt, et töökaartide paigutus ei muutuks.",
+    "Cache/timestamp uuendatud."
+  ],
+  "version": "v3.19.0",
+  "notes": "PIN login: technician/admin first PIN setup, sessions, role-based nav, admin PIN management, superadmin recovery."
 }

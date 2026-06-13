@@ -3,9 +3,9 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260613_1220';
+const APP_BUILD='20260613_1325';
 
-// Build 20260613_1220: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
+// Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
@@ -25,6 +25,68 @@ document.addEventListener('click',e=>{
 },true);
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[]; state.maintenanceNorms=state.maintenanceNorms||[]; state.maintenanceProfiles=state.maintenanceProfiles||[]; state.granlundClassifiers=state.granlundClassifiers||[]; state.unplannedMaintenance=state.unplannedMaintenance||[];
+
+const AUTH_KEY='veco_v3_auth_v1';
+const AUTH_SESSION_KEY='veco_v3_auth_session_v1';
+const AUTH_LOCK_KEY='veco_v3_auth_locks_v1';
+const AUTH_RULES={technician:{min:4,max:4,label:'4-kohaline PIN'},admin:{min:6,max:12,label:'vähemalt 6-kohaline PIN'},superadmin:{min:6,max:8,label:'6–8 kohaline PIN'}};
+const ADMIN_PAGES=new Set(['team','people','vacations','oncall','objects','clients','projects','ticker','maintenanceNorms','devices','maintenanceProfiles','granlundClassifier','unplannedMaintenance','mobilePreview','demo','diagnostics']);
+const TECH_PAGES=new Set(['mobile','calendar','workorders','acts']);
+function authLoad(){try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'{}')||{};}catch(_){return {};}}
+function authSave(a){localStorage.setItem(AUTH_KEY,JSON.stringify(a||{}));}
+function authLocksLoad(){try{return JSON.parse(localStorage.getItem(AUTH_LOCK_KEY)||'{}')||{};}catch(_){return {};}}
+function authLocksSave(l){localStorage.setItem(AUTH_LOCK_KEY,JSON.stringify(l||{}));}
+function normalizeAuthUsers(){
+  const auth=authLoad(); auth.users=auth.users||{};
+  (state.people||[]).forEach(p=>{
+    if(!p.id) return;
+    const role=String(p.role||'Tehnik').toLowerCase()==='admin'?'admin':'technician';
+    auth.users[p.id]={id:p.id,name:p.name||p.id,role,active:p.active!==false,pinHash:auth.users[p.id]?.pinHash||'',pinSetAt:auth.users[p.id]?.pinSetAt||''};
+  });
+  auth.superadmin=auth.superadmin||{role:'superadmin',pinHash:'',pinSetAt:''};
+  authSave(auth);
+  return auth;
+}
+function authHash(pin,salt='VECO-V3'){return btoa(unescape(encodeURIComponent(`${salt}:${pin}`)));}
+function authVerify(pin,hash){return !!hash && authHash(pin)===hash;}
+function authSession(){try{return JSON.parse(sessionStorage.getItem(AUTH_SESSION_KEY)||'null');}catch(_){return null;}}
+function authSetSession(user){sessionStorage.setItem(AUTH_SESSION_KEY,JSON.stringify({id:user.id||'SUPERADMIN',name:user.name||'Superadmin',role:user.role,at:new Date().toISOString()}));}
+function authClearSession(){sessionStorage.removeItem(AUTH_SESSION_KEY);}
+function currentAuthUser(){const s=authSession(); if(!s) return null; if(s.role==='superadmin') return s; const auth=normalizeAuthUsers(); const u=auth.users?.[s.id]; if(!u||u.active===false) return null; return {...s,...u};}
+function authRole(){return currentAuthUser()?.role||'';}
+function canAccessPage(pg=page){const role=authRole(); if(role==='admin') return true; if(role==='technician') return TECH_PAGES.has(pg); if(role==='superadmin') return ['people','diagnostics'].includes(pg); return false;}
+function authLockInfo(role){const locks=authLocksLoad(); const l=locks[role]||{}; const until=Number(l.until||0); return {locked:until>Date.now(),until,failures:Number(l.failures||0)};}
+function authRegisterFailure(role){const locks=authLocksLoad(); const limit=role==='superadmin'?30*60*1000:5*60*1000; const l=locks[role]||{failures:0,until:0}; l.failures=(Number(l.failures)||0)+1; if(l.failures>=5){l.until=Date.now()+limit; l.failures=0;} locks[role]=l; authLocksSave(locks); return authLockInfo(role);}
+function authClearFailure(role){const locks=authLocksLoad(); locks[role]={failures:0,until:0}; authLocksSave(locks);}
+function validatePin(role,pin){const r=AUTH_RULES[role]||AUTH_RULES.technician; const v=String(pin||'').trim(); return /^\d+$/.test(v) && v.length>=r.min && v.length<=r.max;}
+function lockText(info){const min=Math.ceil((info.until-Date.now())/60000); return `Liiga palju valesid katseid. Proovi uuesti ${Math.max(1,min)} minuti pärast.`;}
+function authUsersForLogin(){const auth=normalizeAuthUsers(); return Object.values(auth.users||{}).filter(u=>u.active!==false).sort((a,b)=>(a.role===b.role?0:a.role==='admin'?-1:1)||String(a.name).localeCompare(String(b.name),'et'));}
+function authRenderScreen(message=''){
+  applyTheme?.();
+  const auth=normalizeAuthUsers();
+  const users=authUsersForLogin();
+  const options=users.map(u=>`<option value="${esc(u.id)}">${esc(u.name)} · ${u.role==='admin'?'Admin':'Tehnik'}${u.pinHash?'':' · PIN puudub'}</option>`).join('');
+  document.body.innerHTML=`<div class="auth-page"><form class="auth-card" id="authLoginForm"><div class="auth-brand">VECO</div><h1>Sisselogimine</h1><p class="muted">Vali kasutaja ja sisesta PIN. Kui PIN puudub, saad selle esimesel sisenemisel luua.</p>${message?`<div class="auth-message">${esc(message)}</div>`:''}<label>Kasutaja<select class="select" name="userId" required>${options}</select></label><label>PIN<input class="field" name="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN" required></label><label class="auth-new-pin hidden" id="authNewPinWrap">Korda uut PIN-i<input class="field" name="pin2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Korda PIN-i"></label><button class="btn primary" type="submit">Logi sisse</button><div class="auth-links"><button class="btn ghost" type="button" id="authRecoveryBtn">Süsteemi taastamine</button><button class="btn ghost" type="button" data-theme-toggle>Teema</button></div></form></div>`;
+  const form=document.getElementById('authLoginForm');
+  const updateMode=()=>{const u=auth.users?.[form.elements.userId.value]; document.getElementById('authNewPinWrap')?.classList.toggle('hidden',!!u?.pinHash);};
+  form.elements.userId.addEventListener('change',updateMode); updateMode();
+  form.addEventListener('submit',e=>{e.preventDefault(); const uid=form.elements.userId.value; const pin=form.elements.pin.value; const pin2=form.elements.pin2.value; const authNow=normalizeAuthUsers(); const u=authNow.users?.[uid]; if(!u) return authRenderScreen('Kasutajat ei leitud.'); const role=u.role==='admin'?'admin':'technician'; const lock=authLockInfo(role); if(lock.locked) return authRenderScreen(lockText(lock)); if(!u.pinHash){ if(pin!==pin2) return authRenderScreen('PIN-i kordus ei ühti.'); if(!validatePin(role,pin)) return authRenderScreen(`${u.name}: PIN peab olema ${AUTH_RULES[role].label}.`); u.pinHash=authHash(pin); u.pinSetAt=new Date().toISOString(); authNow.users[uid]=u; authSave(authNow); authSetSession(u); location.reload(); return; } if(!authVerify(pin,u.pinHash)){const l=authRegisterFailure(role); return authRenderScreen(l.locked?lockText(l):'Vale PIN.');} authClearFailure(role); authSetSession(u); location.reload(); });
+  document.getElementById('authRecoveryBtn')?.addEventListener('click',()=>authRenderSuperadmin());
+  bindGlobalThemeToggle?.();
+}
+function authRenderSuperadmin(message=''){
+  applyTheme?.();
+  const auth=normalizeAuthUsers(); const setup=!auth.superadmin?.pinHash;
+  document.body.innerHTML=`<div class="auth-page"><form class="auth-card" id="superForm"><div class="auth-brand">VECO</div><h1>Superadmin</h1><p class="muted">${setup?'Loo esmane superadmin PIN.':'Sisesta superadmin PIN süsteemi taastamiseks.'}</p>${message?`<div class="auth-message">${esc(message)}</div>`:''}<label>${setup?'Uus superadmin PIN':'Superadmin PIN'}<input class="field" name="pin" type="password" inputmode="numeric" autocomplete="current-password" required></label>${setup?`<label>Korda PIN-i<input class="field" name="pin2" type="password" inputmode="numeric" autocomplete="new-password" required></label>`:''}<button class="btn primary" type="submit">${setup?'Loo PIN':'Sisene'}</button><button class="btn ghost" type="button" id="backLoginBtn">Tagasi</button></form></div>`;
+  document.getElementById('backLoginBtn')?.addEventListener('click',()=>authRenderScreen());
+  document.getElementById('superForm')?.addEventListener('submit',e=>{e.preventDefault(); const pin=e.currentTarget.elements.pin.value; const pin2=e.currentTarget.elements.pin2?.value; const lock=authLockInfo('superadmin'); if(lock.locked) return authRenderSuperadmin(lockText(lock)); const authNow=normalizeAuthUsers(); if(!authNow.superadmin.pinHash){ if(pin!==pin2) return authRenderSuperadmin('PIN-i kordus ei ühti.'); if(!validatePin('superadmin',pin)) return authRenderSuperadmin(`Superadmin PIN peab olema ${AUTH_RULES.superadmin.label}.`); authNow.superadmin.pinHash=authHash(pin); authNow.superadmin.pinSetAt=new Date().toISOString(); authSave(authNow); authSetSession({id:'SUPERADMIN',name:'Superadmin',role:'superadmin'}); location.href='people.html'; return; } if(!authVerify(pin,authNow.superadmin.pinHash)){const l=authRegisterFailure('superadmin'); return authRenderSuperadmin(l.locked?lockText(l):'Vale superadmin PIN.');} authClearFailure('superadmin'); authSetSession({id:'SUPERADMIN',name:'Superadmin',role:'superadmin'}); location.href='people.html'; });
+}
+function requireAuthOrRender(){ normalizeAuthUsers(); if(!currentAuthUser()){authRenderScreen(); return false;} if(!canAccessPage(page)){ shell(header('Ligipääs puudub','','','LIGIPÄÄS PUUDUB')+`<div class="detail-body"><p class="muted">Sinu rollil puudub selle vaate kasutamise õigus.</p><button class="btn" id="authLogoutBtn">Logi välja</button></div>`,'',{wide:true}); document.getElementById('authLogoutBtn')?.addEventListener('click',()=>{authClearSession(); location.href='index.html';}); return false;} return true; }
+function authStatusPill(){const u=currentAuthUser(); if(!u) return ''; return `<button class="auth-user-pill" id="authLogoutBtn" type="button" title="Logi välja">${esc(u.name)} · ${u.role==='admin'?'Admin':u.role==='superadmin'?'Superadmin':'Tehnik'} · Välju</button>`;}
+function resetUserPin(userId){const auth=normalizeAuthUsers(); if(auth.users?.[userId]){auth.users[userId].pinHash=''; auth.users[userId].pinSetAt=''; authSave(auth);}}
+function setUserTempPin(userId,pin){const auth=normalizeAuthUsers(); const u=auth.users?.[userId]; if(!u) return false; const role=u.role==='admin'?'admin':'technician'; if(!validatePin(role,pin)) return false; u.pinHash=authHash(pin); u.pinSetAt=new Date().toISOString(); auth.users[userId]=u; authSave(auth); return true;}
+function resetAdminPins(){const auth=normalizeAuthUsers(); Object.values(auth.users||{}).filter(u=>u.role==='admin').forEach(u=>{u.pinHash='';u.pinSetAt='';}); authSave(auth);}
+
 (state.acts||[]).forEach(a=>{ if(a.archived===undefined) a.archived=false;});
 normalizeOncallPeople();
 
@@ -38,120 +100,6 @@ function normalizeWorkorderContentFields(){
   });
 }
 normalizeWorkorderContentFields();
-
-
-// V3.19: lihtne lokaalne PIN-autentimine prototüübi ja sisekasutuse jaoks.
-const AUTH_SESSION_KEY='veco_auth_session_v1';
-const AUTH_ALLOWED={
-  Admin:null,
-  Tehnik:['mobile','team','calendar','workorders','acts']
-};
-function normalizeAuthFields(){
-  (state.people||[]).forEach(p=>{
-    if(typeof p.pinHash==='undefined') p.pinHash='';
-    if(typeof p.pinSetAt==='undefined') p.pinSetAt='';
-    if(typeof p.lastLoginAt==='undefined') p.lastLoginAt='';
-  });
-}
-normalizeAuthFields();
-function pinHash(personId,pin){
-  const input=`${personId}|${String(pin||'').trim()}|VECO-V3-PIN`;
-  let h=2166136261;
-  for(let i=0;i<input.length;i++){
-    h^=input.charCodeAt(i);
-    h=Math.imul(h,16777619);
-  }
-  return (h>>>0).toString(16).padStart(8,'0');
-}
-function readAuth(){
-  try{
-    const raw=JSON.parse(localStorage.getItem(AUTH_SESSION_KEY)||'null');
-    if(!raw?.personId) return null;
-    const p=byId(state.people||[],raw.personId);
-    if(!p||!p.active) return null;
-    return {personId:p.id,name:p.name,role:p.role||'Tehnik',ts:raw.ts||Date.now()};
-  }catch(_){ return null; }
-}
-function writeAuth(person){
-  const auth={personId:person.id,name:person.name,role:person.role||'Tehnik',ts:Date.now()};
-  localStorage.setItem(AUTH_SESSION_KEY,JSON.stringify(auth));
-  person.lastLoginAt=new Date().toISOString();
-  save();
-  return auth;
-}
-function clearAuth(){ localStorage.removeItem(AUTH_SESSION_KEY); }
-function currentAuth(){ return readAuth(); }
-function isAdmin(){ return currentAuth()?.role==='Admin'; }
-function authCanOpen(pageKey){
-  const auth=currentAuth();
-  if(!auth) return false;
-  if(auth.role==='Admin') return true;
-  return (AUTH_ALLOWED[auth.role]||[]).includes(pageKey);
-}
-function activePeopleForLogin(){ return (state.people||[]).filter(p=>p.active!==false).sort((a,b)=>(a.role==='Admin'?-1:0)-(b.role==='Admin'?-1:0)||String(a.name).localeCompare(String(b.name),'et')); }
-function renderAuthScreen(message=''){
-  applyTheme();
-  const people=activePeopleForLogin();
-  const selectedId=localStorage.getItem('veco_last_login_person')||people[0]?.id||'';
-  const selected=byId(people,selectedId)||people[0]||{};
-  const needsPin=!!selected?.id && !selected.pinHash;
-  const mode=needsPin?'create':'login';
-  document.body.innerHTML=`<div class="auth-page"><div class="auth-card"><div class="auth-brand">VECO</div><h1>${mode==='create'?'Loo PIN':'Sisene PIN-koodiga'}</h1><p>${mode==='create'?'Kasutaja on olemas, kuid PIN on veel määramata.':'Vali kasutaja ja sisesta PIN.'}</p>${message?`<div class="auth-error">${esc(message)}</div>`:''}<form id="authForm" class="auth-form"><label>Kasutaja<select class="select" name="personId">${people.map(p=>`<option value="${esc(p.id)}" ${p.id===selected.id?'selected':''}>${esc(p.name)} · ${esc(p.role||'Tehnik')}</option>`).join('')}</select></label><label>${mode==='create'?'Uus PIN':'PIN'}<input class="field auth-pin" name="pin" inputmode="numeric" autocomplete="current-password" maxlength="6" minlength="4" pattern="[0-9]{4,6}" required placeholder="4–6 numbrit"></label>${mode==='create'?`<label>Korda PIN-i<input class="field auth-pin" name="pin2" inputmode="numeric" autocomplete="new-password" maxlength="6" minlength="4" pattern="[0-9]{4,6}" required placeholder="4–6 numbrit"></label>`:''}<button class="btn primary auth-submit" type="submit">${mode==='create'?'Salvesta PIN ja sisene':'Logi sisse'}</button></form><button class="btn ghost auth-theme" type="button" data-theme-toggle>Vaheta hele/tume</button><div class="auth-note">Prototüübi PIN salvestatakse lokaalselt. Päriskasutuseks tuleb see hiljem viia serveripõhise autentimise peale.</div></div></div>`;
-  $('[name="personId"]')?.addEventListener('change',e=>{localStorage.setItem('veco_last_login_person',e.target.value);renderAuthScreen();});
-  $('[data-theme-toggle]')?.addEventListener('click',()=>{toggleTheme();renderAuthScreen(message);});
-  $('#authForm')?.addEventListener('submit',e=>{
-    e.preventDefault();
-    const f=e.currentTarget.elements;
-    const person=byId(state.people,f.personId.value);
-    if(!person||person.active===false) return renderAuthScreen('Kasutaja ei ole aktiivne.');
-    const pin=String(f.pin.value||'').trim();
-    if(!/^\d{4,6}$/.test(pin)) return renderAuthScreen('PIN peab olema 4–6 numbrit.');
-    if(!person.pinHash){
-      if(pin!==String(f.pin2?.value||'').trim()) return renderAuthScreen('PIN-id ei kattu.');
-      person.pinHash=pinHash(person.id,pin);
-      person.pinSetAt=new Date().toISOString();
-      writeAuth(person);
-      localStorage.setItem('veco_last_login_person',person.id);
-      renderCurrentPage();
-      return;
-    }
-    if(person.pinHash!==pinHash(person.id,pin)) return renderAuthScreen('Vale PIN.');
-    writeAuth(person);
-    localStorage.setItem('veco_last_login_person',person.id);
-    renderCurrentPage();
-  });
-}
-function renderAccessDenied(){
-  const auth=currentAuth();
-  const main=header('Ligipääs puudub','','<button class="btn ghost" id="logoutBtn">Logi välja</button>','LUKUS')+`<div class="detail-body"><div class="empty-state"><strong>See vaade on admini õigustega kasutajale.</strong><span>Sisse logitud: ${esc(auth?.name||'-')} · ${esc(auth?.role||'-')}</span></div></div>`;
-  shell(main,'',{wide:true});
-}
-function pinStatusHtml(p){
-  return p.pinHash?`<span class="status ok">PIN määratud</span><div class="muted">${p.lastLoginAt?`Viimane: ${fmtShortDate(p.lastLoginAt.slice(0,10))}`:'Pole loginud'}</div>`:`<span class="status red">PIN puudub</span>`;
-}
-function resetPersonPin(personId){
-  if(!isAdmin()) return alert('PIN-i haldus nõuab admini õigust.');
-  const p=byId(state.people,personId);
-  if(!p) return;
-  p.pinHash='';
-  p.pinSetAt='';
-  p.lastLoginAt='';
-  if(currentAuth()?.personId===personId) clearAuth();
-  save();
-  renderPeople();
-}
-function setTemporaryPin(personId){
-  if(!isAdmin()) return alert('PIN-i haldus nõuab admini õigust.');
-  const p=byId(state.people,personId);
-  if(!p) return;
-  const pin=prompt(`Sisesta ajutine PIN kasutajale ${p.name} (4–6 numbrit)`,'1234');
-  if(pin===null) return;
-  if(!/^\d{4,6}$/.test(String(pin).trim())) return alert('PIN peab olema 4–6 numbrit.');
-  p.pinHash=pinHash(p.id,pin);
-  p.pinSetAt=new Date().toISOString();
-  save();
-  renderPeople();
-}
 
 function normalizeWorkorderPeople(){
   (state.workorders||[]).forEach(w=>{
@@ -390,10 +338,10 @@ function icon(i){return `<span class="icon">${i}</span>`}
 function nav(sidebarMode='full'){
   const groups=[
     ['Tööjuht',[['calendar','▦'],['unplannedMaintenance','⚠'],['workorders','☑'],['acts','▧']]],
-    ['Tehnikud',[['mobile','▤'],['team','◫'],['vacations','▤'],['oncall','☎']]],
+    ['Tehnikud',[['mobile','▤'],['team','◫'],['people','☷'],['vacations','▤'],['oncall','☎']]],
     ['Kliendid ja objektid',[['objects','⌂'],['clients','▥'],['projects','▣']]],
     ['Hooldusinfo',[['devices','▤'],['maintenanceNorms','≡'],['maintenanceProfiles','☑'],['granlundClassifier','⌁']]],
-    ['Süsteem',[['people','☷'],['ticker','▭'],['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
+    ['Süsteem',[['ticker','▭'],['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
     ['Arendus',[['mobilePreview','▧'],['demo','↺'],['diagnostics','◎']]]
   ];
   const activeGroupTitle=(groups.find(([_,items])=>items.some(([key])=>key===page))||groups[0])[0];
@@ -407,17 +355,14 @@ function nav(sidebarMode='full'){
     if(key==='system-import') return `<label class="nav-file-action" for="importDataFile" title="Taasta" aria-label="Taasta">${icon(ic)}<span class="nav-label">Taasta</span></label>`;
     return `<a class="${page===key?'active':''}" href="${pageFiles[key]}" title="${esc(pageTitles[key]||key)}" aria-label="${esc(pageTitles[key]||key)}">${icon(ic)}<span class="nav-label">${pageTitles[key]}</span></a>`;
   };
-  const visibleGroups=groups
-    .map(([title,items])=>[title,items.filter(([key])=>isAdmin() || authCanOpen(key))])
-    .filter(([_,items])=>items.length);
-  const navGroups=visibleGroups.map(([title,items])=>{
+  const navGroups=groups.map(([title,items])=>{
+    const visibleItems=items.filter(([key])=>key.startsWith('system-') ? authRole()==='admin' : canAccessPage(key));
+    if(!visibleItems.length) return '';
     const isOpen=!!openGroups[title];
-    return `<div class="nav-section ${isOpen?'open':'collapsed'}" data-nav-group="${esc(title)}"><button class="nav-section-title" type="button" data-nav-toggle="${esc(title)}" aria-expanded="${isOpen?'true':'false'}"><span>${isOpen?'▾':'▸'}</span>${title}</button><div class="nav-section-items">${items.map(navItem).join('')}</div></div>`;
+    return `<div class="nav-section ${isOpen?'open':'collapsed'}" data-nav-group="${esc(title)}"><button class="nav-section-title" type="button" data-nav-toggle="${esc(title)}" aria-expanded="${isOpen?'true':'false'}"><span>${isOpen?'▾':'▸'}</span>${title}</button><div class="nav-section-items">${visibleItems.map(navItem).join('')}</div></div>`;
   }).join('');
   const toggleTitle=sidebarMode==='hidden'?'Ava menüü':'Peida menüü';
-  const auth=currentAuth();
-  const authBox=auth?`<div class="sidebar-auth"><strong>${esc(auth.name)}</strong><span>${esc(auth.role)}</span><button class="btn ghost small" id="logoutBtn" type="button">Logi välja</button></div>`:'';
-  return `<aside class="sidebar" data-sidebar-state="${sidebarMode}"><button class="sidebar-toggle-rail" id="sidebarToggleRail" type="button" title="${toggleTitle}" aria-label="${toggleTitle}"></button><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav>${authBox}</aside>`
+  return `<aside class="sidebar" data-sidebar-state="${sidebarMode}"><button class="sidebar-toggle-rail" id="sidebarToggleRail" type="button" title="${toggleTitle}" aria-label="${toggleTitle}"></button><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
 }
 function themeLogo(){
   return `<button class="brand-badge brand-theme-toggle" type="button" data-theme-toggle title="Vaheta hele/tume režiim" aria-label="Vaheta hele/tume režiim"><span class="brand-wordmark">VECO</span></button>`;
@@ -445,11 +390,11 @@ function viewContextText(value){
 function header(title,filters='',actions='',context=''){
   const label=viewContextText(context||title);
   if(page==='mobile') return `<div class="panel-head mobile-head"><div><h2>${esc(label)}</h2><span class="muted">Lihtne tehniku töövaade</span></div></div>`;
-  return `<div class="panel-head view-head"><div class="view-head-left"><div class="brand-row">${themeLogo()}<h2 class="context-pill view-context-pill">${esc(label)}</h2>${oncallPill()}</div>${filters?`<div class="filter-row">${filters}</div>`:''}</div><div class="view-head-right">${actions?`<div class="action-row">${actions}</div>`:''}</div></div>`
+  return `<div class="panel-head view-head"><div class="view-head-left"><div class="brand-row">${themeLogo()}<h2 class="context-pill view-context-pill">${esc(label)}</h2>${oncallPill()}</div>${filters?`<div class="filter-row">${filters}</div>`:''}</div><div class="view-head-right">${authStatusPill()}${actions?`<div class="action-row">${actions}</div>`:''}</div></div>`
 }
 
 function detailHeader(title,actions=''){
-  return `<div class="panel-head detail-head"><div class="view-head-left"><h2 class="context-pill">${esc(title)}</h2></div><div class="view-head-right">${actions?`<div class="action-row">${actions}</div>`:''}</div></div>`;
+  return `<div class="panel-head detail-head"><div class="view-head-left"><h2 class="context-pill">${esc(title)}</h2></div><div class="view-head-right">${authStatusPill()}${actions?`<div class="action-row">${actions}</div>`:''}</div></div>`;
 }
 
 
@@ -566,7 +511,6 @@ function bindGlobal(){
   });
   $('#tickerCloseBtn')?.addEventListener('click',()=>{localStorage.setItem('veco_ticker_hidden','true');renderCurrentPage();});
   $('#tickerRestoreBtn')?.addEventListener('click',()=>{localStorage.setItem('veco_ticker_hidden','false');renderCurrentPage();});
-  $('#logoutBtn')?.addEventListener('click',()=>{clearAuth();renderAuthScreen();});
 }
 function card(title,rows=[],status='',extra=''){
   return `<div class="card"><div class="card-top"><h3>${esc(title)}</h3>${status?`<span class="status ${statusClass(status)}">${esc(status)}</span>`:''}</div>${rows.map(([k,v])=>`<div class="kv"><span>${esc(k)}</span><strong>${esc(v||'-')}</strong></div>`).join('')}${extra}</div>`
@@ -1709,6 +1653,19 @@ function openActModal(id='',defaults={}){
   $('#actForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const newId=timestampActId();const next={id:id||newId,number:a.number||newId,workorderId:f.workorderId.value,objectId:f.objectId.value,date:f.date.value,title:f.title.value,status:f.status.value,type:f.type?.value||'Väljakutse akt',problemDescription:f.problemDescription?.value||'',performedWork:f.performedWork.value,workText:f.performedWork.value,resultNotes:f.resultNotes.value,recommendations:f.recommendations.value,materials:f.materials.value,createdAt:a.createdAt||new Date().toISOString(),archived:(a.archived===true||f.status.value==='Arhiveeritud')}; if(id){Object.assign(a,next)}else{state.acts.push(next);selectedActId=next.id;detailOpen.acts=true} save();closeModal(); if(page==='workorders') renderWorkorders(); else renderActs();});
 }
 
+
+function pinStatusHtml(p){
+  const auth=normalizeAuthUsers(); const u=auth.users?.[p.id];
+  return `<span class="status ${u?.pinHash?'ok':'red'}">${u?.pinHash?'PIN määratud':'PIN puudub'}</span>`;
+}
+function superadminPanelHtml(){
+  if(authRole()!=='superadmin') return '';
+  const auth=normalizeAuthUsers();
+  const admins=Object.values(auth.users||{}).filter(u=>u.role==='admin');
+  const list=admins.map(u=>`<div class="kv"><span>${esc(u.name)}</span><strong>${u.pinHash?'PIN määratud':'PIN puudub'}</strong></div>`).join('');
+  return `<div class="auth-admin-panel"><h3>Superadmin taastamine</h3><p class="muted">Superadmin saab taastada admini ligipääsu. PIN-koode ei kuvata.</p>${list}<button class="btn danger" id="resetAdminPinsBtn" type="button">Lähtesta kõik admin PIN-id</button></div>`;
+}
+
 function renderPeople(){
   normalizeOncallPeople();
   const status=$('#peopleStatusFilter')?.value||'active';
@@ -1721,18 +1678,19 @@ function renderPeople(){
   const filters=`<input class="field" id="peopleSearch" placeholder="Otsi kasutajat..." value="${esc(q)}"><select class="select" id="peopleStatusFilter"><option value="active" ${status==='active'?'selected':''}>Aktiivsed</option><option value="inactive" ${status==='inactive'?'selected':''}>Deaktiveeritud</option><option value="all" ${status==='all'?'selected':''}>Kõik kasutajad</option></select>`;
   const actions=`<button class="btn primary" id="newPersonBtn">${icon('＋')}Lisa kasutaja</button>`;
   const today=dateKeyFromDate(new Date());
-  const rows=list.map(p=>`<tr data-person-id="${p.id}"><td><strong>${esc(p.name)}</strong><div class="muted">${esc(p.id)}</div></td><td>${esc(p.role||'-')}</td><td>${availabilityBadgesHtml(p.id,today,{empty:true})}</td><td>${esc(p.phone||'-')}</td><td>${esc(p.email||'-')}</td><td>${esc(p.region||'-')}</td><td><button class="status ${p.onCallActive?'ok':'red'}" data-toggle-oncall-person="${p.id}" type="button" title="Lisa/eemalda valvegraafikust">${p.onCallActive?'Aktiivne':'Ei osale'}</button><div class="muted">Jrk ${Number(p.onCallOrder||0)||'-'}</div></td><td>${pinStatusHtml(p)}</td><td><span class="status ${p.active?'ok':'red'}">${p.active?'Aktiivne':'Deaktiveeritud'}</span></td><td><button class="btn small" data-edit-person="${p.id}" type="button">Muuda</button> <button class="btn small" data-temp-pin="${p.id}" type="button">Ajutine PIN</button> <button class="btn small danger" data-reset-pin="${p.id}" type="button">Nulli PIN</button> <button class="btn small ${p.active?'danger':'primary'}" data-toggle-person="${p.id}" type="button">${p.active?'Deaktiveeri':'Aktiveeri'}</button> <button class="btn small danger" data-delete-person="${p.id}" type="button">Kustuta</button></td></tr>`).join('');
-  const main=header('Tehnikute administreerimine',filters,actions,'TEHNIKUD')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Kasutajaid',state.people.length)}${summaryBox('Aktiivseid',state.people.filter(p=>p.active).length)}${summaryBox('Tehnikuid',state.people.filter(p=>p.role==='Tehnik').length)}${summaryBox('Valve aktiivsed',state.people.filter(p=>p.onCallActive).length)}</div>${table(['Nimi','Roll','Saadavus täna','Telefon','E-post','Piirkond','Valvegraafik','PIN','Staatus','Tegevused'],rows)}</div>`;
+  const rows=list.map(p=>`<tr data-person-id="${p.id}"><td><strong>${esc(p.name)}</strong><div class="muted">${esc(p.id)}</div></td><td>${esc(p.role||'-')}</td><td>${availabilityBadgesHtml(p.id,today,{empty:true})}</td><td>${esc(p.phone||'-')}</td><td>${esc(p.email||'-')}</td><td>${esc(p.region||'-')}</td><td><button class="status ${p.onCallActive?'ok':'red'}" data-toggle-oncall-person="${p.id}" type="button" title="Lisa/eemalda valvegraafikust">${p.onCallActive?'Aktiivne':'Ei osale'}</button><div class="muted">Jrk ${Number(p.onCallOrder||0)||'-'}</div></td><td><span class="status ${p.active?'ok':'red'}">${p.active?'Aktiivne':'Deaktiveeritud'}</span></td><td>${pinStatusHtml(p)}</td><td><button class="btn small" data-edit-person="${p.id}" type="button">Muuda</button> <button class="btn small" data-reset-pin="${p.id}" type="button">Lähtesta PIN</button> <button class="btn small" data-temp-pin="${p.id}" type="button">Ajutine PIN</button> <button class="btn small ${p.active?'danger':'primary'}" data-toggle-person="${p.id}" type="button">${p.active?'Deaktiveeri':'Aktiveeri'}</button> <button class="btn small danger" data-delete-person="${p.id}" type="button">Kustuta</button></td></tr>`).join('');
+  const main=header('Tehnikute administreerimine',filters,actions,'TEHNIKUD')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Kasutajaid',state.people.length)}${summaryBox('Aktiivseid',state.people.filter(p=>p.active).length)}${summaryBox('Tehnikuid',state.people.filter(p=>p.role==='Tehnik').length)}${summaryBox('Valve aktiivsed',state.people.filter(p=>p.onCallActive).length)}</div>${superadminPanelHtml()}${table(['Nimi','Roll','Saadavus täna','Telefon','E-post','Piirkond','Valvegraafik','Staatus','PIN','Tegevused'],rows)}</div>`;
   shell(main,'',{wide:true});
   $('#peopleSearch')?.addEventListener('input',renderPeople);
   $('#peopleStatusFilter')?.addEventListener('change',renderPeople);
   $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();normalizeOncallPeople();save();renderPeople();});
   $('#newPersonBtn')?.addEventListener('click',()=>openPersonModal());
   $$('[data-toggle-oncall-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.toggleOncallPerson);if(p){p.onCallActive=!p.onCallActive;if(p.onCallActive&&!p.onCallOrder){p.onCallOrder=nextOncallOrder();}save();renderPeople();}}));
+  $$('[data-reset-pin]').forEach(btn=>btn.addEventListener('click',async e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.resetPin); if(!p) return; const ok=await openVecoConfirm({title:'Lähtesta PIN?',message:`${p.name} peab järgmisel sisselogimisel uue PIN-i looma.`,confirmText:'Lähtesta',cancelText:'Loobu'}); if(ok){resetUserPin(p.id); renderPeople();}}));
+  $$('[data-temp-pin]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.tempPin); if(!p) return; const role=String(p.role||'').toLowerCase()==='admin'?'admin':'technician'; const pin=prompt(`${p.name} ajutine PIN (${AUTH_RULES[role].label})`); if(pin===null) return; if(!setUserTempPin(p.id,pin)){alert(`PIN peab olema ${AUTH_RULES[role].label}.`); return;} renderPeople();}));
+  $('#resetAdminPinsBtn')?.addEventListener('click',async()=>{const ok=await openVecoConfirm({title:'Lähtesta admin PIN-id?',message:'Kõik adminid peavad järgmisel sisselogimisel uue PIN-i looma.',confirmText:'Lähtesta',cancelText:'Loobu',danger:true}); if(ok){resetAdminPins(); renderPeople();}});
   $$('[data-edit-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openPersonModal(btn.dataset.editPerson);}))
   $$('[data-toggle-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.togglePerson);if(p){p.active=!p.active;save();renderPeople();}}));
-  $$('[data-reset-pin]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();resetPersonPin(btn.dataset.resetPin);}));
-  $$('[data-temp-pin]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();setTemporaryPin(btn.dataset.tempPin);}));
   $$('[data-delete-person]').forEach(btn=>btn.addEventListener('click',async e=>{
     e.stopPropagation();
     const id=btn.dataset.deletePerson;
@@ -3863,9 +3821,7 @@ function renderDiagnostics(){
 }
 
 function renderCurrentPage(){
-  normalizeAuthFields();
-  if(!currentAuth()) return renderAuthScreen();
-  if(!authCanOpen(page)) return renderAccessDenied();
+  if(!requireAuthOrRender()) return;
   ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,unplannedMaintenance:renderUnplannedMaintenance,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
 }
 async function bootstrapApp(){
