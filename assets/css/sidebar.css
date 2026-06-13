@@ -944,3 +944,71 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
   background:rgba(248,250,252,.80)!important;
   border-right:1px solid rgba(15,23,42,.10)!important;
 }
+
+
+/* VECO_V3_20260613_1956: collapsed sidebar Variant A - blue accent rail
+   Closed menu is a minimal dark rail with a blue accent line and blue chevron. */
+:root{
+  --veco-active-blue:#1769aa;
+  --veco-active-blue-2:#2d9cff;
+  --sidebar-rail-hidden-width:28px;
+}
+.app.sidebar-hidden,.app.sidebar-compact{
+  grid-template-columns:28px minmax(0,1fr)!important;
+}
+.app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{
+  width:28px!important;
+  min-width:28px!important;
+  max-width:28px!important;
+  padding:0!important;
+  background:#071016!important;
+  border-right:0!important;
+  box-shadow:inset -3px 0 0 var(--veco-active-blue)!important;
+  overflow:hidden!important;
+}
+.app.sidebar-hidden .sidebar::after,.app.sidebar-compact .sidebar::after{
+  content:'';
+  position:absolute;
+  top:0;
+  right:0;
+  width:3px;
+  height:100%;
+  background:linear-gradient(180deg,var(--veco-active-blue-2),var(--veco-active-blue));
+  opacity:.95;
+  pointer-events:none;
+}
+.app.sidebar-hidden .sidebar-toggle-rail,.app.sidebar-compact .sidebar-toggle-rail{
+  width:28px!important;
+  left:0!important;
+  right:auto!important;
+  background:transparent!important;
+  border:0!important;
+  color:var(--veco-active-blue-2)!important;
+  opacity:1!important;
+}
+.app.sidebar-hidden .sidebar-toggle-rail::before,.app.sidebar-compact .sidebar-toggle-rail::before{
+  content:'›'!important;
+  color:var(--veco-active-blue-2)!important;
+  font-size:20px!important;
+  font-weight:800!important;
+  text-shadow:0 0 12px rgba(45,156,255,.28)!important;
+}
+.app.sidebar-hidden .sidebar-toggle-rail:hover,.app.sidebar-compact .sidebar-toggle-rail:hover{
+  background:rgba(45,156,255,.11)!important;
+  color:#bfe3ff!important;
+  box-shadow:inset -3px 0 0 var(--veco-active-blue-2), 0 0 18px rgba(45,156,255,.16)!important;
+}
+.app.sidebar-hidden .sidebar-toggle-rail:hover::before,.app.sidebar-compact .sidebar-toggle-rail:hover::before{
+  color:#bfe3ff!important;
+}
+.app.sidebar-hidden > main > .content,.app.sidebar-compact > main > .content{
+  padding-left:6px!important;
+}
+.theme-light .app.sidebar-hidden .sidebar,.theme-light .app.sidebar-compact .sidebar{
+  background:#f8fafc!important;
+  box-shadow:inset -3px 0 0 #1769aa!important;
+}
+.theme-light .app.sidebar-hidden .sidebar-toggle-rail,.theme-light .app.sidebar-compact .sidebar-toggle-rail,
+.theme-light .app.sidebar-hidden .sidebar-toggle-rail::before,.theme-light .app.sidebar-compact .sidebar-toggle-rail::before{
+  color:#1769aa!important;
+}

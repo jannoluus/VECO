@@ -1,20 +1,20 @@
 {
-  "build": "VECO_V3_20260613_1831",
-  "build_name": "VECO_V3_20260613_1831",
+  "build": "VECO_V3_20260613_1956",
+  "build_name": "VECO_V3_20260613_1956",
   "created_at": "2026-06-13T18:31:00+03:00",
-  "timezone": "Europe/Tallinn",
+  "timezone": "Europe/Tallinn (EEST)",
   "version": "v3.19.5",
   "changes": [
-    "Hidden sidebar cleanup: closed menu now uses 28px opening rail instead of 42px/48px dark icon-sidebar remnant",
-    "Open handle has subtle rail, border and hover state; nav remains fully hidden in closed state",
+    "Collapsed sidebar Variant A: dark 28px rail with blue accent line and blue chevron",
+    "Kept calendar, equal day width, scroll, today highlight unchanged",
     "APP_BUILD synchronized with ZIP and BUILD_INFO"
   ],
   "notes": [
     "Kontrollida: menüü peidetud olekus vasakul ei jää laia tühja tumedat ala; alles on ainult kitsas avamisriba.",
     "Buildi number, ZIP-faili nimi, BUILD_INFO ja APP_BUILD kasutavad Eesti ajavööndi aega."
   ],
-  "buildNumber": "20260613_1831",
+  "buildNumber": "20260613_1956",
   "createdAt": "2026-06-13T18:31:00+03:00",
-  "build_number": "20260613_1831",
+  "build_number": "20260613_1956",
   "timestamp": "2026-06-13 18:31 Europe/Tallinn (EEST)"
 }

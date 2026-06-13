@@ -1,3 +1,9 @@
+Build: 20260613_1956
+
+VECO V3 build 20260613_1956.
+
+Muudatus: peidetud menüü Variant A - tume 28px avamisriba, sinine aktsentjoon ja sinine nool.
+
 Build: 20260613_1406
 
 VECO V3 build 20260613_1406.
