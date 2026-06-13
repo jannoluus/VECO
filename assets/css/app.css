@@ -3228,3 +3228,17 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 .theme-light .app.page-calendar .calendar-date-sticky-header::after {
   background:#f8fafc!important;
 }
+
+/* VECO_V3_20260613_1541: Equal day width fix
+   Päevade veerud on alati võrdse laiusega; scrollbar/gutter ei kuulu P päeva sisse. */
+.app.page-calendar .calendar-planner-grid{
+  grid-template-columns:repeat(var(--calendar-day-count,7), var(--calendar-equal-day-width, minmax(150px,1fr)))!important;
+  justify-content:start!important;
+  box-sizing:border-box!important;
+}
+.app.page-calendar .calendar-date-sticky-header{
+  width:var(--calendar-sticky-width,100%)!important;
+}
+.app.page-calendar .calendar-date-sticky-header::after{
+  display:none!important;
+}
