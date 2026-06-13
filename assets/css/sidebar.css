@@ -724,3 +724,58 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
   .app.sidebar-full .sidebar{position:fixed!important;inset:0 auto 0 0!important;z-index:1200!important;width:248px!important;min-width:248px!important;}
   .app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{position:sticky!important;top:0!important;width:var(--sidebar-rail-width)!important;min-width:var(--sidebar-rail-width)!important;padding:0!important;}
 }
+
+
+/* VECO_V3_20260613_1055: hidden sidebar uses full dark edge rail
+   - peidetud olekus kogu vasak tume ala on hover/click ala
+   - eemaldab visuaalse topeltjoone raili ja kalendri vasaku ääre vahel
+   - avatud menüüs jääb menüü paremas servas tagasihoidlik sulgemisriba */
+:root{
+  --sidebar-rail-open-width:24px;
+  --sidebar-rail-hidden-width:48px;
+}
+.app.sidebar-full{grid-template-columns:248px minmax(0,1fr)!important;}
+.app.sidebar-hidden,.app.sidebar-compact{grid-template-columns:var(--sidebar-rail-hidden-width) minmax(0,1fr)!important;}
+.app.sidebar-full .sidebar{
+  padding-right:calc(var(--sidebar-rail-open-width) + 14px)!important;
+}
+.app.sidebar-full .sidebar-toggle-rail{
+  width:var(--sidebar-rail-open-width)!important;
+  right:0!important;
+  left:auto!important;
+}
+.app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{
+  width:var(--sidebar-rail-hidden-width)!important;
+  min-width:var(--sidebar-rail-hidden-width)!important;
+  background:var(--sidebar-bg)!important;
+  border-right:0!important;
+  box-shadow:none!important;
+}
+.app.sidebar-hidden .sidebar-toggle-rail,.app.sidebar-compact .sidebar-toggle-rail{
+  width:var(--sidebar-rail-hidden-width)!important;
+  left:0!important;
+  right:auto!important;
+  background:transparent!important;
+  border:0!important;
+}
+.app.sidebar-hidden .sidebar-toggle-rail:hover,.app.sidebar-compact .sidebar-toggle-rail:hover{
+  background:color-mix(in srgb,var(--sidebar-hover) 56%,transparent)!important;
+}
+.app.sidebar-hidden .sidebar-toggle-rail::before,.app.sidebar-compact .sidebar-toggle-rail::before{
+  content:'›';
+  font-size:20px;
+}
+.app.sidebar-full .sidebar-toggle-rail::before{content:'‹';}
+.app.sidebar-hidden > main,.app.sidebar-compact > main{border-left:0!important;}
+.app.sidebar-hidden > main > .content,.app.sidebar-compact > main > .content{padding-left:0!important;}
+.app.sidebar-hidden .content > .panel,.app.sidebar-compact .content > .panel{
+  border-left:0!important;
+  border-top-left-radius:14px!important;
+  border-bottom-left-radius:14px!important;
+}
+.theme-light .app.sidebar-hidden .sidebar,.theme-light .app.sidebar-compact .sidebar{background:var(--sidebar-bg)!important;}
+.theme-light .app.sidebar-hidden .sidebar-toggle-rail:hover,.theme-light .app.sidebar-compact .sidebar-toggle-rail:hover{background:rgba(23,105,170,.08)!important;}
+@media(max-width:1120px){
+  .app.sidebar-hidden,.app.sidebar-compact{grid-template-columns:var(--sidebar-rail-hidden-width) minmax(0,1fr)!important;}
+  .app.sidebar-hidden .sidebar,.app.sidebar-compact .sidebar{width:var(--sidebar-rail-hidden-width)!important;min-width:var(--sidebar-rail-hidden-width)!important;}
+}
