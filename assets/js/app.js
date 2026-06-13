@@ -2703,7 +2703,7 @@ function restoreCalendarScrollState(pos){
     const grid=document.querySelector('.calendar-planner-grid');
     if(wrap){
       const planner=document.querySelector('.calendar-planner');
-      const initialHour=Number(planner?.dataset?.initialScrollHour||7);
+      const initialHour=Number(planner?.dataset?.initialScrollHour||6);
       const hourPx=parseFloat(getComputedStyle(planner||wrap).getPropertyValue('--calendar-hour-px'))||72;
       const initialTop=Math.max(0,Math.round(initialHour*hourPx));
       wrap.scrollTop=pos.hasWrap?(pos.wrapTop||0):initialTop;
