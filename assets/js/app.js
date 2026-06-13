@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260613_1325';
+const APP_BUILD='20260613_1345';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -81,8 +81,44 @@ function authRenderSuperadmin(message=''){
   document.getElementById('backLoginBtn')?.addEventListener('click',()=>authRenderScreen());
   document.getElementById('superForm')?.addEventListener('submit',e=>{e.preventDefault(); const pin=e.currentTarget.elements.pin.value; const pin2=e.currentTarget.elements.pin2?.value; const lock=authLockInfo('superadmin'); if(lock.locked) return authRenderSuperadmin(lockText(lock)); const authNow=normalizeAuthUsers(); if(!authNow.superadmin.pinHash){ if(pin!==pin2) return authRenderSuperadmin('PIN-i kordus ei ühti.'); if(!validatePin('superadmin',pin)) return authRenderSuperadmin(`Superadmin PIN peab olema ${AUTH_RULES.superadmin.label}.`); authNow.superadmin.pinHash=authHash(pin); authNow.superadmin.pinSetAt=new Date().toISOString(); authSave(authNow); authSetSession({id:'SUPERADMIN',name:'Superadmin',role:'superadmin'}); location.href='people.html'; return; } if(!authVerify(pin,authNow.superadmin.pinHash)){const l=authRegisterFailure('superadmin'); return authRenderSuperadmin(l.locked?lockText(l):'Vale superadmin PIN.');} authClearFailure('superadmin'); authSetSession({id:'SUPERADMIN',name:'Superadmin',role:'superadmin'}); location.href='people.html'; });
 }
-function requireAuthOrRender(){ normalizeAuthUsers(); if(!currentAuthUser()){authRenderScreen(); return false;} if(!canAccessPage(page)){ shell(header('Ligipääs puudub','','','LIGIPÄÄS PUUDUB')+`<div class="detail-body"><p class="muted">Sinu rollil puudub selle vaate kasutamise õigus.</p><button class="btn" id="authLogoutBtn">Logi välja</button></div>`,'',{wide:true}); document.getElementById('authLogoutBtn')?.addEventListener('click',()=>{authClearSession(); location.href='index.html';}); return false;} return true; }
+function requireAuthOrRender(){ normalizeAuthUsers(); if(!currentAuthUser()){authRenderScreen(); return false;} if(!canAccessPage(page)){ shell(header('Ligipääs puudub','','','LIGIPÄÄS PUUDUB')+`<div class="detail-body"><p class="muted">Sinu rollil puudub selle vaate kasutamise õigus.</p><button class="btn" id="authLogoutBtn">Logi välja</button></div>`,'',{wide:true}); document.getElementById('authLogoutBtn')?.addEventListener('click',()=>{localStorage.removeItem(ADMIN_VIEW_AS_KEY); authClearSession(); location.href='index.html';}); return false;} return true; }
 function authStatusPill(){const u=currentAuthUser(); if(!u) return ''; return `<button class="auth-user-pill" id="authLogoutBtn" type="button" title="Logi välja">${esc(u.name)} · ${u.role==='admin'?'Admin':u.role==='superadmin'?'Superadmin':'Tehnik'} · Välju</button>`;}
+const ADMIN_VIEW_AS_KEY='veco_admin_view_as_user_id';
+function adminViewAsId(){
+  if(authRole()!=='admin') return '';
+  const id=localStorage.getItem(ADMIN_VIEW_AS_KEY)||'';
+  const p=(state.people||[]).find(x=>x.id===id && x.active!==false);
+  if(id && !p) localStorage.removeItem(ADMIN_VIEW_AS_KEY);
+  return p?.id||'';
+}
+function scopedPersonId(){
+  const u=currentAuthUser();
+  if(!u) return '';
+  if(u.role==='technician') return u.id;
+  if(u.role==='admin') return adminViewAsId();
+  return '';
+}
+function scopedPerson(){const id=scopedPersonId(); return id?byId(state.people,id):null;}
+function currentEffectiveUser(){
+  const u=currentAuthUser();
+  const p=scopedPerson();
+  if(u?.role==='admin' && p) return {...p,role:'technician',viewedBy:u};
+  return u;
+}
+function activeTechnicians(){return (state.people||[]).filter(p=>p.active!==false && p.id!=='U-DEMO' && !['demo','admin'].includes(String(p.role||'').toLowerCase()));}
+function visiblePeopleForCurrentScope(){const id=scopedPersonId(); return id ? activeTechnicians().filter(p=>p.id===id) : activeTechnicians();}
+function workorderVisibleToCurrentScope(w){const id=scopedPersonId(); return !id || workorderMatchesPerson(w,id);}
+function actVisibleToCurrentScope(a){const id=scopedPersonId(); if(!id) return true; const w=byId(state.workorders,a.workorderId); return w ? workorderMatchesPerson(w,id) : false;}
+function scopedWorkorders(){return (state.workorders||[]).filter(workorderVisibleToCurrentScope);}
+function scopedActs(list=null){return (list||state.acts||[]).filter(actVisibleToCurrentScope);}
+function adminViewAsControl(){
+  if(authRole()!=='admin') return '';
+  const current=adminViewAsId();
+  const opts=['<option value="">Admin: kõik tehnikud</option>'].concat(activeTechnicians().map(p=>`<option value="${esc(p.id)}" ${current===p.id?'selected':''}>Vaata kasutajana: ${esc(p.name)}</option>`)).join('');
+  return `<select class="select admin-view-as" id="adminViewAsSelect" title="Admini kontrollivaade">${opts}</select>`;
+}
+function scopeNotice(){const p=scopedPerson(); return p?`<div class="scope-notice">Kuvatakse kasutaja <strong>${esc(p.name)}</strong> vaadet. Teiste tehnikute tööd ja kalendrid on peidetud.</div>`:'';}
+
 function resetUserPin(userId){const auth=normalizeAuthUsers(); if(auth.users?.[userId]){auth.users[userId].pinHash=''; auth.users[userId].pinSetAt=''; authSave(auth);}}
 function setUserTempPin(userId,pin){const auth=normalizeAuthUsers(); const u=auth.users?.[userId]; if(!u) return false; const role=u.role==='admin'?'admin':'technician'; if(!validatePin(role,pin)) return false; u.pinHash=authHash(pin); u.pinSetAt=new Date().toISOString(); auth.users[userId]=u; authSave(auth); return true;}
 function resetAdminPins(){const auth=normalizeAuthUsers(); Object.values(auth.users||{}).filter(u=>u.role==='admin').forEach(u=>{u.pinHash='';u.pinSetAt='';}); authSave(auth);}
@@ -390,11 +426,11 @@ function viewContextText(value){
 function header(title,filters='',actions='',context=''){
   const label=viewContextText(context||title);
   if(page==='mobile') return `<div class="panel-head mobile-head"><div><h2>${esc(label)}</h2><span class="muted">Lihtne tehniku töövaade</span></div></div>`;
-  return `<div class="panel-head view-head"><div class="view-head-left"><div class="brand-row">${themeLogo()}<h2 class="context-pill view-context-pill">${esc(label)}</h2>${oncallPill()}</div>${filters?`<div class="filter-row">${filters}</div>`:''}</div><div class="view-head-right">${authStatusPill()}${actions?`<div class="action-row">${actions}</div>`:''}</div></div>`
+  return `<div class="panel-head view-head"><div class="view-head-left"><div class="brand-row">${themeLogo()}<h2 class="context-pill view-context-pill">${esc(label)}</h2>${oncallPill()}</div>${filters?`<div class="filter-row">${filters}</div>`:''}</div><div class="view-head-right">${adminViewAsControl()}${authStatusPill()}${actions?`<div class="action-row">${actions}</div>`:''}</div></div>`
 }
 
 function detailHeader(title,actions=''){
-  return `<div class="panel-head detail-head"><div class="view-head-left"><h2 class="context-pill">${esc(title)}</h2></div><div class="view-head-right">${authStatusPill()}${actions?`<div class="action-row">${actions}</div>`:''}</div></div>`;
+  return `<div class="panel-head detail-head"><div class="view-head-left"><h2 class="context-pill">${esc(title)}</h2></div><div class="view-head-right">${adminViewAsControl()}${authStatusPill()}${actions?`<div class="action-row">${actions}</div>`:''}</div></div>`;
 }
 
 
@@ -509,6 +545,13 @@ function bindGlobal(){
       e.target.value='';
     }
   });
+  $('#adminViewAsSelect')?.addEventListener('change',e=>{
+    const v=e.currentTarget.value||'';
+    if(v) localStorage.setItem(ADMIN_VIEW_AS_KEY,v); else localStorage.removeItem(ADMIN_VIEW_AS_KEY);
+    if(page==='mobile') localStorage.removeItem('veco_mobile_user_id');
+    renderCurrentPage();
+  });
+  $('#authLogoutBtn')?.addEventListener('click',()=>{localStorage.removeItem(ADMIN_VIEW_AS_KEY);authClearSession();location.href='index.html';});
   $('#tickerCloseBtn')?.addEventListener('click',()=>{localStorage.setItem('veco_ticker_hidden','true');renderCurrentPage();});
   $('#tickerRestoreBtn')?.addEventListener('click',()=>{localStorage.setItem('veco_ticker_hidden','false');renderCurrentPage();});
 }
@@ -836,13 +879,16 @@ function openProjectModal(id=''){
 
 function renderWorkorders(){
   const status=$('#woStatusFilter')?.value||'all'; const tech=$('#woTechFilter')?.value||'all'; const q=($('#woSearch')?.value||'').toLowerCase();
-  const statuses=[...new Set(state.workorders.map(w=>w.status))];
-  const list=state.workorders.filter(w=>(status==='all'||w.status===status)&&(tech==='all'||workorderMatchesPerson(w,tech))&&`${w.title} ${w.description} ${objectName(w.objectId)} ${projectName(w.projectId)} ${workorderPeopleLabel(w)}`.toLowerCase().includes(q));
-  if(!list.some(w=>w.id===selectedWorkorderId)) selectedWorkorderId=list[0]?.id||state.workorders[0]?.id||'';
-  const filters=`<input class="field" id="woSearch" placeholder="Otsi töökäsku..." value="${esc(q)}"><select class="select" id="woTechFilter"><option value="all">Kõik tehnikud</option>${state.people.map(p=>`<option value="${p.id}" ${tech===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select><select class="select" id="woStatusFilter"><option value="all">Kõik staatused</option>${statuses.map(s=>`<option value="${esc(s)}" ${status===s?'selected':''}>${esc(s)}</option>`).join('')}</select>`;
+  const baseWorkorders=scopedWorkorders();
+  const statuses=[...new Set(baseWorkorders.map(w=>w.status))];
+  const list=baseWorkorders.filter(w=>(status==='all'||w.status===status)&&(tech==='all'||workorderMatchesPerson(w,tech))&&`${w.title} ${w.description} ${objectName(w.objectId)} ${projectName(w.projectId)} ${workorderPeopleLabel(w)}`.toLowerCase().includes(q));
+  if(!list.some(w=>w.id===selectedWorkorderId)) selectedWorkorderId=list[0]?.id||baseWorkorders[0]?.id||'';
+  const peopleForFilter=visiblePeopleForCurrentScope();
+  const techFilterHtml=scopedPersonId()?`<select class="select" id="woTechFilter" disabled><option value="${esc(scopedPersonId())}">${esc(scopedPerson()?.name||'Minu tööd')}</option></select>`:`<select class="select" id="woTechFilter"><option value="all">Kõik tehnikud</option>${peopleForFilter.map(p=>`<option value="${p.id}" ${tech===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`;
+  const filters=`<input class="field" id="woSearch" placeholder="Otsi töökäsku..." value="${esc(q)}">${techFilterHtml}<select class="select" id="woStatusFilter"><option value="all">Kõik staatused</option>${statuses.map(s=>`<option value="${esc(s)}" ${status===s?'selected':''}>${esc(s)}</option>`).join('')}</select>`;
   const actions=`<button class="btn primary" id="newWorkorderBtn">${icon('＋')}Lisa töökäsk</button>`;
   const rows=list.map(w=>`<tr data-workorder-id="${w.id}" class="${detailOpen.workorders&&w.id===selectedWorkorderId?'selected':''}"><td><strong>${esc(w.title)}</strong><div class="muted">${esc(problemDescriptionText(w))}</div></td><td>${esc(fmtActDate(w.date))} ${esc(w.time)}</td><td>${esc(clientName(objectClientId(w.objectId)))}</td><td>${esc(objectName(w.objectId))}</td><td>${esc(projectName(w.projectId))}</td><td>${esc(workorderAssigneeLabel(w))}</td><td><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></td></tr>`);
-  const main=header('Töökäsud',filters,actions,'Töökäsud')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Töökäske',state.workorders.length)}${summaryBox('Avatud',openWorkorders().length)}${summaryBox('Lõpetatud',state.workorders.filter(w=>isCompletedStatus(w.status)).length)}${summaryBox('Aktid',state.acts.length)}</div>${table(['Töö','Aeg','Klient','Objekt','Projekt','Vastutaja / osalejad','Staatus'],rows)}</div>`;
+  const main=header('Töökäsud',filters,actions,'Töökäsud')+`<div class="detail-body">${scopeNotice()}<div class="summary-grid">${summaryBox('Töökäske',baseWorkorders.length)}${summaryBox('Avatud',baseWorkorders.filter(w=>!isCompletedStatus(w.status)).length)}${summaryBox('Lõpetatud',baseWorkorders.filter(w=>isCompletedStatus(w.status)).length)}${summaryBox('Aktid',scopedActs().length)}</div>${table(['Töö','Aeg','Klient','Objekt','Projekt','Vastutaja / osalejad','Staatus'],rows)}</div>`;
   shell(main,detailOpen.workorders?workorderDetailHtml():''); $('#woSearch')?.addEventListener('input',renderWorkorders); $('#woTechFilter')?.addEventListener('change',renderWorkorders); $('#woStatusFilter')?.addEventListener('change',renderWorkorders);
   $$('[data-workorder-id]').forEach(row=>row.addEventListener('click',()=>{const id=row.dataset.workorderId; if(detailOpen.workorders&&selectedWorkorderId===id){detailOpen.workorders=false;}else{selectedWorkorderId=id;detailOpen.workorders=true;} renderWorkorders();}));
   $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();selectedWorkorderId=state.workorders[0]?.id||'';detailOpen.workorders=false;renderWorkorders();}); $('#newWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal()); bindWorkorderDetail();
@@ -1591,9 +1637,9 @@ function renderActs(){
   const status=$('#actStatusFilter')?.value||'all';
   const archiveView=$('#actArchiveFilter')?.value||'active';
   const q=($('#actSearch')?.value||'').toLowerCase();
-  const baseActs=archiveView==='archive'?archivedActs():activeActs();
+  const baseActs=scopedActs(archiveView==='archive'?archivedActs():activeActs());
   const statuses=[...new Set(baseActs.map(a=>a.status))];
-  const pending=actPendingWorkorders();
+  const pending=actPendingWorkorders().filter(workorderVisibleToCurrentScope);
   const list=baseActs.filter(a=>(status==='all'||a.status===status)&&`${a.title} ${objectName(a.objectId)} ${a.workorderId}`.toLowerCase().includes(q));
   if(!list.some(a=>a.id===selectedActId)) selectedActId=list[0]?.id||'';
   const filters=`<input class="field" id="actSearch" placeholder="Otsi akti..." value="${esc(q)}"><select class="select" id="actArchiveFilter"><option value="active" ${archiveView==='active'?'selected':''}>Aktiivsed aktid</option><option value="archive" ${archiveView==='archive'?'selected':''}>Arhiiv</option></select><select class="select" id="actStatusFilter"><option value="all">Kõik staatused</option>${statuses.map(s=>`<option value="${esc(s)}" ${status===s?'selected':''}>${esc(s)}</option>`).join('')}</select>`;
@@ -1604,9 +1650,9 @@ function renderActs(){
   }).join('');
   const pendingBlock=archiveView==='active'?`<div class="section-title">Akti ootel tööd</div>${pending.length?table(['Objekt','Töö','Kuupäev','Teostaja','Akti seis','Tegevus'],pendingRows):`<div class="empty-state"><strong>Akti ootel töid ei ole.</strong><div class="muted">Kui töökäsk märgitakse lõpetatuks, ilmub see siia akti loomiseks või avamiseks.</div></div>`}`:'';
   const archiveEmpty=archiveView==='archive' && !list.length?`<div class="empty-state"><strong>Arhiiv on tühi.</strong><div class="muted">Arhiveeritud aktid ilmuvad siia. Siit saab neid taastada või lõplikult kustutada.</div></div>`:'';
-  const activeCount=activeActs().length;
-  const archiveCount=archivedActs().length;
-  const main=header('Aktid',filters,actions,'Aktid')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Akti ootel',pending.length)}${summaryBox('Aktiivsed aktid',activeCount)}${summaryBox('Arhiivis',archiveCount)}${summaryBox('Mustandeid',activeActs().filter(a=>a.status==='Mustand').length)}</div>${pendingBlock}<div class="section-title">${archiveView==='archive'?'Aktide arhiiv':'Aktide register'}</div>${archiveEmpty||table(['Akt','Kuupäev','Klient','Objekt','Töökäsk','Staatus','Tegevused'],rows)}</div>`;
+  const activeCount=scopedActs(activeActs()).length;
+  const archiveCount=scopedActs(archivedActs()).length;
+  const main=header('Aktid',filters,actions,'Aktid')+`<div class="detail-body">${scopeNotice()}<div class="summary-grid">${summaryBox('Akti ootel',pending.length)}${summaryBox('Aktiivsed aktid',activeCount)}${summaryBox('Arhiivis',archiveCount)}${summaryBox('Mustandeid',scopedActs(activeActs()).filter(a=>a.status==='Mustand').length)}</div>${pendingBlock}<div class="section-title">${archiveView==='archive'?'Aktide arhiiv':'Aktide register'}</div>${archiveEmpty||table(['Akt','Kuupäev','Klient','Objekt','Töökäsk','Staatus','Tegevused'],rows)}</div>`;
   shell(main,detailOpen.acts?actDetailHtml():'');
   $('#actSearch')?.addEventListener('input',renderActs);
   $('#actStatusFilter')?.addEventListener('change',renderActs);
@@ -1854,8 +1900,9 @@ function renderTeam(){
   const rawSelectedPeople=(()=>{
     try{ return JSON.parse(localStorage.getItem('veco_team_people_filter')||'[]')||[]; }catch(_){ return []; }
   })().filter(id=>state.people.some(p=>p.id===id));
-  const selectedPeople=rawSelectedPeople.length?rawSelectedPeople:state.people.map(p=>p.id);
-  const visiblePeople=state.people.filter(p=>selectedPeople.includes(p.id));
+  const teamVisiblePeople=visiblePeopleForCurrentScope();
+  const selectedPeople=rawSelectedPeople.length?rawSelectedPeople:teamVisiblePeople.map(p=>p.id);
+  const visiblePeople=teamVisiblePeople.filter(p=>selectedPeople.includes(p.id));
   const preferredCurrentUser=()=>{
     const stored=localStorage.getItem('veco_team_current_user_id')||'';
     return state.people.find(p=>p.id===stored)
@@ -1879,7 +1926,7 @@ function renderTeam(){
   const dayNames=['E','T','K','N','R','L','P'];
   const weekDayOptions=weekDays.map((d,i)=>`<option value="${d}" ${selectedDay===d?'selected':''}>${dayNames[i]} ${d}</option>`).join('');
   const teamStatusFilter=`<div class="team-people-filter" id="teamStatusFilterWrap"><button class="btn ghost" type="button" id="teamStatusFilterBtn">☑ ${esc(statusFilterLabel)}</button><div class="team-people-menu hidden" id="teamStatusMenu"><div class="team-people-menu-head"><strong>Staatused vaates</strong><button class="btn small ghost" type="button" id="teamStatusOpenBtn">Avatud</button></div>${allTeamStatuses.map(st=>`<label class="team-people-option"><input type="checkbox" value="${esc(st)}" ${selectedStatuses.includes(st)?'checked':''}> <span>${esc(st)}</span><small>${isCompletedStatus(st)?'lõpetatud':'avatud'}</small></label>`).join('')}<div class="team-people-menu-actions"><button class="btn small ghost" type="button" id="teamStatusAllBtn">Kõik</button><button class="btn small ghost" type="button" id="teamStatusDefaultBtn">Vaikimisi</button></div></div></div>`;
-  const teamPeopleFilter=`<div class="team-people-filter" id="teamPeopleFilter"><button class="btn ghost" type="button" id="teamPeopleFilterBtn">👥 ${esc(peopleFilterLabel)}</button><div class="team-people-menu hidden" id="teamPeopleMenu"><div class="team-people-menu-head"><strong>Tehnikud vaates</strong><button class="btn small ghost" type="button" id="teamPeopleAllBtn">Kõik</button></div>${currentTeamUser?`<button class="btn small ghost full" type="button" id="teamPeopleMineBtn">Minu tööd · ${esc(currentTeamUser.name)}</button>`:''}${state.people.map(p=>`<label class="team-people-option"><input type="checkbox" value="${esc(p.id)}" ${selectedPeople.includes(p.id)?'checked':''}> <span>${esc(p.name)}</span><small>${esc(p.role||'Tehnik')}</small></label>`).join('')}</div></div>`;
+  const teamPeopleFilter=`<div class="team-people-filter" id="teamPeopleFilter"><button class="btn ghost" type="button" id="teamPeopleFilterBtn">👥 ${esc(peopleFilterLabel)}</button><div class="team-people-menu hidden" id="teamPeopleMenu"><div class="team-people-menu-head"><strong>Tehnikud vaates</strong><button class="btn small ghost" type="button" id="teamPeopleAllBtn">Kõik</button></div>${currentTeamUser?`<button class="btn small ghost full" type="button" id="teamPeopleMineBtn">Minu tööd · ${esc(currentTeamUser.name)}</button>`:''}${teamVisiblePeople.map(p=>`<label class="team-people-option"><input type="checkbox" value="${esc(p.id)}" ${selectedPeople.includes(p.id)?'checked':''}> <span>${esc(p.name)}</span><small>${esc(p.role||'Tehnik')}</small></label>`).join('')}</div></div>`;
   const viewSwitch=`<select class="select" id="teamViewMode"><option value="cards" ${view==='cards'?'selected':''}>Kaardid</option><option value="matrix" ${view==='matrix'?'selected':''}>Nädalatabel</option><option value="day" ${view==='day'?'selected':''}>Päev</option></select><select class="select" id="teamWeekScope"><option value="workdays" ${scope==='workdays'?'selected':''}>E–R</option><option value="full" ${scope==='full'?'selected':''}>E–P</option></select>${view==='day'?`<select class="select" id="teamDaySelect">${weekDayOptions}</select>`:''}`;
   const filters=`<input class="field" id="teamWeekStart" type="date" value="${esc(currentWeek)}">${teamStatusFilter}${teamPeopleFilter}${viewSwitch}`;
   const actions=`<button class="btn ghost" id="teamPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="teamThisWeekBtn" type="button">↕ Täna</button><button class="btn ghost" id="teamNextWeekBtn" type="button">Järgmine ›</button>`;
@@ -1939,7 +1986,7 @@ function renderTeam(){
   const content=view==='matrix'?matrixHtml:(view==='day'?dayHtml:`<div class="grid team-grid">${techCards}</div>`);
   const teamHeaderLabel=formatViewPeriod('Tiimivaade',view==='day'?'day':'week',view==='day'?[selectedDay]:visibleDays,currentWeek,{hideRange:view!=='day'});
   window.__VECO_ONCALL_CONTEXT_DAYS__ = view==='day' ? [selectedDay] : visibleDays;
-  const main=header('Tiimivaade',filters,actions,teamHeaderLabel)+`<div class="detail-body"><div class="summary-grid">${summaryBox('Tehnikuid',visiblePeople.length)}${summaryBox(view==='day'?'Päeva töid':'Vahemiku töid',view==='day'?dayWorkorders.length:visibleWorkorders.length)}${summaryBox('Planeeritud h',view==='day'?dayWorkorders.reduce((sum,w)=>sum+workorderHours(w),0):totalHours)}${summaryBox('Hoiatusi',absentCount+overloaded)}</div><div class="team-view-hint">${view==='cards'?'Kaardivaade näitab tehniku koormust valitud nädalas.':view==='matrix'?'Nädalatabel näitab kogu tiimi päevade kaupa.':'Päevavaade sobib hommikuseks tööde jagamiseks.'}</div>${content}</div>`;
+  const main=header('Tiimivaade',filters,actions,teamHeaderLabel)+`<div class="detail-body">${scopeNotice()}<div class="summary-grid">${summaryBox('Tehnikuid',visiblePeople.length)}${summaryBox(view==='day'?'Päeva töid':'Vahemiku töid',view==='day'?dayWorkorders.length:visibleWorkorders.length)}${summaryBox('Planeeritud h',view==='day'?dayWorkorders.reduce((sum,w)=>sum+workorderHours(w),0):totalHours)}${summaryBox('Hoiatusi',absentCount+overloaded)}</div><div class="team-view-hint">${view==='cards'?'Kaardivaade näitab tehniku koormust valitud nädalas.':view==='matrix'?'Nädalatabel näitab kogu tiimi päevade kaupa.':'Päevavaade sobib hommikuseks tööde jagamiseks.'}</div>${content}</div>`;
   const detail=selectedTeamPersonId?teamDetailHtml(visibleDays,view==='day'?dayWorkorders:visibleWorkorders):'';
   shell(main,detail);
   $('#teamWeekStart')?.addEventListener('change',()=>{const next=weekStartKeyFrom($('#teamWeekStart').value); localStorage.setItem('veco_team_week',next); $('#teamWeekStart').value=next; renderTeam();}); $('#teamViewMode')?.addEventListener('change',renderTeam); $('#teamWeekScope')?.addEventListener('change',renderTeam); $('#teamDaySelect')?.addEventListener('change',renderTeam);
@@ -2233,9 +2280,13 @@ function openAbsenceModal(id=''){
   $('#absenceForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('EV'),personId:f.personId.value,type:f.type.value,start:f.start.value,end:f.end.value,note:f.note.value};if(next.end<next.start){alert('Lõpp ei saa olla enne algust.');return;}if(id){Object.assign(a,next)}else{state.absences.push(next)}save();closeModal();renderVacations();});
 }
 function activeMobilePeople(){
-  return state.people.filter(p=>p.active && p.id!=='U-DEMO' && String(p.role||'').toLowerCase()!=='demo');
+  const scopedId=scopedPersonId();
+  const people=visiblePeopleForCurrentScope();
+  return scopedId ? people.filter(p=>p.id===scopedId) : people;
 }
 function mobileCurrentUser(){
+  const scopedId=scopedPersonId();
+  if(scopedId) return activeMobilePeople().find(p=>p.id===scopedId)||null;
   const id=localStorage.getItem('veco_mobile_user_id')||'';
   const person=activeMobilePeople().find(p=>p.id===id)||null;
   if(id && !person) localStorage.removeItem('veco_mobile_user_id');
@@ -2667,7 +2718,8 @@ function renderCalendar(){
   const calendarScrollState=captureCalendarScrollState();
   const storedDate=localStorage.getItem('veco_calendar_week')||weekStartKeyFrom('');
   const currentDate=storedDate;
-  const techFilter=$('#calendarTechFilter')?.value||'all';
+  const scopedId=scopedPersonId();
+  const techFilter=scopedId||($('#calendarTechFilter')?.value||'all');
   const statusFilter=$('#calendarStatusFilter')?.value||'open';
   const mode=$('#calendarViewMode')?.value||localStorage.getItem('veco_calendar_view')||'week';
   const hideWeekend=(localStorage.getItem('veco_calendar_hide_weekend')||'false')==='true';
@@ -2700,7 +2752,9 @@ function renderCalendar(){
     // ja alla hilisemaks kerida ning tööpäeva lõppu ei lõigata ära.
     return {start:0,end:24};
   };
-  const filters=`<input class="field" id="calendarWeekStart" type="date" value="${esc(currentDate)}"><select class="select" id="calendarTechFilter"><option value="all">Kõik tehnikud</option>${state.people.map(p=>`<option value="${p.id}" ${techFilter===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select><select class="select" id="calendarViewMode"><option value="day" ${mode==='day'?'selected':''}>Päev</option><option value="week" ${mode==='week'?'selected':''}>Nädal</option><option value="month" ${mode==='month'?'selected':''}>Kuu</option><option value="year" ${mode==='year'?'selected':''}>Aasta</option></select><button class="btn ghost" id="calendarHideWeekend" type="button" data-hidden="${hideWeekend?'true':'false'}">▦ ${hideWeekend?'Näita L/P':'Peida L/P'}</button><select class="select" id="calendarStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Kalendri tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${workorderStatusOptions.map(s=>`<option value="${s}" ${statusFilter===s?'selected':''}>${s}</option>`).join('')}</select>`;
+  const calendarPeople=visiblePeopleForCurrentScope();
+  const calendarTechFilterHtml=scopedId?`<select class="select" id="calendarTechFilter" disabled><option value="${esc(scopedId)}">${esc(scopedPerson()?.name||'Minu kalender')}</option></select>`:`<select class="select" id="calendarTechFilter"><option value="all">Kõik tehnikud</option>${calendarPeople.map(p=>`<option value="${p.id}" ${techFilter===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`;
+  const filters=`<input class="field" id="calendarWeekStart" type="date" value="${esc(currentDate)}">${calendarTechFilterHtml}<select class="select" id="calendarViewMode"><option value="day" ${mode==='day'?'selected':''}>Päev</option><option value="week" ${mode==='week'?'selected':''}>Nädal</option><option value="month" ${mode==='month'?'selected':''}>Kuu</option><option value="year" ${mode==='year'?'selected':''}>Aasta</option></select><button class="btn ghost" id="calendarHideWeekend" type="button" data-hidden="${hideWeekend?'true':'false'}">▦ ${hideWeekend?'Näita L/P':'Peida L/P'}</button><select class="select" id="calendarStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Kalendri tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${workorderStatusOptions.map(s=>`<option value="${s}" ${statusFilter===s?'selected':''}>${s}</option>`).join('')}</select>`;
   const actions=`<button class="btn ghost" id="calendarImportWorkBtn" type="button">▧ Impordi töö</button><button class="btn ghost" id="calendarPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="calendarThisWeekBtn" type="button">⌖ Täna</button><button class="btn ghost" id="calendarNextWeekBtn" type="button">Järgmine ›</button><button class="btn primary" id="newCalendarWorkorderBtn" type="button">＋ Lisa töökäsk</button>`;
   const calendarBounds=calendarWorkTimeBounds(filtered,visibleDays);
   const calendarStartHour=calendarBounds.start;
@@ -2824,7 +2878,7 @@ function renderCalendar(){
     body=`<div class="calendar-year-grid">${visibleDays.map(month=>{const jobs=filtered.filter(w=>w.date&&w.date.startsWith(month));const label=parseDateKey(month+'-01').toLocaleDateString('et-EE',{month:'long',year:'numeric'});return `<div class="calendar-year-month"><strong>${esc(label)}</strong><span class="muted">${jobs.length} tööd</span>${jobs.slice(0,5).map(w=>`<button class="calendar-mini-event" data-calendar-edit="${w.id}" type="button">${esc(fmtActDate(w.date))} · ${esc(objectName(w.objectId))}</button>`).join('')}</div>`}).join('')}</div>`;
   }
   window.__VECO_ONCALL_CONTEXT_DAYS__ = visibleDays;
-  const main=header('Kalender',filters,actions,calendarRangeLabel(mode,visibleDays,currentDate))+`<div class="calendar-planner-wrap">${body}</div>`;
+  const main=header('Kalender',filters,actions,calendarRangeLabel(mode,visibleDays,currentDate))+`<div class="calendar-planner-wrap">${scopeNotice()}${body}</div>`;
   shell(main,'',{wide:true});
   restoreCalendarScrollState(calendarScrollState);
   $('#calendarWeekStart')?.addEventListener('change',e=>{localStorage.setItem('veco_calendar_week',e.target.value);renderCalendar();}); $('#calendarTechFilter')?.addEventListener('change',renderCalendar); $('#calendarStatusFilter')?.addEventListener('change',renderCalendar); $('#calendarViewMode')?.addEventListener('change',renderCalendar);

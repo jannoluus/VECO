@@ -1,5 +1,5 @@
 {
-  "build": "VECO_V3_20260613_1325",
+  "build": "20260613_1345",
   "created_at": "2026-06-13 11:38",
   "changes": [
     "Kalendri päeva/kuupäeva päis on tehtud eraldi sticky overlay-na.",
@@ -7,6 +7,6 @@
     "Sisemised päevapäised jäeti ruumi hoidma, kuid peideti visuaalselt, et töökaartide paigutus ei muutuks.",
     "Cache/timestamp uuendatud."
   ],
-  "version": "v3.19.0",
-  "notes": "PIN login: technician/admin first PIN setup, sessions, role-based nav, admin PIN management, superadmin recovery."
+  "version": "v3.19.1",
+  "notes": "Role scoped technician views: technicians see only own work; admin sees all or can view as technician."
 }
