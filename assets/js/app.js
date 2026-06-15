@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260615_1716';
+const APP_BUILD='20260615_1732';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -439,19 +439,29 @@ function globalTicker(){
   // Calendar/workspace gets the full available vertical area; no footer height is reserved.
   return '';
 }
+function getStoredSidebarMode(){
+  if(page==='mobile') return 'full';
+  const explicitOpen=localStorage.getItem('veco_sidebar_open');
+  if(explicitOpen==='false') return 'hidden';
+  if(explicitOpen==='true') return 'full';
+  let mode=localStorage.getItem('veco_sidebar_mode')||'';
+  if(mode==='compact') mode='hidden';
+  if(['full','hidden'].includes(mode)) return mode;
+  return localStorage.getItem('veco_sidebar_collapsed')==='true' ? 'hidden' : 'full';
+}
+function setStoredSidebarMode(mode){
+  if(mode==='compact') mode='hidden';
+  if(!['full','hidden'].includes(mode)) mode='full';
+  localStorage.setItem('veco_sidebar_mode',mode);
+  localStorage.setItem('veco_sidebar_collapsed',mode==='hidden'?'true':'false');
+  localStorage.setItem('veco_sidebar_open',mode==='full'?'true':'false');
+  return mode;
+}
 function shell(main,aside='',opts={}){
   applyTheme();
-  let sidebarMode=page==='mobile' ? 'full' : (localStorage.getItem('veco_sidebar_mode')||'');
-  if(!sidebarMode){
-    sidebarMode=localStorage.getItem('veco_sidebar_collapsed')==='true' ? 'hidden' : 'full';
-    localStorage.setItem('veco_sidebar_mode',sidebarMode);
-  }
-  // Alates sellest buildist on ainult 2 olekut: täismenüü ja peidetud menüü.
-  // Vana 'compact' olek teisendatakse peidetuks, et ikoonivaade ei jääks kasutajale ette.
-  if(sidebarMode==='compact') sidebarMode='hidden';
-  if(!['full','hidden'].includes(sidebarMode)) sidebarMode='full';
-  localStorage.setItem('veco_sidebar_mode',sidebarMode);
-  localStorage.setItem('veco_sidebar_collapsed',sidebarMode==='hidden'?'true':'false');
+  // VECO_V3_20260615_1732: persist left sidebar open/hidden state across refreshes.
+  // If the menu was closed before refresh, it must stay closed after reload.
+  const sidebarMode=setStoredSidebarMode(getStoredSidebarMode());
   const sidebarClass=sidebarMode==='hidden'?'sidebar-hidden':'sidebar-full';
   document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();
@@ -473,10 +483,9 @@ function bindGlobal(){
   $$('[data-theme-toggle]').forEach(btn=>btn.addEventListener('click',toggleTheme));
   $$('[data-mobile-theme-toggle]').forEach(btn=>btn.addEventListener('click',()=>{toggleTheme();renderMobile();}));
   const sidebarToggleHandler=()=>{
-    const current=localStorage.getItem('veco_sidebar_mode') || (localStorage.getItem('veco_sidebar_collapsed')==='true'?'hidden':'full');
+    const current=getStoredSidebarMode();
     const next=current==='hidden'?'full':'hidden';
-    localStorage.setItem('veco_sidebar_mode',next);
-    localStorage.setItem('veco_sidebar_collapsed',next==='hidden'?'true':'false');
+    setStoredSidebarMode(next);
     renderCurrentPage();
   };
   $('#sidebarToggleRail')?.addEventListener('click',sidebarToggleHandler);

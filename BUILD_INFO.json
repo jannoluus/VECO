@@ -1,19 +1,16 @@
 {
-  "build": "VECO_V3_20260615_1716",
-  "buildNumber": "20260615_1716",
+  "build": "VECO_V3_20260615_1732",
+  "buildNumber": "20260615_1732",
   "createdAt": "2026-06-15T17:16:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
   "version": "v3.19.6",
   "changes": [
-    "CR-081E: calendar height CSS cleanup after ticker removal",
-    "Removed legacy fixed/min-height conflicts from calendar planner layout",
-    "Planner wrapper now flex-fills remaining panel height instead of using stale inline height",
-    "Responsive hour-height JS now reads actual wrapper height and no longer freezes wrapper height",
-    "24h timeline, 07:00-18:00 adaptive target and scroll remain intact",
-    "Diagnostics build display remains available"
+    "CR-082A: vasaku menüü avatud/suletud olek salvestub localStorage-sse ja taastub pärast refreshi",
+    "Lisatud veco_sidebar_open võti koos legacy veco_sidebar_mode / veco_sidebar_collapsed ühilduvusega",
+    "HTML asset query stringid uuendatud build numbrile cache vältimiseks"
   ],
   "notes": "Targets the remaining bottom dead-zone below the calendar scroll area.",
-  "build_number": "20260615_1716",
-  "app_build": "20260615_1716",
-  "created_at": "2026-06-15T17:16:00+03:00"
+  "build_number": "20260615_1732",
+  "app_build": "20260615_1732",
+  "created_at": "2026-06-15T17:32:00+03:00"
 }
