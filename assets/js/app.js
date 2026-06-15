@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260615_1732';
+const APP_BUILD='20260615_1755';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -459,11 +459,11 @@ function setStoredSidebarMode(mode){
 }
 function shell(main,aside='',opts={}){
   applyTheme();
-  // VECO_V3_20260615_1732: persist left sidebar open/hidden state across refreshes.
+  // VECO_V3_20260615_1755: persist left sidebar open/hidden state across refreshes.
   // If the menu was closed before refresh, it must stay closed after reload.
   const sidebarMode=setStoredSidebarMode(getStoredSidebarMode());
   const sidebarClass=sidebarMode==='hidden'?'sidebar-hidden':'sidebar-full';
-  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
+  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}${page==='mobile'?'':'<button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Sulge menüü"></button>'}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();
 }
 function activeThemeKey(){
@@ -490,6 +490,13 @@ function bindGlobal(){
   };
   $('#sidebarToggleRail')?.addEventListener('click',sidebarToggleHandler);
   $('#sidebarToggleBtn')?.addEventListener('click',sidebarToggleHandler);
+  $('#sidebarScrim')?.addEventListener('click',()=>{ setStoredSidebarMode('hidden'); renderCurrentPage(); });
+  document.addEventListener('keydown',(event)=>{
+    if(event.key==='Escape' && getStoredSidebarMode()==='full'){
+      setStoredSidebarMode('hidden');
+      renderCurrentPage();
+    }
+  },{once:true});
   $$('[data-nav-toggle]').forEach(btn=>btn.addEventListener('click',()=>{
     const title=btn.dataset.navToggle;
     let open={};

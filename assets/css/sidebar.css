@@ -1012,3 +1012,112 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
 .theme-light .app.sidebar-hidden .sidebar-toggle-rail::before,.theme-light .app.sidebar-compact .sidebar-toggle-rail::before{
   color:#1769aa!important;
 }
+
+
+/* VECO_V3_20260615_1755: Slide sidebar v1
+   Existing 28px blue rail remains; full menu slides over the calendar instead of resizing it. */
+:root{
+  --sidebar-slide-width:248px;
+  --sidebar-slide-rail-width:28px;
+  --sidebar-slide-z:1600;
+}
+.app.sidebar-full,
+.app.sidebar-hidden,
+.app.sidebar-compact{
+  grid-template-columns:var(--sidebar-slide-rail-width) minmax(0,1fr)!important;
+}
+.app.sidebar-full > main,
+.app.sidebar-hidden > main,
+.app.sidebar-compact > main{
+  grid-column:2!important;
+  min-width:0!important;
+}
+.app.sidebar-full .sidebar,
+.app.sidebar-hidden .sidebar,
+.app.sidebar-compact .sidebar{
+  position:fixed!important;
+  top:0!important;
+  left:0!important;
+  bottom:0!important;
+  z-index:var(--sidebar-slide-z)!important;
+  transition:transform .22s cubic-bezier(.2,.8,.2,1), width .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease!important;
+  will-change:transform!important;
+}
+.app.sidebar-hidden .sidebar,
+.app.sidebar-compact .sidebar{
+  width:var(--sidebar-slide-rail-width)!important;
+  min-width:var(--sidebar-slide-rail-width)!important;
+  max-width:var(--sidebar-slide-rail-width)!important;
+  transform:translateX(0)!important;
+  padding:0!important;
+  background:#071016!important;
+  box-shadow:inset -3px 0 0 var(--veco-active-blue)!important;
+}
+.app.sidebar-full .sidebar{
+  width:var(--sidebar-slide-width)!important;
+  min-width:var(--sidebar-slide-width)!important;
+  max-width:var(--sidebar-slide-width)!important;
+  transform:translateX(0)!important;
+  padding:18px 14px!important;
+  background:var(--sidebar-bg)!important;
+  color:var(--sidebar-ink)!important;
+  border-right:1px solid rgba(255,255,255,.10)!important;
+  box-shadow:18px 0 42px rgba(0,0,0,.34)!important;
+  overflow:auto!important;
+}
+.app.sidebar-full .nav,
+.app.sidebar-full #importDataFile{
+  display:block!important;
+}
+.app.sidebar-full .sidebar-toggle-rail{
+  position:fixed!important;
+  left:calc(var(--sidebar-slide-width) - var(--sidebar-slide-rail-width))!important;
+  right:auto!important;
+  top:0!important;
+  width:var(--sidebar-slide-rail-width)!important;
+  height:100vh!important;
+  background:transparent!important;
+  color:var(--veco-active-blue-2)!important;
+  z-index:calc(var(--sidebar-slide-z) + 2)!important;
+  box-shadow:inset -3px 0 0 var(--veco-active-blue)!important;
+}
+.app.sidebar-full .sidebar-toggle-rail::before{
+  content:'‹'!important;
+  opacity:1!important;
+  color:var(--veco-active-blue-2)!important;
+  font-size:20px!important;
+  font-weight:800!important;
+}
+.sidebar-scrim{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:calc(var(--sidebar-slide-z) - 1);
+  border:0;
+  padding:0;
+  margin:0;
+  background:rgba(0,0,0,.10);
+  cursor:default;
+}
+.app.sidebar-full .sidebar-scrim{
+  display:block!important;
+}
+.app.sidebar-full > main > .content,
+.app.sidebar-hidden > main > .content,
+.app.sidebar-compact > main > .content{
+  padding-left:6px!important;
+}
+.theme-light .app.sidebar-full .sidebar{
+  background:#f8fafc!important;
+  color:#1f2937!important;
+  border-right:1px solid #d7e0e8!important;
+  box-shadow:18px 0 42px rgba(15,23,42,.16)!important;
+}
+.theme-light .sidebar-scrim{background:rgba(15,23,42,.06)!important;}
+@media(max-width:1120px){
+  .app.sidebar-full,
+  .app.sidebar-hidden,
+  .app.sidebar-compact{grid-template-columns:var(--sidebar-slide-rail-width) minmax(0,1fr)!important;}
+  .app.sidebar-full .sidebar{width:min(82vw,var(--sidebar-slide-width))!important;min-width:min(82vw,var(--sidebar-slide-width))!important;}
+  .app.sidebar-full .sidebar-toggle-rail{left:calc(min(82vw,var(--sidebar-slide-width)) - var(--sidebar-slide-rail-width))!important;}
+}
