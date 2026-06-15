@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260615_1013';
+const APP_BUILD='20260615_1057';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -2821,6 +2821,47 @@ if(!window.__VECO_CALENDAR_STICKY_SYNC_BOUND__){
   window.addEventListener('orientationchange',()=>{scheduleCalendarResponsiveHourHeight();scheduleCalendarStickyHeaderSync();},{passive:true});
 }
 
+
+function calendarCompactHeader({rangeLabel='',visibleDays=[],mode='week',currentDate='',calendarTechFilterHtml='',hideWeekend=false,statusFilter='open'}={}){
+  const parts=String(rangeLabel||'').split(' · ');
+  const mainLabel=(parts.slice(0,2).join(' · ') || rangeLabel || 'Kalender').toUpperCase();
+  const dateRange=(parts.slice(2).join(' · ') || (visibleDays?.length?`${fmtShortDate(visibleDays[0])}–${fmtShortDate(visibleDays[visibleDays.length-1])}`:''));
+  const filtersExpanded=localStorage.getItem('veco_calendar_filters_expanded')==='true';
+  const viewSelect=`<select class="select calendar-top-view" id="calendarViewMode"><option value="day" ${mode==='day'?'selected':''}>Päev</option><option value="week" ${mode==='week'?'selected':''}>Nädal</option><option value="month" ${mode==='month'?'selected':''}>Kuu</option><option value="year" ${mode==='year'?'selected':''}>Aasta</option></select>`;
+  const adminControl=adminViewAsControl();
+  const authPill=authStatusPill();
+  const filterFields=`<div class="calendar-filter-fields">
+    <label><span>Kuupäev</span><input class="field" id="calendarWeekStart" type="date" value="${esc(currentDate)}"></label>
+    <label><span>L/P</span><button class="btn ghost" id="calendarHideWeekend" type="button" data-hidden="${hideWeekend?'true':'false'}">▦ ${hideWeekend?'Näita L/P':'Peida L/P'}</button></label>
+    <label><span>Töö tüüp</span><select class="select" id="calendarStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Kalendri tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${workorderStatusOptions.map(st=>`<option value="${st}" ${statusFilter===st?'selected':''}>${st}</option>`).join('')}</select></label>
+    <label><span>Import</span><button class="btn ghost" id="calendarImportWorkBtn" type="button">▧ Impordi töö</button></label>
+    ${adminControl?`<label><span>Admin</span>${adminControl}</label>`:''}
+    ${authPill?`<label class="calendar-auth-label"><span>Kasutaja</span>${authPill}</label>`:''}
+  </div>`;
+  return `<div class="calendar-compact-head ${filtersExpanded?'filters-open':'filters-closed'}">
+    <div class="calendar-compact-main">
+      <div class="calendar-compact-left">
+        ${themeLogo()}
+        <div class="calendar-nav-mini" aria-label="Kalendri navigeerimine">
+          <button class="btn ghost square" id="calendarPrevWeekBtn" type="button" title="Eelmine">‹</button>
+          <button class="btn primary" id="calendarThisWeekBtn" type="button">Täna</button>
+          <button class="btn ghost square" id="calendarNextWeekBtn" type="button" title="Järgmine">›</button>
+        </div>
+        <div class="calendar-period-title"><strong>${esc(mainLabel)}</strong><span>${esc(dateRange)} <b>•</b> <em>VALVE: ${esc(currentOncallLabel(visibleDays)).toUpperCase()}</em></span></div>
+      </div>
+      <div class="calendar-compact-right">
+        ${calendarTechFilterHtml}
+        ${viewSelect}
+        <button class="btn primary" id="newCalendarWorkorderBtn" type="button">+ Lisa töö</button>
+      </div>
+    </div>
+    <div class="calendar-filter-toggle-row">
+      <button class="btn ghost calendar-filter-toggle" id="calendarFiltersToggle" type="button" aria-expanded="${filtersExpanded?'true':'false'}">☷ Filtrid ${filtersExpanded?'⌃':'⌄'}</button>
+    </div>
+    <div class="calendar-filter-panel" aria-hidden="${filtersExpanded?'false':'true'}">${filterFields}</div>
+  </div>`;
+}
+
 function renderCalendar(){
   const calendarScrollState=captureCalendarScrollState();
   const storedDate=localStorage.getItem('veco_calendar_week')||weekStartKeyFrom('');
@@ -2861,8 +2902,6 @@ function renderCalendar(){
   };
   const calendarPeople=visiblePeopleForCurrentScope();
   const calendarTechFilterHtml=scopedId?`<select class="select" id="calendarTechFilter" disabled><option value="${esc(scopedId)}">${esc(scopedPerson()?.name||'Minu kalender')}</option></select>`:`<select class="select" id="calendarTechFilter"><option value="all">Kõik tehnikud</option>${calendarPeople.map(p=>`<option value="${p.id}" ${techFilter===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`;
-  const filters=`<input class="field" id="calendarWeekStart" type="date" value="${esc(currentDate)}">${calendarTechFilterHtml}<select class="select" id="calendarViewMode"><option value="day" ${mode==='day'?'selected':''}>Päev</option><option value="week" ${mode==='week'?'selected':''}>Nädal</option><option value="month" ${mode==='month'?'selected':''}>Kuu</option><option value="year" ${mode==='year'?'selected':''}>Aasta</option></select><button class="btn ghost" id="calendarHideWeekend" type="button" data-hidden="${hideWeekend?'true':'false'}">▦ ${hideWeekend?'Näita L/P':'Peida L/P'}</button><select class="select" id="calendarStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Kalendri tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${workorderStatusOptions.map(s=>`<option value="${s}" ${statusFilter===s?'selected':''}>${s}</option>`).join('')}</select>`;
-  const actions=`<button class="btn ghost" id="calendarImportWorkBtn" type="button">▧ Impordi töö</button><button class="btn ghost" id="calendarPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="calendarThisWeekBtn" type="button">⌖ Täna</button><button class="btn ghost" id="calendarNextWeekBtn" type="button">Järgmine ›</button><button class="btn primary" id="newCalendarWorkorderBtn" type="button">＋ Lisa töökäsk</button>`;
   const calendarBounds=calendarWorkTimeBounds(filtered,visibleDays);
   const calendarStartHour=calendarBounds.start;
   const calendarEndHour=calendarBounds.end;
@@ -2987,7 +3026,8 @@ function renderCalendar(){
     body=`<div class="calendar-year-grid">${visibleDays.map(month=>{const jobs=filtered.filter(w=>w.date&&w.date.startsWith(month));const label=parseDateKey(month+'-01').toLocaleDateString('et-EE',{month:'long',year:'numeric'});return `<div class="calendar-year-month"><strong>${esc(label)}</strong><span class="muted">${jobs.length} tööd</span>${jobs.slice(0,5).map(w=>`<button class="calendar-mini-event" data-calendar-edit="${w.id}" type="button">${esc(fmtActDate(w.date))} · ${esc(objectName(w.objectId))}</button>`).join('')}</div>`}).join('')}</div>`;
   }
   window.__VECO_ONCALL_CONTEXT_DAYS__ = visibleDays;
-  const main=header('Kalender',filters,actions,calendarRangeLabel(mode,visibleDays,currentDate))+`<div class="calendar-planner-wrap">${scopeNotice()}${body}</div>`;
+  const compactHeader=calendarCompactHeader({rangeLabel:calendarRangeLabel(mode,visibleDays,currentDate),visibleDays,mode,currentDate,calendarTechFilterHtml,hideWeekend,statusFilter});
+  const main=compactHeader+`<div class="calendar-planner-wrap">${scopeNotice()}${body}</div>`;
   shell(main,'',{wide:true});
   scheduleCalendarResponsiveHourHeight();
   restoreCalendarScrollState(calendarScrollState);
@@ -3000,6 +3040,20 @@ function renderCalendar(){
   $('#calendarNextWeekBtn')?.addEventListener('click',()=>{const base=parseDateKey(currentDate); let next;if(mode==='day') next=addDateDays(base,1); else if(mode==='week') next=addDateDays(base,7); else if(mode==='month') next=new Date(base.getFullYear(),base.getMonth()+1,1,12,0,0); else next=new Date(base.getFullYear()+1,0,1,12,0,0); localStorage.setItem('veco_calendar_week',dateKeyFromDate(next));renderCalendar();});
   $('#calendarThisWeekBtn')?.addEventListener('click',()=>{localStorage.setItem('veco_calendar_week',mode==='week'?weekStartKeyFrom(''):dateKeyFromDate(new Date()));renderCalendar();});
   $('#newCalendarWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal());
+  $('#calendarFiltersToggle')?.addEventListener('click',e=>{
+    const head=e.currentTarget.closest('.calendar-compact-head');
+    const next=!head?.classList.contains('filters-open');
+    localStorage.setItem('veco_calendar_filters_expanded',next?'true':'false');
+    if(head){
+      head.classList.toggle('filters-open',next);
+      head.classList.toggle('filters-closed',!next);
+      const panel=head.querySelector('.calendar-filter-panel');
+      if(panel) panel.setAttribute('aria-hidden',next?'false':'true');
+      e.currentTarget.setAttribute('aria-expanded',next?'true':'false');
+      e.currentTarget.innerHTML=`☷ Filtrid ${next?'⌃':'⌄'}`;
+    }
+    setTimeout(()=>{syncCalendarStickyHeader();applyResponsiveCalendarHourHeight();},220);
+  });
   $('#calendarImportWorkBtn')?.addEventListener('click',()=>openCalendarImportModal(currentDate));
   $$('[data-add-date]').forEach(el=>el.addEventListener('click',e=>{ if(e.target.closest('[data-calendar-edit]')) return; const date=el.dataset.addDate; const time=el.dataset.addTime||'09:00'; openCalendarWorkorderModal(date,time); }));
   bindCalendarResize(calendarStartHour,calendarEndHour);
