@@ -1,19 +1,19 @@
 {
-  "build": "VECO_V3_20260615_1654",
-  "buildNumber": "20260615_1654",
-  "createdAt": "2026-06-15T16:54:32+03:00",
+  "build": "VECO_V3_20260615_1716",
+  "buildNumber": "20260615_1716",
+  "createdAt": "2026-06-15T17:16:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
   "version": "v3.19.6",
   "changes": [
-    "CR-081D: calendar viewport height recalculation on initial render",
-    "Calendar height now uses final viewport position instead of stale flex height",
-    "Recalculation runs after initial render, filter expand/collapse, resize and layout changes",
-    "Fixed filter-toggle recalc function call",
-    "Build number is shown clearly in Diagnostics view",
-    "Ticker/status footer remains removed"
+    "CR-081E: calendar height CSS cleanup after ticker removal",
+    "Removed legacy fixed/min-height conflicts from calendar planner layout",
+    "Planner wrapper now flex-fills remaining panel height instead of using stale inline height",
+    "Responsive hour-height JS now reads actual wrapper height and no longer freezes wrapper height",
+    "24h timeline, 07:00-18:00 adaptive target and scroll remain intact",
+    "Diagnostics build display remains available"
   ],
-  "notes": "Fixes bottom dead-zone that appeared when filters were closed. 24h timeline and 07:00-18:00 adaptive target remain intact.",
-  "build_number": "20260615_1654",
-  "app_build": "20260615_1654",
-  "created_at": "2026-06-15T16:54:32+03:00"
+  "notes": "Targets the remaining bottom dead-zone below the calendar scroll area.",
+  "build_number": "20260615_1716",
+  "app_build": "20260615_1716",
+  "created_at": "2026-06-15T17:16:00+03:00"
 }

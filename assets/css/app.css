@@ -3425,3 +3425,61 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 }
 .diagnostics-build-card strong{font-size:18px;}
 .diagnostics-build-card code{font-size:15px;color:#9bd2ff;}
+
+
+/* VECO_V3_20260615_1716: calendar height CSS cleanup
+   Remove legacy fixed/min-height conflicts and let the planner wrapper fill
+   the remaining panel height. The JS now only updates hour scale variables. */
+html:has(.app.page-calendar),
+body:has(.app.page-calendar){
+  height:100vh!important;
+  overflow:hidden!important;
+}
+.app.page-calendar{
+  height:100vh!important;
+  max-height:100vh!important;
+  min-height:100vh!important;
+  overflow:hidden!important;
+}
+.app.page-calendar > main{
+  height:100vh!important;
+  max-height:100vh!important;
+  min-height:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+}
+.app.page-calendar > main > .content.wide{
+  flex:1 1 auto!important;
+  display:flex!important;
+  flex-direction:column!important;
+  min-height:0!important;
+  height:auto!important;
+  overflow:hidden!important;
+  padding-bottom:0!important;
+}
+.app.page-calendar > main > .content.wide > .panel{
+  flex:1 1 auto!important;
+  display:flex!important;
+  flex-direction:column!important;
+  min-height:0!important;
+  height:auto!important;
+  overflow:hidden!important;
+  padding-bottom:0!important;
+}
+.app.page-calendar .calendar-compact-head{
+  flex:0 0 auto!important;
+}
+.app.page-calendar .calendar-planner-wrap{
+  flex:1 1 0!important;
+  min-height:0!important;
+  height:auto!important;
+  max-height:none!important;
+  margin-bottom:0!important;
+  padding-bottom:0!important;
+  overflow:auto!important;
+  scrollbar-width:thin!important;
+}
+.app.page-calendar .calendar-planner{
+  margin-bottom:0!important;
+}

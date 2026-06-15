@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260615_1654';
+const APP_BUILD='20260615_1716';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -2771,12 +2771,12 @@ function applyCalendarResponsiveHourHeight(){
   const bottomPad=parseFloat(wrapStyles.paddingBottom)||0;
   const topPad=parseFloat(wrapStyles.paddingTop)||0;
   const bottomGap=10;
-  const availableH=Math.max(360,Math.floor(viewportH-rect.top-bottomGap));
-  wrap.style.height=`${availableH}px`;
-  wrap.style.maxHeight=`${availableH}px`;
+  // VECO_V3_20260615_1716: use the actual flex-filled wrapper height.
+  // Do not write an inline height here: it can freeze the wrapper too short
+  // and leave a dead black zone below the inner scroll area.
+  const fallbackH=Math.max(360,Math.floor(viewportH-rect.top-bottomGap));
+  const availableH=Math.max(360,Math.floor(wrap.clientHeight||fallbackH));
   // Target 07:00–18:00 as the default visible work window.
-  // The wrapper height is calculated from the final viewport position instead
-  // of stale flex height so closed/open filters render consistently on load.
   const bodyH=Math.max(320,availableH-40-topPad-bottomPad);
   const hourPx=clampCalendarHourPx(bodyH/11);
   planner.style.setProperty('--calendar-hour-px',`${hourPx}px`);
