@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260615_1400';
+const APP_BUILD='20260615_1504';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -435,7 +435,7 @@ function detailHeader(title,actions=''){
 
 
 function globalTicker(){
-  // Build 20260615_1400: ticker/status footer removed from the UI.
+  // Build 20260615_1504: ticker/status footer removed from the UI.
   // Calendar/workspace gets the full available vertical area; no footer height is reserved.
   return '';
 }
@@ -2744,7 +2744,7 @@ function scheduleCalendarStickyHeaderSync(){
   setTimeout(run,360);
 }
 
-// Build 20260615_1400: adaptive workday calendar hour height; ticker removed.
+// Build 20260615_1504: adaptive workday calendar hour height; ticker removed.
 // Keeps the full 24h scrollable timeline, but adjusts one-hour row height
 // so the default visible work window targets 07:00-18:00 (~11 hours).
 function clampCalendarHourPx(value){
@@ -2765,7 +2765,10 @@ function applyCalendarResponsiveHourHeight(){
   const wrap=document.querySelector('.calendar-planner-wrap');
   if(!planner||!wrap) return false;
   const hoursCount=Number(planner.style.getPropertyValue('--calendar-hours-count'))||24;
-  const bodyH=Math.max(360,(wrap.clientHeight||0)-40);
+  const wrapStyles=getComputedStyle(wrap);
+  const bottomPad=parseFloat(wrapStyles.paddingBottom)||0;
+  const topPad=parseFloat(wrapStyles.paddingTop)||0;
+  const bodyH=Math.max(360,(wrap.clientHeight||0)-40-topPad-bottomPad);
   const hourPx=clampCalendarHourPx(bodyH/11);
   planner.style.setProperty('--calendar-hour-px',`${hourPx}px`);
   planner.style.setProperty('--calendar-body-height',`${hoursCount*hourPx}px`);

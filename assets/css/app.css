@@ -3368,7 +3368,7 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 }
 
 
-/* VECO_V3_20260615_1400: remove ticker/status footer from workspace */
+/* VECO_V3_20260615_1504: remove ticker/status footer from workspace */
 .app:not(.app-mobile) .global-ticker,
 .app:not(.app-mobile) .global-ticker-restore{
   display:none!important;
@@ -3386,4 +3386,22 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 }
 .app.page-calendar .calendar-planner-wrap{
   padding-bottom:10px!important;
+}
+
+
+/* VECO_V3_20260615_1504: calendar bottom gutter cleanup after ticker removal
+   Keep full 24h scroll and the 07:00-18:00 adaptive target, but do not
+   reserve a separate empty lower gutter inside the calendar frame. */
+.app.page-calendar > main > .content{
+  padding-bottom:0!important;
+}
+.app.page-calendar .calendar-planner-wrap{
+  padding-bottom:0!important;
+  margin-bottom:0!important;
+}
+.app.page-calendar .calendar-planner{
+  margin-bottom:0!important;
+}
+.app.page-calendar .panel{
+  padding-bottom:0!important;
 }
