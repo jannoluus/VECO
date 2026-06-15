@@ -1121,3 +1121,38 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
   .app.sidebar-full .sidebar{width:min(82vw,var(--sidebar-slide-width))!important;min-width:min(82vw,var(--sidebar-slide-width))!important;}
   .app.sidebar-full .sidebar-toggle-rail{left:calc(min(82vw,var(--sidebar-slide-width)) - var(--sidebar-slide-rail-width))!important;}
 }
+
+
+/* VECO_V3_20260615_1816: Slide sidebar v1 fixes
+   - keep native backup file input hidden inside sidebar
+   - avoid raw menu/file-input flash
+   - sidebar mode toggles live without full page re-render
+*/
+.sidebar #importDataFile,
+.app.sidebar-full #importDataFile,
+.app.sidebar-hidden #importDataFile,
+.app.sidebar-compact #importDataFile{
+  display:none!important;
+  width:0!important;
+  height:0!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  position:absolute!important;
+  pointer-events:none!important;
+}
+.app.sidebar-full .nav{
+  display:grid!important;
+}
+.app.sidebar-full .nav-section.open .nav-section-items{display:grid!important;}
+.app.sidebar-full .nav-section.collapsed .nav-section-items{display:none!important;}
+.app.sidebar-hidden .nav,
+.app.sidebar-compact .nav{display:none!important;}
+.app.sidebar-full .sidebar{
+  backface-visibility:hidden!important;
+  contain:layout paint!important;
+}
+.app.sidebar-hidden .sidebar,
+.app.sidebar-compact .sidebar{
+  backface-visibility:hidden!important;
+  contain:layout paint!important;
+}

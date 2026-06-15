@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260615_1755';
+const APP_BUILD='20260615_1816';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -105,7 +105,7 @@ function currentEffectiveUser(){
   if(u?.role==='admin' && p) return {...p,role:'technician',viewedBy:u};
   return u;
 }
-function activeTechnicians(){return (state.people||[]).filter(p=>p.active!==false && p.id!=='U-DEMO' && !['demo','admin'].includes(String(p.role||'').toLowerCase()));}
+function activeTechnicians(){return (state.people||[]).filter(p=>p.active!==false && p.id!=='U-DEMO' && String(p.role||'').toLowerCase()!=='demo');}
 function visiblePeopleForCurrentScope(){const id=scopedPersonId(); return id ? activeTechnicians().filter(p=>p.id===id) : activeTechnicians();}
 function workorderVisibleToCurrentScope(w){const id=scopedPersonId(); return !id || workorderMatchesPerson(w,id);}
 function actVisibleToCurrentScope(a){const id=scopedPersonId(); if(!id) return true; const w=byId(state.workorders,a.workorderId); return w ? workorderMatchesPerson(w,id) : false;}
@@ -482,21 +482,33 @@ function toggleTheme(){
 function bindGlobal(){
   $$('[data-theme-toggle]').forEach(btn=>btn.addEventListener('click',toggleTheme));
   $$('[data-mobile-theme-toggle]').forEach(btn=>btn.addEventListener('click',()=>{toggleTheme();renderMobile();}));
+  const applySidebarMode=(mode)=>{
+    mode=setStoredSidebarMode(mode);
+    const appEl=$('.app');
+    const sidebar=$('.sidebar');
+    const rail=$('#sidebarToggleRail');
+    if(appEl){
+      appEl.classList.toggle('sidebar-full',mode==='full');
+      appEl.classList.toggle('sidebar-hidden',mode!=='full');
+      appEl.classList.remove('sidebar-compact');
+    }
+    if(sidebar) sidebar.dataset.sidebarState=mode;
+    if(rail){
+      const title=mode==='full'?'Peida menüü':'Ava menüü';
+      rail.setAttribute('title',title);
+      rail.setAttribute('aria-label',title);
+    }
+  };
   const sidebarToggleHandler=()=>{
-    const current=getStoredSidebarMode();
-    const next=current==='hidden'?'full':'hidden';
-    setStoredSidebarMode(next);
-    renderCurrentPage();
+    const next=getStoredSidebarMode()==='hidden'?'full':'hidden';
+    applySidebarMode(next);
   };
   $('#sidebarToggleRail')?.addEventListener('click',sidebarToggleHandler);
   $('#sidebarToggleBtn')?.addEventListener('click',sidebarToggleHandler);
-  $('#sidebarScrim')?.addEventListener('click',()=>{ setStoredSidebarMode('hidden'); renderCurrentPage(); });
+  $('#sidebarScrim')?.addEventListener('click',()=>applySidebarMode('hidden'));
   document.addEventListener('keydown',(event)=>{
-    if(event.key==='Escape' && getStoredSidebarMode()==='full'){
-      setStoredSidebarMode('hidden');
-      renderCurrentPage();
-    }
-  },{once:true});
+    if(event.key==='Escape' && getStoredSidebarMode()==='full') applySidebarMode('hidden');
+  });
   $$('[data-nav-toggle]').forEach(btn=>btn.addEventListener('click',()=>{
     const title=btn.dataset.navToggle;
     let open={};

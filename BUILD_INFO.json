@@ -1,18 +1,19 @@
 {
-  "build": "VECO_V3_20260615_1755",
-  "buildNumber": "20260615_1755",
-  "createdAt": "2026-06-15T17:55:00+03:00",
+  "build": "VECO_V3_20260615_1816",
+  "buildNumber": "20260615_1816",
+  "createdAt": "2026-06-15T18:16:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
   "version": "v3.19.7",
   "changes": [
-    "CR-082B: slide sidebar v1",
-    "Vasaku menüü avamine toimub overlay/slide loogikaga ega muuda kalendri laiust",
-    "Olemasolev 28px sinine avamisriba jääb visuaalselt samaks",
-    "Overlay sulgemine taustale vajutades või Esc klahviga"
+    "CR-082B fix: slide-menüü ei renderda enam native failiinputi menüüsse",
+    "Menüü avamine/sulgemine toimub live klassimuutusega, mitte kogu lehe re-renderiga",
+    "Vähendatud slide-menüü vilkumist/flash-efekti",
+    "Admin-rollis kasutajad on nüüd nähtavad valitavate/planeeritavate kasutajate hulgas"
   ],
-  "notes": "Existing blue rail opens menu as slide overlay; calendar width remains stable.",
-  "build_number": "20260615_1755",
-  "app_build": "20260615_1755",
-  "created_at": "2026-06-15T17:55:00+03:00",
-  "timestamp": "2026-06-15 17:55 Europe/Tallinn"
+  "notes": "Slide sidebar fixes: hidden file input, live sidebar toggle without full re-render, admin users visible as assignable/mobile users.",
+  "build_number": "20260615_1816",
+  "app_build": "20260615_1816",
+  "created_at": "2026-06-15T18:16:00+03:00",
+  "timestamp": "2026-06-15 18:16 Europe/Tallinn",
+  "createdAtEuropeTallinn": "2026-06-15T18:16:00+03:00"
 }
