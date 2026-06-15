@@ -16,3 +16,8 @@ Põhimõte:
 - Vaikimisi nähtav tööaken sihib 07:00–18:00.
 - 00:00–24:00 ajatelg ja scroll jäävad alles.
 - Tunni kõrgus skaleerub automaatselt vahemikus 48–84 px.
+
+
+## VECO_V3_20260615_1400
+- Ticker/status footer removed from workspace.
+- Calendar keeps 24h scroll and adaptive 07:00-18:00 workday view.

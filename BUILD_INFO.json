@@ -1,8 +1,8 @@
 {
-  "build": "VECO_V3_20260615_1333",
-  "buildNumber": "20260615_1333",
-  "createdAt": "2026-06-15T13:33:00+03:00",
-  "timezone": "Europe/Tallinn (EEST)",
+  "build": "VECO_V3_20260615_1400",
+  "buildNumber": "20260615_1400",
+  "createdAt": "2026-06-15T14:00:00+03:00",
+  "timezone": "Europe/Tallinn",
   "version": "v3.19.6",
   "changes": [
     "CR-080 MVP: compact calendar header based on Variant C",
@@ -11,8 +11,10 @@
     "Main technician and view selectors moved to the top-right control area",
     "Filter row is collapsible and keeps its state in localStorage",
     "Filters open/close with a lightweight slide transition",
-    "CR-081A: adaptive workday view targets 07:00-18:00 with responsive hour height"
+    "CR-081A: adaptive workday view targets 07:00-18:00 with responsive hour height",
+    "Ticker/status footer removed from workspace to free vertical calendar space"
   ],
-  "notes": "CR-081A Adaptive Workday View: target default visible range 07:00-18:00 with responsive hour height; 24h timeline remains scrollable.",
-  "build_number": "20260615_1333"
+  "notes": "Ticker/status footer removed; calendar keeps 24h scroll and adaptive 07:00-18:00 workday view.",
+  "build_number": "20260615_1400",
+  "app_build": "20260615_1400"
 }

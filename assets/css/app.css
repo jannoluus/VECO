@@ -3366,3 +3366,24 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
   .app.page-calendar .calendar-filter-fields{display:grid;grid-template-columns:1fr;}
   .app.page-calendar .calendar-compact-head.filters-open .calendar-filter-panel{max-height:420px;}
 }
+
+
+/* VECO_V3_20260615_1400: remove ticker/status footer from workspace */
+.app:not(.app-mobile) .global-ticker,
+.app:not(.app-mobile) .global-ticker-restore{
+  display:none!important;
+  height:0!important;
+  min-height:0!important;
+  max-height:0!important;
+  flex:0 0 0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  overflow:hidden!important;
+}
+.app.page-calendar > main > .content{
+  padding-bottom:14px!important;
+}
+.app.page-calendar .calendar-planner-wrap{
+  padding-bottom:10px!important;
+}

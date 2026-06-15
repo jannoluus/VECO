@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260615_1333';
+const APP_BUILD='20260615_1400';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -435,42 +435,9 @@ function detailHeader(title,actions=''){
 
 
 function globalTicker(){
-  if(page==='mobile') return '';
-  const hidden=localStorage.getItem('veco_ticker_hidden')==='true';
-  if(hidden){
-    return `<button class="global-ticker-restore" id="tickerRestoreBtn" type="button" title="Näita tickerit">▴</button>`;
-  }
-  const open= openWorkorders();
-  const openCount=open.length;
-  const draftActs=state.acts.filter(a=>['Mustand','Koostamisel','Saatmata'].includes(a.status)).length;
-  const activeObjects=state.objects.filter(o=>o.status!=='inactive'&&o.status!=='Peatatud').length;
-  const today=dateKeyFromDate(new Date());
-  const todayWork=state.workorders.filter(w=>w.date===today).length;
-  const oncallToday=state.oncall.filter(o=>o.start<=today&&o.end>=today).map(o=>techName(o.personId)).filter(Boolean);
-  const overdue=open.filter(w=>w.date && w.date<today).length;
-  const pageBits={
-    calendar:[`${todayWork} täna`, `${openCount} avatud tööd`],
-    team:[`${state.people.length} tehnikut`, `${openCount} avatud tööd`, `${state.absences.length} puudumist`],
-    objects:[`${activeObjects} aktiivset objekti`, `${state.devices.length} seadet`, `${openCount} avatud tööd`],
-    projects:[`${state.projects.length} projekti`, `${state.workorders.length} töökäsku`],
-    workorders:[`${openCount} avatud`, overdue?`${overdue} tähtajast üle`:'tähtajad korras'],
-    acts:[`${state.acts.length} akti`, `${draftActs} akti ootel`],
-    clients:[`${state.clients.length} klienti`, `${activeObjects} objekti`],
-    people:[`${state.people.length} tehnikut`, `${state.absences.length} puudumist`],
-    vacations:[`${state.absences.length} puudumist`, `${state.people.length} tehnikut`],
-    oncall:[oncallToday.length?`Täna valves: ${oncallToday.join(', ')}`:'Täna valvet ei ole']
-  };
-  const bits=[
-    `VECO CRM · ${APP_VERSION}`,
-    `Build ${APP_BUILD}`,
-    `Vaade: ${pageTitles[page]||page}`,
-    `Andmed: ${window.VECO_API?.modeLabel?.()||'lokaalne'}`,
-    ...(pageBits[page]||[]),
-    oncallToday.length&&page!=='oncall'?`Valve: ${oncallToday.join(', ')}`:'',
-    draftActs&&page!=='acts'?`${draftActs} akti ootel`:''
-  ].filter(Boolean);
-  const items=bits.map(x=>`<span class="global-ticker-item">${esc(x)}</span>`).join('<b>•</b>');
-  return `<div class="global-ticker moving" role="status" aria-label="VECO süsteemi staatuseriba"><div class="global-ticker-viewport"><div class="global-ticker-track"><span class="global-ticker-set">${items}</span><span class="global-ticker-set" aria-hidden="true">${items}</span></div></div><button class="global-ticker-close" id="tickerCloseBtn" type="button" title="Peida ticker">×</button></div>`;
+  // Build 20260615_1400: ticker/status footer removed from the UI.
+  // Calendar/workspace gets the full available vertical area; no footer height is reserved.
+  return '';
 }
 function shell(main,aside='',opts={}){
   applyTheme();
@@ -552,8 +519,6 @@ function bindGlobal(){
     renderCurrentPage();
   });
   $('#authLogoutBtn')?.addEventListener('click',()=>{localStorage.removeItem(ADMIN_VIEW_AS_KEY);authClearSession();location.href='index.html';});
-  $('#tickerCloseBtn')?.addEventListener('click',()=>{localStorage.setItem('veco_ticker_hidden','true');renderCurrentPage();});
-  $('#tickerRestoreBtn')?.addEventListener('click',()=>{localStorage.setItem('veco_ticker_hidden','false');renderCurrentPage();});
 }
 function card(title,rows=[],status='',extra=''){
   return `<div class="card"><div class="card-top"><h3>${esc(title)}</h3>${status?`<span class="status ${statusClass(status)}">${esc(status)}</span>`:''}</div>${rows.map(([k,v])=>`<div class="kv"><span>${esc(k)}</span><strong>${esc(v||'-')}</strong></div>`).join('')}${extra}</div>`
@@ -2779,7 +2744,7 @@ function scheduleCalendarStickyHeaderSync(){
   setTimeout(run,360);
 }
 
-// Build 20260615_1333: adaptive workday calendar hour height.
+// Build 20260615_1400: adaptive workday calendar hour height; ticker removed.
 // Keeps the full 24h scrollable timeline, but adjusts one-hour row height
 // so the default visible work window targets 07:00-18:00 (~11 hours).
 function clampCalendarHourPx(value){
@@ -2790,8 +2755,7 @@ function clampCalendarHourPx(value){
 function calendarInitialResponsiveHourPx(){
   const viewportH=window.innerHeight||900;
   const small=window.matchMedia&&window.matchMedia('(max-width:1120px)').matches;
-  const tickerClosed=!!document.querySelector('.global-ticker-restore');
-  const offset=tickerClosed?156:(small?210:190);
+  const offset=small?176:156;
   const wrapH=Math.max(420,viewportH-offset);
   const bodyH=Math.max(360,wrapH-40);
   return clampCalendarHourPx(bodyH/10.5);
