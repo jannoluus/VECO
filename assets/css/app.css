@@ -3368,7 +3368,7 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 }
 
 
-/* VECO_V3_20260615_1504: remove ticker/status footer from workspace */
+/* VECO_V3_20260615_1654: remove ticker/status footer from workspace */
 .app:not(.app-mobile) .global-ticker,
 .app:not(.app-mobile) .global-ticker-restore{
   display:none!important;
@@ -3405,3 +3405,23 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 .app.page-calendar .panel{
   padding-bottom:0!important;
 }
+
+
+/* VECO_V3_20260615_1654: robust calendar viewport height recalculation */
+.app.page-calendar .calendar-planner-wrap{
+  box-sizing:border-box!important;
+  margin-bottom:0!important;
+}
+.app.page-calendar .panel{
+  padding-bottom:0!important;
+}
+.diagnostics-build-card{
+  border:1px solid rgba(45,156,255,.38);
+  border-radius:10px;
+  padding:14px 16px;
+  background:rgba(45,156,255,.08);
+  display:grid;
+  gap:6px;
+}
+.diagnostics-build-card strong{font-size:18px;}
+.diagnostics-build-card code{font-size:15px;color:#9bd2ff;}

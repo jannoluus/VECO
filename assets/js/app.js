@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260615_1504';
+const APP_BUILD='20260615_1654';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -2765,14 +2765,24 @@ function applyCalendarResponsiveHourHeight(){
   const wrap=document.querySelector('.calendar-planner-wrap');
   if(!planner||!wrap) return false;
   const hoursCount=Number(planner.style.getPropertyValue('--calendar-hours-count'))||24;
+  const viewportH=window.innerHeight||document.documentElement.clientHeight||900;
+  const rect=wrap.getBoundingClientRect();
   const wrapStyles=getComputedStyle(wrap);
   const bottomPad=parseFloat(wrapStyles.paddingBottom)||0;
   const topPad=parseFloat(wrapStyles.paddingTop)||0;
-  const bodyH=Math.max(360,(wrap.clientHeight||0)-40-topPad-bottomPad);
+  const bottomGap=10;
+  const availableH=Math.max(360,Math.floor(viewportH-rect.top-bottomGap));
+  wrap.style.height=`${availableH}px`;
+  wrap.style.maxHeight=`${availableH}px`;
+  // Target 07:00–18:00 as the default visible work window.
+  // The wrapper height is calculated from the final viewport position instead
+  // of stale flex height so closed/open filters render consistently on load.
+  const bodyH=Math.max(320,availableH-40-topPad-bottomPad);
   const hourPx=clampCalendarHourPx(bodyH/11);
   planner.style.setProperty('--calendar-hour-px',`${hourPx}px`);
   planner.style.setProperty('--calendar-body-height',`${hoursCount*hourPx}px`);
   planner.dataset.hourPx=String(hourPx);
+  planner.dataset.viewportHeight=String(availableH);
   return true;
 }
 function scheduleCalendarResponsiveHourHeight(){
@@ -2780,7 +2790,28 @@ function scheduleCalendarResponsiveHourHeight(){
     if(applyCalendarResponsiveHourHeight()) scheduleCalendarStickyHeaderSync();
   };
   requestAnimationFrame(()=>requestAnimationFrame(run));
-  setTimeout(run,160);
+  setTimeout(run,80);
+  setTimeout(run,180);
+  setTimeout(run,360);
+  setTimeout(run,720);
+}
+function bindCalendarResponsiveHeightObserver(){
+  if(window.__VECO_CALENDAR_RESPONSIVE_OBSERVER_BOUND__) return;
+  window.__VECO_CALENDAR_RESPONSIVE_OBSERVER_BOUND__=true;
+  if('ResizeObserver' in window){
+    const ro=new ResizeObserver(()=>scheduleCalendarResponsiveHourHeight());
+    const bind=()=>{
+      const wrap=document.querySelector('.calendar-planner-wrap');
+      const panel=document.querySelector('.app.page-calendar .panel');
+      const head=document.querySelector('.calendar-compact-head');
+      if(wrap) ro.observe(wrap);
+      if(panel) ro.observe(panel);
+      if(head) ro.observe(head);
+    };
+    requestAnimationFrame(bind);
+    setTimeout(bind,300);
+  }
+  window.addEventListener('load',()=>scheduleCalendarResponsiveHourHeight(),{once:false,passive:true});
 }
 if(!window.__VECO_CALENDAR_STICKY_SYNC_BOUND__){
   window.__VECO_CALENDAR_STICKY_SYNC_BOUND__=true;
@@ -3017,7 +3048,7 @@ function renderCalendar(){
       e.currentTarget.setAttribute('aria-expanded',next?'true':'false');
       e.currentTarget.innerHTML=`☷ Filtrid ${next?'⌃':'⌄'}`;
     }
-    setTimeout(()=>{syncCalendarStickyHeader();applyResponsiveCalendarHourHeight();},220);
+    setTimeout(()=>{syncCalendarStickyHeader();scheduleCalendarResponsiveHourHeight();},220);
   });
   $('#calendarImportWorkBtn')?.addEventListener('click',()=>openCalendarImportModal(currentDate));
   $$('[data-add-date]').forEach(el=>el.addEventListener('click',e=>{ if(e.target.closest('[data-calendar-edit]')) return; const date=el.dataset.addDate; const time=el.dataset.addTime||'09:00'; openCalendarWorkorderModal(date,time); }));
@@ -3990,6 +4021,9 @@ function renderDiagnostics(){
   const rows=[
     ['Versioon',APP_VERSION],
     ['Build',APP_BUILD],
+    ['Build nr kopeerimiseks',`VECO_V3_${APP_BUILD}`],
+    ['Keskkond',location.hostname.includes('github.io')?'GitHub Pages / production':'local / preview'],
+    ['Leht',pageTitles[page]||page],
     ['Andmerežiim',window.VECO_API?.modeLabel?.()||'lokaalne'],
     ['Objekte',state.objects.length],
     ['Töökäske',state.workorders.length],
@@ -4002,7 +4036,8 @@ function renderDiagnostics(){
     ['Hooldusprofiile',(state.maintenanceProfiles||[]).length],
     ['Granlundi klassifikaatoreid',(state.granlundClassifiers||[]).length],['Planeerimata hooldusi',(state.unplannedMaintenance||[]).length]
   ].map(([k,v])=>`<tr><td><strong>${esc(k)}</strong></td><td>${esc(v)}</td></tr>`).join('');
-  const main=header('Diagnostika','','','ARENDUS')+`<div class="detail-body">${table(['Parameeter','Väärtus'],rows)}</div>`;
+  const buildCard=`<div class="diagnostics-build-card"><span class="muted">Hetkel laaditud build</span><strong>VECO_V3_${esc(APP_BUILD)}</strong><code>${esc(location.href)}</code></div>`;
+  const main=header('Diagnostika','','','ARENDUS')+`<div class="detail-body">${buildCard}${table(['Parameeter','Väärtus'],rows)}</div>`;
   shell(main,'',{wide:true});
 }
 

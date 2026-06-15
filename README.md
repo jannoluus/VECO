@@ -1,18 +1,17 @@
-Build: 20260615_1013
+Build: 20260615_1654
 
-VECO V3 build 20260615_1013.
+VECO V3 build 20260615_1654.
 
-Muudatus: CR-079 MVP - kalendri automaatne tunni kõrgus vastavalt nähtavale kalendrialale.
+Muudatused:
+- CR-081D: kalendri kõrguse ümberarvutus esmasel renderil.
+- Kalendri nähtav kõrgus arvutatakse nüüd lõpliku viewporti/asukohaga, mitte vananenud flex-kõrguse järgi.
+- Ümberarvutus käivitub renderi järel, filtrite avamisel/sulgemisel, resize/orientation muutusel ja layouti muutustel.
+- Parandatud filtrite toggle järel vale funktsioonikõne.
+- Diagnostika vaates kuvatakse selgelt hetkel laaditud build: VECO_V3_20260615_1654.
+- Ticker/statusriba jääb eemaldatuks.
 
 Põhimõte:
-- 24h ajatelg jääb alles;
-- vertikaalne scroll jääb alles;
-- madalama resolutsiooniga ekraanil väheneb tunni kõrgus automaatselt;
-- kõrgus on piiratud vahemikku 48px–84px;
-- päevade laiuseid, tänase päeva rõhutust ja menüü Variant A lahendust ei muudetud.
-
-
-## CR-081A Adaptive Workday View
-- Vaikimisi nähtav tööaken sihib 07:00–18:00.
-- 00:00–24:00 ajatelg ja scroll jäävad alles.
-- Tunni kõrgus skaleerub automaatselt vahemikus 48–84 px.
+- 24h ajatelg jääb alles.
+- Vertikaalne scroll jääb alles.
+- Vaikimisi sihtvaade jääb 07:00–18:00.
+- Päiseid, filtreid ja päevade laiuseid ei muudetud.

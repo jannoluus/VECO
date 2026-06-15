@@ -1,21 +1,19 @@
 {
-  "build": "VECO_V3_20260615_1504",
-  "buildNumber": "20260615_1504",
-  "createdAt": "2026-06-15T15:05:36.374571+03:00",
+  "build": "VECO_V3_20260615_1654",
+  "buildNumber": "20260615_1654",
+  "createdAt": "2026-06-15T16:54:32+03:00",
   "timezone": "Europe/Tallinn (EEST)",
   "version": "v3.19.6",
   "changes": [
-    "CR-080 MVP: compact calendar header based on Variant C",
-    "Valve info is shown next to the week/date range",
-    "Calendar navigation changed to compact previous / today / next controls",
-    "Main technician and view selectors moved to the top-right control area",
-    "Filter row is collapsible and keeps its state in localStorage",
-    "Filters open/close with a lightweight slide transition",
-    "CR-081A: adaptive workday view targets 07:00-18:00 with responsive hour height",
-    "Calendar bottom gutter cleanup after ticker removal"
+    "CR-081D: calendar viewport height recalculation on initial render",
+    "Calendar height now uses final viewport position instead of stale flex height",
+    "Recalculation runs after initial render, filter expand/collapse, resize and layout changes",
+    "Fixed filter-toggle recalc function call",
+    "Build number is shown clearly in Diagnostics view",
+    "Ticker/status footer remains removed"
   ],
-  "notes": "CR-081A Adaptive Workday View: target default visible range 07:00-18:00 with responsive hour height; 24h timeline remains scrollable.",
-  "build_number": "20260615_1504",
-  "app_build": "20260615_1504",
-  "created_at": "2026-06-15T15:05:36.374571+03:00"
+  "notes": "Fixes bottom dead-zone that appeared when filters were closed. 24h timeline and 07:00-18:00 adaptive target remain intact.",
+  "build_number": "20260615_1654",
+  "app_build": "20260615_1654",
+  "created_at": "2026-06-15T16:54:32+03:00"
 }
