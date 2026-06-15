@@ -1,7 +1,7 @@
 {
-  "build": "VECO_V3_20260615_1302",
-  "buildNumber": "20260615_1302",
-  "createdAt": "2026-06-15T13:02:00+03:00",
+  "build": "VECO_V3_20260615_1333",
+  "buildNumber": "20260615_1333",
+  "createdAt": "2026-06-15T13:33:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
   "version": "v3.19.6",
   "changes": [
@@ -10,11 +10,9 @@
     "Calendar navigation changed to compact previous / today / next controls",
     "Main technician and view selectors moved to the top-right control area",
     "Filter row is collapsible and keeps its state in localStorage",
-    "Filters open/close with a lightweight slide transition"
+    "Filters open/close with a lightweight slide transition",
+    "CR-081A: adaptive workday view targets 07:00-18:00 with responsive hour height"
   ],
-  "notes": [
-    "Calendar day widths, today highlight, sidebar Variant A and automatic hour height were not intentionally changed.",
-    "Build number, ZIP filename, BUILD_INFO and APP_BUILD use Europe/Tallinn time.",
-    "CR-080 adjustment: top-right technician selector replaced with Filters button; technician selector moved into filter panel."
-  ]
+  "notes": "CR-081A Adaptive Workday View: target default visible range 07:00-18:00 with responsive hour height; 24h timeline remains scrollable.",
+  "build_number": "20260615_1333"
 }

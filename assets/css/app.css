@@ -3243,7 +3243,7 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
   display:none!important;
 }
 
-/* VECO_V3_20260615_1302: CR-080 Compact Header - filters button moved to top-right */
+/* VECO_V3_20260615_1333: CR-080 Compact Header - filters button moved to top-right */
 .app.page-calendar .panel-head.view-head{display:none!important;}
 .app.page-calendar .calendar-compact-head{
   padding:14px 16px 10px;
