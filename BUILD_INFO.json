@@ -1,20 +1,22 @@
 {
-  "build": "VECO_V3_20260613_1956",
-  "build_name": "VECO_V3_20260613_1956",
-  "created_at": "2026-06-13T18:31:00+03:00",
+  "build": "VECO_V3_20260615_1013",
+  "build_name": "VECO_V3_20260615_1013",
+  "created_at": "2026-06-15T10:13:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
-  "version": "v3.19.5",
+  "version": "v3.19.6",
   "changes": [
-    "Collapsed sidebar Variant A: dark 28px rail with blue accent line and blue chevron",
-    "Kept calendar, equal day width, scroll, today highlight unchanged",
+    "CR-079 MVP: automatic responsive calendar hour height based on visible calendar height",
+    "Full 24h scrollable timeline remains available",
+    "Hour height is clamped between 48px and 84px; lower-resolution screens become more compact automatically",
+    "Kept equal day width, today highlight and collapsed sidebar Variant A unchanged",
     "APP_BUILD synchronized with ZIP and BUILD_INFO"
   ],
   "notes": [
-    "Kontrollida: menüü peidetud olekus vasakul ei jää laia tühja tumedat ala; alles on ainult kitsas avamisriba.",
+    "Kontrollida madalama resolutsiooniga ekraanil: nähtaval peaks olema rohkem tunde, aga vertikaalne scroll peab jääma alles.",
     "Buildi number, ZIP-faili nimi, BUILD_INFO ja APP_BUILD kasutavad Eesti ajavööndi aega."
   ],
-  "buildNumber": "20260613_1956",
-  "createdAt": "2026-06-13T18:31:00+03:00",
-  "build_number": "20260613_1956",
-  "timestamp": "2026-06-13 18:31 Europe/Tallinn (EEST)"
+  "buildNumber": "20260615_1013",
+  "createdAt": "2026-06-15T10:13:00+03:00",
+  "build_number": "20260615_1013",
+  "timestamp": "2026-06-15 10:13 Europe/Tallinn (EEST)"
 }

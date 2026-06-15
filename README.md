@@ -1,17 +1,12 @@
-Build: 20260613_1956
+Build: 20260615_1013
 
-VECO V3 build 20260613_1956.
+VECO V3 build 20260615_1013.
 
-Muudatus: peidetud menüü Variant A - tume 28px avamisriba, sinine aktsentjoon ja sinine nool.
+Muudatus: CR-079 MVP - kalendri automaatne tunni kõrgus vastavalt nähtavale kalendrialale.
 
-Build: 20260613_1406
-
-VECO V3 build 20260613_1406.
-
-Muudatused:
-- Kalendri tunni kõrgus suurendatud 72px -> 84px, et 08:00-17:00 aktiivne tööala kasutaks rohkem nähtavat kõrgust.
-- 24h ajatelg ja scroll jäävad alles.
-- Vaikimisi algscroll 06:00.
-- E-P joondusloogikat ei muudetud.
-
-Build: VECO_V3_20260613_1831
+Põhimõte:
+- 24h ajatelg jääb alles;
+- vertikaalne scroll jääb alles;
+- madalama resolutsiooniga ekraanil väheneb tunni kõrgus automaatselt;
+- kõrgus on piiratud vahemikku 48px–84px;
+- päevade laiuseid, tänase päeva rõhutust ja menüü Variant A lahendust ei muudetud.

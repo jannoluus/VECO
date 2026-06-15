@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260613_1956';
+const APP_BUILD='20260615_1013';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -2778,10 +2778,47 @@ function scheduleCalendarStickyHeaderSync(){
   setTimeout(run,120);
   setTimeout(run,360);
 }
+
+// Build 20260615_1013: automatic responsive calendar hour height.
+// Keeps the full 24h scrollable timeline, but adjusts one-hour row height
+// to show roughly 10-12 hours on lower-height screens.
+function clampCalendarHourPx(value){
+  const n=Number(value);
+  if(!Number.isFinite(n)) return 84;
+  return Math.max(48,Math.min(84,Math.round(n)));
+}
+function calendarInitialResponsiveHourPx(){
+  const viewportH=window.innerHeight||900;
+  const small=window.matchMedia&&window.matchMedia('(max-width:1120px)').matches;
+  const tickerClosed=!!document.querySelector('.global-ticker-restore');
+  const offset=tickerClosed?156:(small?210:190);
+  const wrapH=Math.max(420,viewportH-offset);
+  const bodyH=Math.max(360,wrapH-40);
+  return clampCalendarHourPx(bodyH/10.5);
+}
+function applyCalendarResponsiveHourHeight(){
+  const planner=document.querySelector('.calendar-planner');
+  const wrap=document.querySelector('.calendar-planner-wrap');
+  if(!planner||!wrap) return false;
+  const hoursCount=Number(planner.style.getPropertyValue('--calendar-hours-count'))||24;
+  const bodyH=Math.max(360,(wrap.clientHeight||0)-40);
+  const hourPx=clampCalendarHourPx(bodyH/10.5);
+  planner.style.setProperty('--calendar-hour-px',`${hourPx}px`);
+  planner.style.setProperty('--calendar-body-height',`${hoursCount*hourPx}px`);
+  planner.dataset.hourPx=String(hourPx);
+  return true;
+}
+function scheduleCalendarResponsiveHourHeight(){
+  const run=()=>{
+    if(applyCalendarResponsiveHourHeight()) scheduleCalendarStickyHeaderSync();
+  };
+  requestAnimationFrame(()=>requestAnimationFrame(run));
+  setTimeout(run,160);
+}
 if(!window.__VECO_CALENDAR_STICKY_SYNC_BOUND__){
   window.__VECO_CALENDAR_STICKY_SYNC_BOUND__=true;
-  window.addEventListener('resize',()=>scheduleCalendarStickyHeaderSync(),{passive:true});
-  window.addEventListener('orientationchange',()=>scheduleCalendarStickyHeaderSync(),{passive:true});
+  window.addEventListener('resize',()=>{scheduleCalendarResponsiveHourHeight();scheduleCalendarStickyHeaderSync();},{passive:true});
+  window.addEventListener('orientationchange',()=>{scheduleCalendarResponsiveHourHeight();scheduleCalendarStickyHeaderSync();},{passive:true});
 }
 
 function renderCalendar(){
@@ -2941,8 +2978,9 @@ function renderCalendar(){
     const nowLabel=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     const globalNowLine=showNowLine?`<div class="calendar-now-line calendar-now-line-global" style="top:calc(40px + (100% - 40px) * ${nowTopPct/100})"><span>${nowLabel}</span></div>`:'';
     const stickyDateHeader=`<div class="calendar-date-sticky-header" aria-hidden="true" style="grid-template-columns:54px repeat(${visibleDays.length},minmax(150px,1fr))"><div class="calendar-date-sticky-spacer"></div>${visibleDays.map(date=>{const d=parseDateKey(date);const dayNote=calendarDayMarker(date);return `<div class="calendar-date-sticky-day ${date===today?'today':''} ${calendarDayClass(date)}"><strong>${dayNames[d.getDay()]}</strong><span>${esc(fmtShortDate(date,true))}</span>${dayNote}</div>`;}).join('')}</div>`;
-    // Build 20260613_1406: workday visibility tuning - larger hour height, 24h scroll kept.
-    body=`${stickyDateHeader}<div class="calendar-planner" style="--calendar-hours-count:${hours.length};--calendar-hour-px:84px;--calendar-body-height:${hours.length*84}px" data-initial-scroll-hour="6">${globalNowLine}<div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="--calendar-day-count:${visibleDays.length};grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}${multiDayOverlay}</div></div>`;
+    // Build 20260615_1013: responsive hour height - 24h scroll kept.
+    const responsiveHourPx=calendarInitialResponsiveHourPx();
+    body=`${stickyDateHeader}<div class="calendar-planner" style="--calendar-hours-count:${hours.length};--calendar-hour-px:${responsiveHourPx}px;--calendar-body-height:${hours.length*responsiveHourPx}px" data-initial-scroll-hour="6">${globalNowLine}<div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="--calendar-day-count:${visibleDays.length};grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}${multiDayOverlay}</div></div>`;
   }else if(mode==='month'){
     body=`<div class="calendar-month-grid">${visibleDays.map(date=>{const jobs=filtered.filter(w=>workorderOccursOnDate(w,date)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const d=parseDateKey(date);const dayNote=calendarDayMarker(date);return `<div class="calendar-month-day ${date===today?'today':''} ${calendarDayClass(date)}" data-add-date="${date}"><div class="calendar-month-head"><strong>${d.getDate()}</strong><span>${dayNames[d.getDay()]}</span></div>${dayNote}${jobs.slice(0,4).map(w=>`<button class="calendar-mini-event" data-calendar-edit="${w.id}" type="button">${esc(w.time||'')} · ${esc(objectName(w.objectId))}${workorderDaySpan(w)>1?' · '+esc(daysBetweenKeys(w.date,date)+1)+'/'+esc(workorderDaySpan(w)):''}</button>`).join('')}${jobs.length>4?`<span class="muted">+${jobs.length-4} veel</span>`:''}</div>`}).join('')}</div>`;
   }else{
@@ -2951,6 +2989,7 @@ function renderCalendar(){
   window.__VECO_ONCALL_CONTEXT_DAYS__ = visibleDays;
   const main=header('Kalender',filters,actions,calendarRangeLabel(mode,visibleDays,currentDate))+`<div class="calendar-planner-wrap">${scopeNotice()}${body}</div>`;
   shell(main,'',{wide:true});
+  scheduleCalendarResponsiveHourHeight();
   restoreCalendarScrollState(calendarScrollState);
   scheduleCalendarStickyHeaderSync();
   document.querySelector('.calendar-planner-grid')?.addEventListener('scroll',()=>syncCalendarStickyHeader(),{passive:true});
