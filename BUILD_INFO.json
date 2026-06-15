@@ -1,19 +1,19 @@
 {
-  "build": "VECO_V3_20260615_1816",
-  "buildNumber": "20260615_1816",
-  "createdAt": "2026-06-15T18:16:00+03:00",
+  "build": "VECO_V3_20260615_1834",
+  "buildNumber": "20260615_1834",
+  "createdAt": "2026-06-15T18:34:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
   "version": "v3.19.7",
   "changes": [
-    "CR-082B fix: slide-menüü ei renderda enam native failiinputi menüüsse",
-    "Menüü avamine/sulgemine toimub live klassimuutusega, mitte kogu lehe re-renderiga",
-    "Vähendatud slide-menüü vilkumist/flash-efekti",
-    "Admin-rollis kasutajad on nüüd nähtavad valitavate/planeeritavate kasutajate hulgas"
+    "CR-082B fix: slide-menüü algolek on pärast refreshi alati suletud",
+    "Ignoreeritakse vana localStorage veco_sidebar_open=true väärtust initial load ajal",
+    "Menüü toggle kasutab nüüd DOM-i tegelikku open/closed olekut",
+    "Esc sulgeb menüü ainult siis, kui slide-menüü on reaalselt avatud"
   ],
-  "notes": "Slide sidebar fixes: hidden file input, live sidebar toggle without full re-render, admin users visible as assignable/mobile users.",
-  "build_number": "20260615_1816",
-  "app_build": "20260615_1816",
-  "created_at": "2026-06-15T18:16:00+03:00",
-  "timestamp": "2026-06-15 18:16 Europe/Tallinn",
-  "createdAtEuropeTallinn": "2026-06-15T18:16:00+03:00"
+  "notes": "Slide sidebar initial state fix: overlay menu no longer opens automatically after refresh; legacy open localStorage is neutralized.",
+  "build_number": "20260615_1834",
+  "app_build": "20260615_1834",
+  "created_at": "2026-06-15T18:34:00+03:00",
+  "timestamp": "2026-06-15 18:34 Europe/Tallinn",
+  "createdAtEuropeTallinn": "2026-06-15T18:34:00+03:00"
 }

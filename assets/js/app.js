@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260615_1816';
+const APP_BUILD='20260615_1834';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -441,20 +441,17 @@ function globalTicker(){
 }
 function getStoredSidebarMode(){
   if(page==='mobile') return 'full';
-  const explicitOpen=localStorage.getItem('veco_sidebar_open');
-  if(explicitOpen==='false') return 'hidden';
-  if(explicitOpen==='true') return 'full';
-  let mode=localStorage.getItem('veco_sidebar_mode')||'';
-  if(mode==='compact') mode='hidden';
-  if(['full','hidden'].includes(mode)) return mode;
-  return localStorage.getItem('veco_sidebar_collapsed')==='true' ? 'hidden' : 'full';
+  // VECO_V3_20260615_1834: slide sidebar is an ephemeral overlay.
+  // It must never reopen automatically after refresh, even if old localStorage says open.
+  return 'hidden';
 }
 function setStoredSidebarMode(mode){
   if(mode==='compact') mode='hidden';
-  if(!['full','hidden'].includes(mode)) mode='full';
+  if(!['full','hidden'].includes(mode)) mode='hidden';
+  // Keep legacy keys in a safe closed state so older builds do not auto-open after deploy/cache.
   localStorage.setItem('veco_sidebar_mode',mode);
   localStorage.setItem('veco_sidebar_collapsed',mode==='hidden'?'true':'false');
-  localStorage.setItem('veco_sidebar_open',mode==='full'?'true':'false');
+  localStorage.setItem('veco_sidebar_open','false');
   return mode;
 }
 function shell(main,aside='',opts={}){
@@ -500,14 +497,15 @@ function bindGlobal(){
     }
   };
   const sidebarToggleHandler=()=>{
-    const next=getStoredSidebarMode()==='hidden'?'full':'hidden';
-    applySidebarMode(next);
+    const appEl=$('.app');
+    const isOpen=!!appEl?.classList.contains('sidebar-full');
+    applySidebarMode(isOpen?'hidden':'full');
   };
   $('#sidebarToggleRail')?.addEventListener('click',sidebarToggleHandler);
   $('#sidebarToggleBtn')?.addEventListener('click',sidebarToggleHandler);
   $('#sidebarScrim')?.addEventListener('click',()=>applySidebarMode('hidden'));
   document.addEventListener('keydown',(event)=>{
-    if(event.key==='Escape' && getStoredSidebarMode()==='full') applySidebarMode('hidden');
+    if(event.key==='Escape' && $('.app')?.classList.contains('sidebar-full')) applySidebarMode('hidden');
   });
   $$('[data-nav-toggle]').forEach(btn=>btn.addEventListener('click',()=>{
     const title=btn.dataset.navToggle;

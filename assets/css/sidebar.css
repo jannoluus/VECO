@@ -1123,7 +1123,7 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
 }
 
 
-/* VECO_V3_20260615_1816: Slide sidebar v1 fixes
+/* VECO_V3_20260615_1834: Slide sidebar v1 fixes
    - keep native backup file input hidden inside sidebar
    - avoid raw menu/file-input flash
    - sidebar mode toggles live without full page re-render
