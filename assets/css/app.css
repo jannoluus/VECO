@@ -3243,7 +3243,7 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
   display:none!important;
 }
 
-/* VECO_V3_20260615_1057: CR-080 Compact Header + Collapsible Filters */
+/* VECO_V3_20260615_1302: CR-080 Compact Header - filters button moved to top-right */
 .app.page-calendar .panel-head.view-head{display:none!important;}
 .app.page-calendar .calendar-compact-head{
   padding:14px 16px 10px;
@@ -3304,11 +3304,8 @@ body.theme-light{background:var(--bg)!important;color:var(--ink)!important;}
 }
 .app.page-calendar .calendar-compact-right .select{min-width:150px;}
 .app.page-calendar .calendar-compact-right .calendar-top-view{min-width:100px;}
-.app.page-calendar .calendar-filter-toggle-row{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
+.app.page-calendar .calendar-compact-right .calendar-filter-toggle{min-width:118px;}
+.app.page-calendar .calendar-filter-toggle-row{display:none;}
 .app.page-calendar .calendar-filter-toggle{
   min-height:34px;
   color:var(--ink);

@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260615_1057';
+const APP_BUILD='20260615_1302';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -2832,6 +2832,7 @@ function calendarCompactHeader({rangeLabel='',visibleDays=[],mode='week',current
   const authPill=authStatusPill();
   const filterFields=`<div class="calendar-filter-fields">
     <label><span>Kuupäev</span><input class="field" id="calendarWeekStart" type="date" value="${esc(currentDate)}"></label>
+    <label><span>Tehnik</span>${calendarTechFilterHtml}</label>
     <label><span>L/P</span><button class="btn ghost" id="calendarHideWeekend" type="button" data-hidden="${hideWeekend?'true':'false'}">▦ ${hideWeekend?'Näita L/P':'Peida L/P'}</button></label>
     <label><span>Töö tüüp</span><select class="select" id="calendarStatusFilter"><option value="open" ${statusFilter==='open'?'selected':''}>Kalendri tööd</option><option value="all" ${statusFilter==='all'?'selected':''}>Kõik staatused</option>${workorderStatusOptions.map(st=>`<option value="${st}" ${statusFilter===st?'selected':''}>${st}</option>`).join('')}</select></label>
     <label><span>Import</span><button class="btn ghost" id="calendarImportWorkBtn" type="button">▧ Impordi töö</button></label>
@@ -2850,13 +2851,10 @@ function calendarCompactHeader({rangeLabel='',visibleDays=[],mode='week',current
         <div class="calendar-period-title"><strong>${esc(mainLabel)}</strong><span>${esc(dateRange)} <b>•</b> <em>VALVE: ${esc(currentOncallLabel(visibleDays)).toUpperCase()}</em></span></div>
       </div>
       <div class="calendar-compact-right">
-        ${calendarTechFilterHtml}
+        <button class="btn ghost calendar-filter-toggle" id="calendarFiltersToggle" type="button" aria-expanded="${filtersExpanded?'true':'false'}">☷ Filtrid ${filtersExpanded?'⌃':'⌄'}</button>
         ${viewSelect}
         <button class="btn primary" id="newCalendarWorkorderBtn" type="button">+ Lisa töö</button>
       </div>
-    </div>
-    <div class="calendar-filter-toggle-row">
-      <button class="btn ghost calendar-filter-toggle" id="calendarFiltersToggle" type="button" aria-expanded="${filtersExpanded?'true':'false'}">☷ Filtrid ${filtersExpanded?'⌃':'⌄'}</button>
     </div>
     <div class="calendar-filter-panel" aria-hidden="${filtersExpanded?'false':'true'}">${filterFields}</div>
   </div>`;

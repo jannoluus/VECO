@@ -1,7 +1,7 @@
 {
-  "build": "VECO_V3_20260615_1057",
-  "buildNumber": "20260615_1057",
-  "createdAt": "2026-06-15T10:57:00+03:00",
+  "build": "VECO_V3_20260615_1302",
+  "buildNumber": "20260615_1302",
+  "createdAt": "2026-06-15T13:02:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
   "version": "v3.19.6",
   "changes": [
@@ -14,6 +14,7 @@
   ],
   "notes": [
     "Calendar day widths, today highlight, sidebar Variant A and automatic hour height were not intentionally changed.",
-    "Build number, ZIP filename, BUILD_INFO and APP_BUILD use Europe/Tallinn time."
+    "Build number, ZIP filename, BUILD_INFO and APP_BUILD use Europe/Tallinn time.",
+    "CR-080 adjustment: top-right technician selector replaced with Filters button; technician selector moved into filter panel."
   ]
 }
