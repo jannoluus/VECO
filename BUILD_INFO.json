@@ -1,22 +1,19 @@
 {
-  "build": "VECO_V3_20260616_1115",
-  "buildNumber": "20260616_1115",
-  "createdAt": "2026-06-16T11:15:00+03:00",
+  "build": "20260616_1133",
+  "buildNumber": "20260616_1133",
+  "app_build": "20260616_1133",
+  "createdAt": "2026-06-16T11:33:00+03:00",
+  "created_at": "2026-06-16T11:33:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
-  "version": "v3.19.10",
+  "version": "v3.19.11",
+  "package": "VECO_V3_20260616_1133.zip",
   "changes": [
-    "CR-084: kalendri esmane render koondatud üheks layout-passiks",
-    "Eemaldatud korduvad setTimeout layout-sync kordusrenderid, mis tekitasid vilkumist",
-    "Kalender peidetakse lühidalt kuni kõrgus, veerulaiused, sticky header ja scroll on rakendatud",
-    "ResizeObserver ei käivita uut layout-pass'i kalendri ettevalmistuse ajal",
-    "CR-084B: lisatud multi-tab render guard; BroadcastChannel/storage sync ei renderda kalendrit uuesti, kui tööde signatuur ei muutunud.",
-    "CR-085A: kalendri töökaartide paremale küljele jäetud püsiv klikiriba; ühe pika töö kõrvale jääb vaba pind uue töö lisamiseks.",
-    "CR-086A: tehniku sisselogimisvaade puhastatud; eemaldatud Süsteemi taastamine ja Teema nupud, PIN väli viidud eraldi reale, lisatud build number."
+    "CR-087B: admin-controlled PIN reset; admin saab lubada kasutajal järgmisel loginil ise uue PIN-i määrata.",
+    "Admin-vaates nupp Lähtesta PIN asendatud loogikaga Luba uus PIN.",
+    "Lisatud PIN reset olek: Uus PIN ootel.",
+    "Login-vaates kuvatakse PIN-i kordus ainult siis, kui admin on kasutajale PIN-i uuesti seadistamise lubanud.",
+    "Admin saab endiselt kasutajale PIN-i ise määrata nupuga Määra PIN.",
+    "Ajutise/uue PIN-i määramine lõpetab reset-oleku."
   ],
-  "notes": "CR-086A: simplified technician login screen; admin/recovery controls removed from primary login view.",
-  "build_number": "20260616_1115",
-  "app_build": "20260616_1115",
-  "created_at": "2026-06-16T11:15:00+03:00",
-  "timestamp": "2026-06-16 11:15 Europe/Tallinn",
-  "createdAtEuropeTallinn": "2026-06-16T11:15:00+03:00"
+  "base": "VECO_V3_20260616_1129"
 }
