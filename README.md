@@ -1,6 +1,6 @@
-Build: 20260616_1202
+Build: 20260616_1208
 
-VECO_V3_20260616_1202:
+VECO_V3_20260616_1208:
 - CR-089A: kasutajate haldus liigub Supabase-first mudelile.
 - `auth_users` on sisselogimise ja kasutajate keskne tõeallikas.
 - Meeskonna vaade sünkroniseerib Supabase kasutajad VECO `people` vaatesse.
@@ -8,9 +8,9 @@ VECO_V3_20260616_1202:
 - Uue kasutaja lisamine, muutmine, deaktiveerimine ja PIN reset kirjutatakse keskandmetesse.
 - Lisatud roll `Hooldusjuht` / `supervisor`.
 
-Build: 20260616_1202
+Build: 20260616_1208
 
-VECO_V3_20260616_1202:
+VECO_V3_20260616_1208:
 - CR-088A: lisatud keskse kasutajate/PIN-ide andmehoidla adapter Supabase jaoks.
 - Kui Supabase `auth_users` tabel on olemas, saab sama PIN-iga sisse logida ka inkognitos, telefonis ja teises brauseris.
 - Admini tegevused “Luba uus PIN”, “Määra PIN” ja admin PIN reset kirjutatakse keskandmetesse.

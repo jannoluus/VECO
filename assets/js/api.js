@@ -203,13 +203,35 @@
       pinResetRequired:row.pin_reset_required===true
     };
   }
+  function authDedupeKey(row){
+    const username=String(row.username||'').trim().toLowerCase();
+    if(username) return `u:${username}`;
+    return `n:${authUsernameClean(row.full_name||'')}`;
+  }
+  function authRowRank(row){
+    let score=0;
+    if(row.active!==false) score+=100;
+    if(row.pin_hash) score+=50;
+    if(row.pin_reset_required===false) score+=20;
+    if(String(row.role||'').toLowerCase()==='admin') score+=10;
+    if(String(row.role||'').toLowerCase()==='supervisor') score+=5;
+    score+=Date.parse(row.updated_at||row.created_at||0)/1e13 || 0;
+    return score;
+  }
   async function loadAuthUsers(){
     const client=getClient();
     if(!client) return null;
     const {data,error}=await client.from(AUTH_TABLE).select('id,username,full_name,role,pin_hash,pin_reset_required,active,created_at,updated_at').order('full_name',{ascending:true});
     if(error) throw error;
-    const auth={users:{},superadmin:{role:'superadmin',pinHash:'',pinSetAt:''}};
+    const byKey=new Map();
     (data||[]).forEach(row=>{
+      const key=authDedupeKey(row);
+      if(!key) return;
+      const current=byKey.get(key);
+      if(!current || authRowRank(row)>authRowRank(current)) byKey.set(key,row);
+    });
+    const auth={users:{},superadmin:{role:'superadmin',pinHash:'',pinSetAt:''}};
+    Array.from(byKey.values()).forEach(row=>{
       const u=authUserFromRow(row);
       if(!u.id) return;
       if(u.username==='superadmin') auth.superadmin={role:'superadmin',pinHash:u.pinHash||'',pinSetAt:u.pinSetAt||''};
