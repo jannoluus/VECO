@@ -3594,3 +3594,27 @@ body{
 
 .mobile-timebox{border:1px solid rgba(148,163,184,.22);border-radius:12px;padding:8px 10px;background:rgba(15,23,42,.18);display:grid;gap:4px;}
 .mobile-timebox .kv{margin:0;}
+
+
+/* CR-094A 20260616_1710: calendar drag layer must stay above all calendar day/event layers.
+   The moving preview is rendered as a fixed body-level ghost; keep it above sticky headers,
+   span events, now-line and other cards. */
+body.calendar-drag-active .calendar-drag-ghost,
+.calendar-drag-ghost{
+  position:fixed!important;
+  z-index:2147483000!important;
+  pointer-events:none!important;
+  opacity:.97!important;
+  isolation:isolate!important;
+  transform:translateZ(0)!important;
+  will-change:left,top!important;
+}
+body.calendar-drag-active .calendar-event.dragging{
+  z-index:2147482000!important;
+  opacity:.24!important;
+}
+body.calendar-drag-active .calendar-planner-day,
+body.calendar-drag-active .calendar-planner-lane,
+body.calendar-drag-active .calendar-planner-grid{
+  overflow:visible!important;
+}

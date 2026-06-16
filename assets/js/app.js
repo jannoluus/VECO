@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.19.16';
-const APP_BUILD='20260616_1229';
+const APP_VERSION='v3.19.19';
+const APP_BUILD='20260616_1247';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -97,6 +97,8 @@ function mergeAuthUsersIntoPeople(auth,{saveState=false,replace=false}={}){
   if(!users.length) return false;
   const asPerson=(u,idx)=>({
     id:u.id,
+    dbId:u.dbId||'',
+    username:u.username||'',
     name:u.name||u.full_name||u.username||u.id,
     role:personRoleFromAuthRole(u.role),
     active:u.active!==false,
@@ -2509,7 +2511,14 @@ function fmtDateTimeShort(value){
   return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 function currentMobileActionUser(){
-  return mobileCurrentUser() || scopedPerson() || null;
+  const person=mobileCurrentUser() || scopedPerson() || null;
+  if(person){
+    if(person.dbId) return person;
+    const auth=normalizeAuthUsers();
+    const u=auth.users?.[person.id];
+    return {...person, dbId:u?.dbId||'', username:u?.username||''};
+  }
+  return currentAuthUser() || null;
 }
 function mobileWorkflowButtons(w){
   const status=String(w.status||'').trim();
@@ -3623,12 +3632,19 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
         ghost=card.cloneNode(true);
         ghost.classList.add('calendar-drag-ghost');
         ghost.classList.remove('dragging');
+        ghost.removeAttribute('id');
+        ghost.style.position='fixed';
+        ghost.style.zIndex='2147483000';
         ghost.style.width=`${cardRect.width}px`;
         ghost.style.height=`${cardRect.height}px`;
         ghost.style.left=`${cardRect.left}px`;
         ghost.style.top=`${cardRect.top}px`;
-        ghost.style.transform='none';
+        ghost.style.right='auto';
+        ghost.style.bottom='auto';
+        ghost.style.margin='0';
+        ghost.style.transform='translateZ(0)';
         ghost.style.pointerEvents='none';
+        ghost.style.willChange='left, top';
         document.body.appendChild(ghost);
       };
       const updateGhost=(clientX,clientY,lane)=>{
@@ -3662,7 +3678,7 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
         document.body.classList.add('calendar-drag-active');
         card.classList.add('dragging');
         card.style.transition='none';
-        card.style.zIndex='200';
+        card.style.zIndex='2147482000';
         createGhost();
       };
       const onMove=(ev)=>{
