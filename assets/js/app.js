@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260616_1109';
+const APP_BUILD='20260616_1115';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -66,13 +66,11 @@ function authRenderScreen(message=''){
   const auth=normalizeAuthUsers();
   const users=authUsersForLogin();
   const options=users.map(u=>`<option value="${esc(u.id)}">${esc(u.name)} · ${u.role==='admin'?'Admin':'Tehnik'}${u.pinHash?'':' · PIN puudub'}</option>`).join('');
-  document.body.innerHTML=`<div class="auth-page"><form class="auth-card" id="authLoginForm"><div class="auth-brand">VECO</div><h1>Sisselogimine</h1><p class="muted">Vali kasutaja ja sisesta PIN. Kui PIN puudub, saad selle esimesel sisenemisel luua.</p>${message?`<div class="auth-message">${esc(message)}</div>`:''}<label>Kasutaja<select class="select" name="userId" required>${options}</select></label><label>PIN<input class="field" name="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN" required></label><label class="auth-new-pin hidden" id="authNewPinWrap">Korda uut PIN-i<input class="field" name="pin2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Korda PIN-i"></label><button class="btn primary" type="submit">Logi sisse</button><div class="auth-links"><button class="btn ghost" type="button" id="authRecoveryBtn">Süsteemi taastamine</button><button class="btn ghost" type="button" data-theme-toggle>Teema</button></div></form></div>`;
+  document.body.innerHTML=`<div class="auth-page"><form class="auth-card" id="authLoginForm"><div class="auth-brand">VECO</div><h1>Sisselogimine</h1><p class="muted">Vali kasutaja ja sisesta PIN.</p>${message?`<div class="auth-message">${esc(message)}</div>`:''}<label>Kasutaja<select class="select" name="userId" required>${options}</select></label><label>PIN<input class="field" name="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN" required></label><label class="auth-new-pin hidden" id="authNewPinWrap">Korda uut PIN-i<input class="field" name="pin2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Korda PIN-i"></label><button class="btn primary" type="submit">Logi sisse</button><div class="auth-build">VECO_V3_${APP_BUILD}</div></form></div>`;
   const form=document.getElementById('authLoginForm');
   const updateMode=()=>{const u=auth.users?.[form.elements.userId.value]; document.getElementById('authNewPinWrap')?.classList.toggle('hidden',!!u?.pinHash);};
   form.elements.userId.addEventListener('change',updateMode); updateMode();
   form.addEventListener('submit',e=>{e.preventDefault(); const uid=form.elements.userId.value; const pin=form.elements.pin.value; const pin2=form.elements.pin2.value; const authNow=normalizeAuthUsers(); const u=authNow.users?.[uid]; if(!u) return authRenderScreen('Kasutajat ei leitud.'); const role=u.role==='admin'?'admin':'technician'; const lock=authLockInfo(role); if(lock.locked) return authRenderScreen(lockText(lock)); if(!u.pinHash){ if(pin!==pin2) return authRenderScreen('PIN-i kordus ei ühti.'); if(!validatePin(role,pin)) return authRenderScreen(`${u.name}: PIN peab olema ${AUTH_RULES[role].label}.`); u.pinHash=authHash(pin); u.pinSetAt=new Date().toISOString(); authNow.users[uid]=u; authSave(authNow); authSetSession(u); location.reload(); return; } if(!authVerify(pin,u.pinHash)){const l=authRegisterFailure(role); return authRenderScreen(l.locked?lockText(l):'Vale PIN.');} authClearFailure(role); authSetSession(u); location.reload(); });
-  document.getElementById('authRecoveryBtn')?.addEventListener('click',()=>authRenderSuperadmin());
-  bindGlobalThemeToggle?.();
 }
 function authRenderSuperadmin(message=''){
   applyTheme?.();

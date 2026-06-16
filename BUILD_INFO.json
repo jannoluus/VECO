@@ -1,21 +1,22 @@
 {
-  "build": "VECO_V3_20260616_1109",
-  "buildNumber": "20260616_1109",
-  "createdAt": "2026-06-16T11:09:00+03:00",
+  "build": "VECO_V3_20260616_1115",
+  "buildNumber": "20260616_1115",
+  "createdAt": "2026-06-16T11:15:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
-  "version": "v3.19.9",
+  "version": "v3.19.10",
   "changes": [
     "CR-084: kalendri esmane render koondatud üheks layout-passiks",
     "Eemaldatud korduvad setTimeout layout-sync kordusrenderid, mis tekitasid vilkumist",
     "Kalender peidetakse lühidalt kuni kõrgus, veerulaiused, sticky header ja scroll on rakendatud",
     "ResizeObserver ei käivita uut layout-pass'i kalendri ettevalmistuse ajal",
     "CR-084B: lisatud multi-tab render guard; BroadcastChannel/storage sync ei renderda kalendrit uuesti, kui tööde signatuur ei muutunud.",
-    "CR-085A: kalendri töökaartide paremale küljele jäetud püsiv klikiriba; ühe pika töö kõrvale jääb vaba pind uue töö lisamiseks."
+    "CR-085A: kalendri töökaartide paremale küljele jäetud püsiv klikiriba; ühe pika töö kõrvale jääb vaba pind uue töö lisamiseks.",
+    "CR-086A: tehniku sisselogimisvaade puhastatud; eemaldatud Süsteemi taastamine ja Teema nupud, PIN väli viidud eraldi reale, lisatud build number."
   ],
-  "notes": "CR-085A: calendar day event cards leave a permanent right-side click gutter for adding work between long events.",
-  "build_number": "20260616_1109",
-  "app_build": "20260616_1109",
-  "created_at": "2026-06-16T11:09:00+03:00",
-  "timestamp": "2026-06-16 11:09 Europe/Tallinn",
-  "createdAtEuropeTallinn": "2026-06-16T11:09:00+03:00"
+  "notes": "CR-086A: simplified technician login screen; admin/recovery controls removed from primary login view.",
+  "build_number": "20260616_1115",
+  "app_build": "20260616_1115",
+  "created_at": "2026-06-16T11:15:00+03:00",
+  "timestamp": "2026-06-16 11:15 Europe/Tallinn",
+  "createdAtEuropeTallinn": "2026-06-16T11:15:00+03:00"
 }

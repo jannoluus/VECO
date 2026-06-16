@@ -3484,7 +3484,7 @@ body:has(.app.page-calendar){
   margin-bottom:0!important;
 }
 
-/* VECO_V3_20260616_1109 / CR-084: smooth calendar first paint.
+/* VECO_V3_20260616_1115 / CR-084: smooth calendar first paint.
    Hide the planner only while final column width, hour height and initial
    scroll position are being calculated, so users do not see intermediate
    layout passes as flicker. */
@@ -3497,7 +3497,7 @@ body.calendar-layout-ready .app.page-calendar .calendar-planner-wrap{
   transition:opacity 120ms ease!important;
 }
 
-/* VECO_V3_20260616_1109 / CR-085A: kalendri päeva klikiriba.
+/* VECO_V3_20260616_1115 / CR-085A: kalendri päeva klikiriba.
    Töökaardid ei kata enam kogu päeva veeru laiust; paremale jääb vaba ala,
    mille kaudu saab pika töö kõrvale/vahele uut tööd lisada. */
 .app.page-calendar .calendar-planner-lane{
@@ -3516,4 +3516,31 @@ body.calendar-layout-ready .app.page-calendar .calendar-planner-wrap{
   .app.page-calendar .calendar-planner-lane > .calendar-event:not(.calendar-span-event):not(.overlapping){
     right:calc(8px + var(--calendar-click-gutter,14px))!important;
   }
+}
+
+/* VECO_V3_20260616_1115 / CR-086A: simplified technician login view. */
+.auth-card label{
+  display:grid;
+  gap:6px;
+  color:var(--ink);
+  font-size:14px;
+  font-weight:800;
+}
+.auth-card .field,
+.auth-card .select{
+  width:100%;
+}
+.auth-build{
+  margin-top:2px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:800;
+  text-align:center;
+  letter-spacing:.02em;
+  opacity:.82;
+}
+@media(max-width:760px){
+  .auth-page{padding:18px;align-items:center;justify-items:center;}
+  .auth-card{width:min(420px,100%);padding:22px;gap:13px;}
+  .auth-card h1{font-size:23px;}
 }
