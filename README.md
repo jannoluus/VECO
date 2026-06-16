@@ -1,6 +1,14 @@
-Build: 20260616_1208
+Build: 20260616_1224
 
-VECO_V3_20260616_1208:
+VECO_V3_20260616_1224:
+- CR-089E Fix: valvegraafiku osalus ja järjekord salvestuvad Supabase `auth_users` väljadele `on_call_active` ja `on_call_order`.
+- Mitteosalejatele ei kuvata enam järjekorranumbrit.
+- Järgmine järjekorranumber arvutatakse ainult aktiivsete valvegraafikus osalejate järgi.
+- Vana valvekirje ei lisa kasutajat automaatselt rotatsiooni; osalemine tuleb määrata Tehnikute vaates.
+
+Build: 20260616_1215
+
+VECO_V3_20260616_1215:
 - CR-089A: kasutajate haldus liigub Supabase-first mudelile.
 - `auth_users` on sisselogimise ja kasutajate keskne tõeallikas.
 - Meeskonna vaade sünkroniseerib Supabase kasutajad VECO `people` vaatesse.
@@ -8,9 +16,9 @@ VECO_V3_20260616_1208:
 - Uue kasutaja lisamine, muutmine, deaktiveerimine ja PIN reset kirjutatakse keskandmetesse.
 - Lisatud roll `Hooldusjuht` / `supervisor`.
 
-Build: 20260616_1208
+Build: 20260616_1215
 
-VECO_V3_20260616_1208:
+VECO_V3_20260616_1215:
 - CR-088A: lisatud keskse kasutajate/PIN-ide andmehoidla adapter Supabase jaoks.
 - Kui Supabase `auth_users` tabel on olemas, saab sama PIN-iga sisse logida ka inkognitos, telefonis ja teises brauseris.
 - Admini tegevused “Luba uus PIN”, “Määra PIN” ja admin PIN reset kirjutatakse keskandmetesse.

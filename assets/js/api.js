@@ -187,6 +187,9 @@
       active:u.active!==false,
       pin_hash:u.pinHash||null,
       pin_reset_required:u.pinResetRequired===true,
+      on_call_active:u.onCallActive===true,
+      on_call_order:u.onCallActive===true ? (Number(u.onCallOrder)||null) : null,
+      availability_status:u.availabilityStatus||u.availability_status||'available',
       updated_at:new Date().toISOString()
     };
   }
@@ -200,7 +203,10 @@
       active:row.active!==false,
       pinHash:row.pin_hash||'',
       pinSetAt:row.updated_at||'',
-      pinResetRequired:row.pin_reset_required===true
+      pinResetRequired:row.pin_reset_required===true,
+      onCallActive:row.on_call_active===true,
+      onCallOrder:Number(row.on_call_order||0)||0,
+      availabilityStatus:row.availability_status||'available'
     };
   }
   function authDedupeKey(row){
@@ -221,7 +227,7 @@
   async function loadAuthUsers(){
     const client=getClient();
     if(!client) return null;
-    const {data,error}=await client.from(AUTH_TABLE).select('id,username,full_name,role,pin_hash,pin_reset_required,active,created_at,updated_at').order('full_name',{ascending:true});
+    const {data,error}=await client.from(AUTH_TABLE).select('id,username,full_name,role,pin_hash,pin_reset_required,active,on_call_active,on_call_order,availability_status,created_at,updated_at').order('full_name',{ascending:true});
     if(error) throw error;
     const byKey=new Map();
     (data||[]).forEach(row=>{

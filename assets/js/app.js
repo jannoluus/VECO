@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260616_1208';
+const APP_BUILD='20260616_1224';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -104,7 +104,8 @@ function mergeAuthUsersIntoPeople(auth,{saveState=false,replace=false}={}){
     region:u.region||'',
     skills:u.skills||'',
     onCallActive:u.onCallActive===true,
-    onCallOrder:Number(u.onCallOrder||0)||idx+1
+    onCallOrder:u.onCallActive===true ? (Number(u.onCallOrder||0)||idx+1) : 0,
+    availabilityStatus:u.availabilityStatus||'available'
   });
   if(replace){
     const next=users.map(asPerson);
@@ -121,7 +122,7 @@ function mergeAuthUsersIntoPeople(auth,{saveState=false,replace=false}={}){
     const next=asPerson(u,idx);
     if(p){
       if(p.id!==next.id){ p.id=next.id; changed=true; }
-      ['name','role','active'].forEach(k=>{ if(p[k]!==next[k]){ p[k]=next[k]; changed=true; }});
+      ['name','role','active','onCallActive','onCallOrder','availabilityStatus'].forEach(k=>{ if(p[k]!==next[k]){ p[k]=next[k]; changed=true; }});
     }else{
       state.people.push(next);
       changed=true;
@@ -161,6 +162,9 @@ function normalizeAuthUsers(){
       name:p.name||existing.name||p.id,
       role,
       active:p.active!==false,
+      onCallActive:p.onCallActive===true,
+      onCallOrder:p.onCallActive===true ? (Number(p.onCallOrder)||0) : 0,
+      availabilityStatus:p.availabilityStatus||'available',
       pinHash,
       pinSetAt:existing.pinSetAt||'',
       pinResetRequired:existing.pinResetRequired===true || (!pinHash && existing.pinResetRequired!==false)
@@ -322,11 +326,13 @@ function workorderRoleLabel(w,personId){
 }
 
 function normalizeOncallPeople(){
-  const scheduledIds=new Set((state.oncall||[]).map(o=>o.personId).filter(Boolean));
-  (state.people||[]).forEach((p,index)=>{
-    if(typeof p.onCallActive==='undefined') p.onCallActive=scheduledIds.has(p.id);
-    if(typeof p.onCallOrder==='undefined') p.onCallOrder=index+1;
+  // Supabase-first: on-call membership is stored on auth_users.on_call_active.
+  // Existing shift rows must not automatically enroll people into the rotation.
+  (state.people||[]).forEach(p=>{
+    if(typeof p.onCallActive==='undefined') p.onCallActive=false;
+    if(p.onCallActive!==true) p.onCallOrder=0;
   });
+  if(typeof normalizeOncallPeopleOrder==='function') normalizeOncallPeopleOrder();
 }
 
 let selectedObjectId=state.objects?.[0]?.id||'';
@@ -1265,7 +1271,7 @@ function openWorkorderModal(id='',defaults={}){
       title:'Kustuta töökäsk',
       message:'Kas soovid selle töökäsu kustutada?',
       details:`<strong>${esc(existing.id)}</strong><br>${esc(objectName(existing.objectId))}<br>${esc(existing.title)}`,
-      confirmText:'Kustuta',
+      confirmText:'Arhiveeri',
       cancelText:'Loobu',
       danger:true
     });
@@ -1839,6 +1845,26 @@ function superadminPanelHtml(){
   return `<div class="auth-admin-panel"><h3>Superadmin taastamine</h3><p class="muted">Superadmin saab taastada admini ligipääsu. PIN-koode ei kuvata.</p>${list}<button class="btn danger" id="resetAdminPinsBtn" type="button">Lähtesta kõik admin PIN-id</button></div>`;
 }
 
+
+function normalizeOncallPeopleOrder({persist=false}={}){
+  const active=(state.people||[])
+    .filter(p=>p&&p.active!==false&&p.onCallActive===true)
+    .sort((a,b)=>(Number(a.onCallOrder)||9999)-(Number(b.onCallOrder)||9999)||String(a.name||'').localeCompare(String(b.name||''),'et'));
+  let changed=false;
+  active.forEach((p,idx)=>{ const order=idx+1; if(Number(p.onCallOrder||0)!==order){ p.onCallOrder=order; changed=true; } });
+  (state.people||[]).forEach(p=>{ if(!p||p.onCallActive===true) return; if(Number(p.onCallOrder||0)!==0){ p.onCallOrder=0; changed=true; } });
+  if(changed && persist) save();
+  return changed;
+}
+async function persistPersonAuthToRemote(p){
+  if(!p) return false;
+  const auth=normalizeAuthUsers();
+  const user=auth.users?.[p.id];
+  if(!user) return false;
+  if(window.VECO_API?.saveAuthUser){ await window.VECO_API.saveAuthUser(user); }
+  return true;
+}
+
 function renderPeople(){
   normalizeOncallPeople();
   const status=$('#peopleStatusFilter')?.value||'active';
@@ -1851,19 +1877,41 @@ function renderPeople(){
   const filters=`<input class="field" id="peopleSearch" placeholder="Otsi kasutajat..." value="${esc(q)}"><select class="select" id="peopleStatusFilter"><option value="active" ${status==='active'?'selected':''}>Aktiivsed</option><option value="inactive" ${status==='inactive'?'selected':''}>Deaktiveeritud</option><option value="all" ${status==='all'?'selected':''}>Kõik kasutajad</option></select>`;
   const actions=`<button class="btn primary" id="newPersonBtn">${icon('＋')}Lisa kasutaja</button>`;
   const today=dateKeyFromDate(new Date());
-  const rows=list.map(p=>`<tr data-person-id="${p.id}"><td><strong>${esc(p.name)}</strong><div class="muted">${esc(p.id)}</div></td><td>${esc(p.role||'-')}</td><td>${availabilityBadgesHtml(p.id,today,{empty:true})}</td><td>${esc(p.phone||'-')}</td><td>${esc(p.email||'-')}</td><td>${esc(p.region||'-')}</td><td><button class="status ${p.onCallActive?'ok':'red'}" data-toggle-oncall-person="${p.id}" type="button" title="Lisa/eemalda valvegraafikust">${p.onCallActive?'Aktiivne':'Ei osale'}</button><div class="muted">Jrk ${Number(p.onCallOrder||0)||'-'}</div></td><td><span class="status ${p.active?'ok':'red'}">${p.active?'Aktiivne':'Deaktiveeritud'}</span></td><td>${pinStatusHtml(p)}</td><td><button class="btn small" data-edit-person="${p.id}" type="button">Muuda</button> <button class="btn small" data-reset-pin="${p.id}" type="button">Luba uus PIN</button> <button class="btn small" data-temp-pin="${p.id}" type="button">Määra PIN</button> <button class="btn small ${p.active?'danger':'primary'}" data-toggle-person="${p.id}" type="button">${p.active?'Deaktiveeri':'Aktiveeri'}</button> <button class="btn small danger" data-delete-person="${p.id}" type="button">Arhiveeri</button></td></tr>`).join('');
+  const rows=list.map(p=>`<tr data-person-id="${p.id}"><td><strong>${esc(p.name)}</strong><div class="muted">${esc(p.id)}</div></td><td>${esc(p.role||'-')}</td><td>${availabilityBadgesHtml(p.id,today,{empty:true})}</td><td>${esc(p.phone||'-')}</td><td>${esc(p.email||'-')}</td><td>${esc(p.region||'-')}</td><td><button class="status ${p.onCallActive===true?'ok':'red'}" data-toggle-oncall-person="${p.id}" type="button" title="Lisa/eemalda valvegraafikust">${p.onCallActive===true?'Aktiivne':'Ei osale'}</button><div class="muted">${p.onCallActive===true&&Number(p.onCallOrder||0)>0?'Jrk '+Number(p.onCallOrder):''}</div></td><td><span class="status ${p.active?'ok':'red'}">${p.active?'Aktiivne':'Deaktiveeritud'}</span></td><td>${pinStatusHtml(p)}</td><td><button class="btn small" data-edit-person="${p.id}" type="button">Muuda</button> <button class="btn small" data-reset-pin="${p.id}" type="button">Luba uus PIN</button> <button class="btn small" data-temp-pin="${p.id}" type="button">Määra PIN</button> <button class="btn small ${p.active?'danger':'primary'}" data-toggle-person="${p.id}" type="button">${p.active?'Deaktiveeri':'Aktiveeri'}</button> <button class="btn small danger" data-delete-person="${p.id}" type="button">Arhiveeri</button></td></tr>`).join('');
   const main=header('Tehnikute administreerimine',filters,actions,'TEHNIKUD')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Kasutajaid',state.people.length)}${summaryBox('Aktiivseid',state.people.filter(p=>p.active).length)}${summaryBox('Tehnikuid',state.people.filter(p=>authRoleFromPersonRole(p.role)==='technician').length)}${summaryBox('Valve aktiivsed',state.people.filter(p=>p.onCallActive).length)}</div>${superadminPanelHtml()}${table(['Nimi','Roll','Saadavus täna','Telefon','E-post','Piirkond','Valvegraafik','Staatus','PIN','Tegevused'],rows)}</div>`;
   shell(main,'',{wide:true});
   $('#peopleSearch')?.addEventListener('input',renderPeople);
   $('#peopleStatusFilter')?.addEventListener('change',renderPeople);
   $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();normalizeOncallPeople();save();renderPeople();});
   $('#newPersonBtn')?.addEventListener('click',()=>openPersonModal());
-  $$('[data-toggle-oncall-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.toggleOncallPerson);if(p){p.onCallActive=!p.onCallActive;if(p.onCallActive&&!p.onCallOrder){p.onCallOrder=nextOncallOrder();}save();renderPeople();}}));
+  $$('[data-toggle-oncall-person]').forEach(btn=>btn.addEventListener('click',async e=>{
+    e.stopPropagation();
+    const p=byId(state.people,btn.dataset.toggleOncallPerson);
+    if(!p) return;
+    p.onCallActive = !(p.onCallActive===true);
+    p.onCallOrder = p.onCallActive===true ? nextOncallOrder() : 0;
+    normalizeOncallPeopleOrder({persist:false});
+    save();
+    try{
+      await persistPersonAuthToRemote(p);
+      // Persist normalized orders for all active on-call users, so Supabase remains consistent.
+      const active=(state.people||[]).filter(x=>x&&x.onCallActive===true);
+      for(const person of active){ await persistPersonAuthToRemote(person); }
+    }catch(err){
+      console.warn('VECO on-call remote update failed',err);
+      alert('Valvegraafiku salvestamine Supabase’i ebaõnnestus.');
+      await authLoadRemoteIntoLocal();
+      renderPeople();
+      return;
+    }
+    await authLoadRemoteIntoLocal();
+    renderPeople();
+  }));
   $$('[data-reset-pin]').forEach(btn=>btn.addEventListener('click',async e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.resetPin); if(!p) return; const ok=await openVecoConfirm({title:'Luba uus PIN?',message:`${p.name} vana PIN unustatakse. Järgmisel sisselogimisel saab kasutaja ise uue PIN-i määrata.`,confirmText:'Luba uus PIN',cancelText:'Loobu'}); if(ok){requestUserPinReset(p.id); renderPeople();}}));
   $$('[data-temp-pin]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.tempPin); if(!p) return; const role=authRoleFromPersonRole(p.role); const pin=prompt(`${p.name} uus PIN (${AUTH_RULES[role].label})`); if(pin===null) return; if(!setUserTempPin(p.id,pin)){alert(`PIN peab olema ${AUTH_RULES[role].label}.`); return;} renderPeople();}));
   $('#resetAdminPinsBtn')?.addEventListener('click',async()=>{const ok=await openVecoConfirm({title:'Lähtesta admin PIN-id?',message:'Kõigi adminide vana PIN unustatakse. Järgmisel sisselogimisel saavad nad uue PIN-i määrata.',confirmText:'Lähtesta',cancelText:'Loobu',danger:true}); if(ok){resetAdminPins(); renderPeople();}});
   $$('[data-edit-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openPersonModal(btn.dataset.editPerson);}))
-  $$('[data-toggle-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.togglePerson);if(p){p.active=!p.active;save();const auth=normalizeAuthUsers();authPersist(auth);if(window.VECO_API?.saveAuthUser){window.VECO_API.saveAuthUser(auth.users[p.id]).catch(err=>console.warn('VECO auth remote user update failed',err));}renderPeople();}}));
+  $$('[data-toggle-person]').forEach(btn=>btn.addEventListener('click',async e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.togglePerson);if(!p)return;p.active=!p.active;save();const auth=normalizeAuthUsers();authSave(auth);try{await authSaveUserRemoteNow(auth.users[p.id]);}catch(err){console.warn('VECO auth remote user update failed',err);alert('Kasutaja staatuse salvestamine Supabase’i ebaõnnestus.');}await authLoadRemoteIntoLocal();renderPeople();}));
   $$('[data-delete-person]').forEach(btn=>btn.addEventListener('click',async e=>{
     e.stopPropagation();
     const id=btn.dataset.deletePerson;
@@ -1879,26 +1927,29 @@ function renderPeople(){
     const used=Object.values(related).some(Boolean);
     const detailRows=`<div class="confirm-kv"><span>Kasutaja</span><strong>${esc(p.name)}</strong></div>`+(used?`<div class="confirm-warning">⚠ Kasutaja on seotud: ${related.works} tööd, ${related.projects} projekti, ${related.objects} objekti, ${related.absences} puudumist, ${related.oncall} valvet.</div>`:'');
     const ok=await openVecoConfirm({
-      title:'Kustuta kasutaja?',
-      message:used?'Kasutaja on seotud teiste kirjetega. Kustutamine võib jätta viited tühjaks.':'Kas soovid selle kasutaja kustutada?',
+      title:'Arhiveeri kasutaja?',
+      message:used?'Kasutaja on seotud teiste kirjetega. Kustutamine võib jätta viited tühjaks.':'Kas soovid selle kasutaja arhiveerida?',
       details:detailRows,
-      confirmText:'Kustuta',
+      confirmText:'Arhiveeri',
       cancelText:'Loobu',
       danger:true
     });
     if(!ok) return;
-    state.people=state.people.filter(x=>x.id!==id);
-    deleteAuthUserLocal(id);
+    p.active=false;
     save();
-    authPersist(normalizeAuthUsers());
+    const auth=normalizeAuthUsers();
+    authSave(auth);
+    try{ if(window.VECO_API?.deactivateAuthUser){ await window.VECO_API.deactivateAuthUser(id); } }
+    catch(err){ console.warn('VECO auth remote archive failed',err); alert('Kasutaja arhiveerimine Supabase’is ebaõnnestus.'); }
+    await authLoadRemoteIntoLocal();
     renderPeople();
   }));
 }
 function openPersonModal(id=''){
   const p=id?byId(state.people,id):{name:'',role:'Tehnik',phone:'',email:'',region:'',skills:'',active:true,onCallActive:false,onCallOrder:nextOncallOrder()};
-  openModal(`<form id="personForm"><div class="dialog-head"><h2>${id?'Muuda kasutajat':'Lisa kasutaja'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Nimi<input class="field" name="name" required value="${esc(p.name)}"></label><label>Roll<select class="select" name="role">${['Admin','Hooldusjuht','Tehnik'].map(r=>`<option value="${r}" ${p.role===r?'selected':''}>${r}</option>`).join('')}</select></label><label>Telefon<input class="field" name="phone" value="${esc(p.phone||'')}"></label><label>E-post<input class="field" name="email" type="email" value="${esc(p.email||'')}"></label><label>Piirkond<input class="field" name="region" value="${esc(p.region||'')}"></label><label>Oskused<input class="field" name="skills" value="${esc(p.skills||'')}"></label><label>Staatus<select class="select" name="active"><option value="true" ${p.active?'selected':''}>Aktiivne</option><option value="false" ${!p.active?'selected':''}>Deaktiveeritud</option></select></label><label>Valvegraafik<select class="select" name="onCallActive"><option value="true" ${p.onCallActive?'selected':''}>Aktiivne</option><option value="false" ${!p.onCallActive?'selected':''}>Ei osale</option></select></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  openModal(`<form id="personForm"><div class="dialog-head"><h2>${id?'Muuda kasutajat':'Lisa kasutaja'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Nimi<input class="field" name="name" required value="${esc(p.name)}"></label><label>Roll<select class="select" name="role">${['Admin','Hooldusjuht','Tehnik'].map(r=>`<option value="${r}" ${p.role===r?'selected':''}>${r}</option>`).join('')}</select></label><label>Telefon<input class="field" name="phone" value="${esc(p.phone||'')}"></label><label>E-post<input class="field" name="email" type="email" value="${esc(p.email||'')}"></label><label>Piirkond<input class="field" name="region" value="${esc(p.region||'')}"></label><label>Oskused<input class="field" name="skills" value="${esc(p.skills||'')}"></label><label>Saadavus<select class="select" name="availabilityStatus"><option value="available" ${(p.availabilityStatus||'available')==='available'?'selected':''}>Saadaval</option><option value="vacation" ${p.availabilityStatus==='vacation'?'selected':''}>Puhkus</option><option value="sick" ${p.availabilityStatus==='sick'?'selected':''}>Haigus</option><option value="training" ${p.availabilityStatus==='training'?'selected':''}>Koolitus</option><option value="oncall" ${p.availabilityStatus==='oncall'?'selected':''}>Valve</option></select></label><label>Staatus<select class="select" name="active"><option value="true" ${p.active?'selected':''}>Aktiivne</option><option value="false" ${!p.active?'selected':''}>Deaktiveeritud</option></select></label><label>Valvegraafik<select class="select" name="onCallActive"><option value="true" ${p.onCallActive?'selected':''}>Aktiivne</option><option value="false" ${!p.onCallActive?'selected':''}>Ei osale</option></select></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
-  $('#personForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('U'),name:f.name.value,role:f.role.value,phone:f.phone.value,email:f.email.value,region:f.region.value,skills:f.skills.value,active:f.active.value==='true',onCallActive:f.onCallActive.value==='true',onCallOrder:p.onCallOrder||nextOncallOrder()};if(id){Object.assign(p,next)}else{state.people.push(next)}save();const auth=normalizeAuthUsers();authSave(auth);try{if(window.VECO_API?.saveAuthUser){await window.VECO_API.saveAuthUser(auth.users[next.id]);}}catch(err){console.warn('VECO auth remote user save failed',err); alert('Kasutaja salvestamine Supabase’i ebaõnnestus. Muudatus jäi ainult lokaalseks.'); return;}closeModal();await authLoadRemoteIntoLocal();renderPeople();});
+  $('#personForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('U'),name:f.name.value,role:f.role.value,phone:f.phone.value,email:f.email.value,region:f.region.value,skills:f.skills.value,availabilityStatus:f.availabilityStatus.value||'available',active:f.active.value==='true',onCallActive:f.onCallActive.value==='true',onCallOrder:f.onCallActive.value==='true' ? (p.onCallOrder||nextOncallOrder()) : 0};if(id){Object.assign(p,next)}else{state.people.push(next)}save();const auth=normalizeAuthUsers();authSave(auth);try{if(window.VECO_API?.saveAuthUser){await window.VECO_API.saveAuthUser(auth.users[next.id]);}}catch(err){console.warn('VECO auth remote user save failed',err); alert('Kasutaja salvestamine Supabase’i ebaõnnestus. Muudatus jäi ainult lokaalseks.'); return;}closeModal();await authLoadRemoteIntoLocal();renderPeople();});
 }
 
 
@@ -2213,7 +2264,7 @@ function teamDetailHtml(weekDays,weekWorkorders){
 }
 
 function nextOncallOrder(){
-  return Math.max(0,...(state.people||[]).map(p=>Number(p.onCallOrder)||0))+1;
+  return Math.max(0,...(state.people||[]).filter(p=>p&&p.onCallActive===true).map(p=>Number(p.onCallOrder)||0))+1;
 }
 function activeOncallPeople(){
   normalizeOncallPeople();
@@ -2257,7 +2308,7 @@ function bindOncallView(){
       title:'Kustuta valve?',
       message:'Kas soovid selle valveperioodi kustutada?',
       details:`<div class="confirm-kv"><span>Tehnik</span><strong>${esc(techName(o.personId))}</strong></div><div class="confirm-kv"><span>Periood</span><strong>${esc(fmtActDate(o.start))} – ${esc(fmtActDate(o.end))}</strong></div>${o.note?`<div class="confirm-kv"><span>Märkus</span><strong>${esc(o.note)}</strong></div>`:''}`,
-      confirmText:'Kustuta',
+      confirmText:'Arhiveeri',
       cancelText:'Loobu',
       danger:true
     });
@@ -2270,7 +2321,7 @@ function bindOncallView(){
   $$('#oncallSortList .oncall-person').forEach(item=>{
     item.addEventListener('dragstart',()=>{draggedId=item.dataset.oncallPerson;item.classList.add('dragging');});
     item.addEventListener('dragend',()=>{item.classList.remove('dragging');draggedId='';});
-    item.addEventListener('dragover',e=>{e.preventDefault();const target=item.dataset.oncallPerson;if(!draggedId||draggedId===target)return;const list=activeOncallPeople().map(p=>p.id);const from=list.indexOf(draggedId);const to=list.indexOf(target);if(from<0||to<0)return;list.splice(to,0,list.splice(from,1)[0]);list.forEach((id,idx)=>{const p=byId(state.people,id);if(p)p.onCallOrder=idx+1;});save();renderOncall();});
+    item.addEventListener('dragover',e=>{e.preventDefault();const target=item.dataset.oncallPerson;if(!draggedId||draggedId===target)return;const list=activeOncallPeople().map(p=>p.id);const from=list.indexOf(draggedId);const to=list.indexOf(target);if(from<0||to<0)return;list.splice(to,0,list.splice(from,1)[0]);list.forEach((id,idx)=>{const p=byId(state.people,id);if(p){p.onCallActive=true;p.onCallOrder=idx+1;}});save();renderOncall();clearTimeout(window.__vecoOncallOrderSaveTimer);window.__vecoOncallOrderSaveTimer=setTimeout(async()=>{try{for(const id of list){await persistPersonAuthToRemote(byId(state.people,id));}}catch(err){console.warn('VECO on-call order remote save failed',err);}},300);});
   });
 }
 function openOncallModal(id=''){
@@ -2310,10 +2361,10 @@ function absenceTypeClass(type){
 }
 function availabilityMeta(type){
   const t=String(type||'').toLowerCase();
-  if(t.includes('puhkus')) return {icon:'🏖', label:'Puhkus', cls:'vacation'};
-  if(t.includes('haig')) return {icon:'🤒', label:'Haigus', cls:'sick'};
-  if(t.includes('koolitus')) return {icon:'🎓', label:'Koolitus', cls:'training'};
-  if(t.includes('valve')) return {icon:'☎', label:'Valve', cls:'oncall'};
+  if(t.includes('puhkus')||t==='vacation') return {icon:'🏖', label:'Puhkus', cls:'vacation'};
+  if(t.includes('haig')||t==='sick') return {icon:'🤒', label:'Haigus', cls:'sick'};
+  if(t.includes('koolitus')||t==='training') return {icon:'🎓', label:'Koolitus', cls:'training'};
+  if(t.includes('valve')||t==='oncall') return {icon:'☎', label:'Valve', cls:'oncall'};
   if(t.includes('lähet')||t.includes('lahet')) return {icon:'🚗', label:'Lähetus', cls:'travel'};
   if(t.includes('puud')) return {icon:'⛔', label:'Puudub', cls:'absent'};
   return {icon:'📌', label:type||'Muu', cls:'other'};
@@ -2325,6 +2376,9 @@ function activeOncallForPerson(personId,day=dateKeyFromDate(new Date())){
   return (state.oncall||[]).filter(o=>o.personId===personId && o.start<=day && o.end>=day);
 }
 function availabilityBadgesForPerson(personId,day=dateKeyFromDate(new Date())){
+  const person=byId(state.people||[],personId);
+  const status=String(person?.availabilityStatus||'available').toLowerCase();
+  const statusBadge=status&&status!=='available'?(()=>{const meta=availabilityMeta(status);return [{kind:'status',cls:meta.cls,icon:meta.icon,label:meta.label,title:meta.label}];})():[];
   const abs=activeAbsencesForPerson(personId,day).map(a=>{
     const meta=availabilityMeta(a.type||'Puudumine');
     return {kind:'absence', cls:meta.cls, icon:meta.icon, label:meta.label, title:`${meta.label}: ${fmtActDate(a.start)}–${fmtActDate(a.end)}${a.note?' · '+a.note:''}`};
@@ -2333,7 +2387,7 @@ function availabilityBadgesForPerson(personId,day=dateKeyFromDate(new Date())){
     const meta=availabilityMeta('Valve');
     return {kind:'oncall', cls:meta.cls, icon:meta.icon, label:'Valve', title:`Valve: ${fmtActDate(o.start)}–${fmtActDate(o.end)}${o.note?' · '+o.note:''}`};
   });
-  return [...abs,...calls];
+  return [...statusBadge,...abs,...calls];
 }
 function availabilityBadgesHtml(personId,day=dateKeyFromDate(new Date()),opts={}){
   const badges=availabilityBadgesForPerson(personId,day);
@@ -2390,7 +2444,7 @@ function bindVacations(){
       title:'Kustuta puudumine?',
       message:'Kas soovid selle puudumise kustutada?',
       details:`<div class="confirm-kv"><span>Töötaja</span><strong>${esc(techName(a.personId))}</strong></div><div class="confirm-kv"><span>Tüüp</span><strong>${esc(a.type||'Puudumine')}</strong></div><div class="confirm-kv"><span>Periood</span><strong>${esc(fmtActDate(a.start))} – ${esc(fmtActDate(a.end))}</strong></div>${a.note?`<div class="confirm-kv"><span>Märkus</span><strong>${esc(a.note)}</strong></div>`:''}${conflictHtml}`,
-      confirmText:'Kustuta',
+      confirmText:'Arhiveeri',
       cancelText:'Loobu',
       danger:true
     });
@@ -3728,7 +3782,7 @@ function renderDevices(){
   $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();normalizeDevices();save();renderDevices();});
   $$('[data-edit-device]').forEach(btn=>btn.addEventListener('click',()=>openDeviceModal(btn.dataset.editDevice)));
   $$('[data-toggle-device]').forEach(btn=>btn.addEventListener('click',()=>{const d=byId(state.devices,btn.dataset.toggleDevice);if(d){d.status=d.status==='Peidetud'?'Aktiivne':'Peidetud';save();renderDevices();}}));
-  $$('[data-delete-device]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteDevice;const d=byId(state.devices,id);if(!d)return;openConfirm({title:'Kustuta seade?',message:`${d.code||d.name} · ${objectName(d.objectId)}`,details:'<div class="muted">Kustutamine eemaldab seadme registrist. Kui seade on päriselt kasutusest väljas, kasuta pigem staatust Peidetud või Mahakantud.</div>',confirmText:'Kustuta',onConfirm:()=>{state.devices=state.devices.filter(x=>x.id!==id);save();renderDevices();}});}))
+  $$('[data-delete-device]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteDevice;const d=byId(state.devices,id);if(!d)return;openConfirm({title:'Kustuta seade?',message:`${d.code||d.name} · ${objectName(d.objectId)}`,details:'<div class="muted">Kustutamine eemaldab seadme registrist. Kui seade on päriselt kasutusest väljas, kasuta pigem staatust Peidetud või Mahakantud.</div>',confirmText:'Arhiveeri',onConfirm:()=>{state.devices=state.devices.filter(x=>x.id!==id);save();renderDevices();}});}))
 }
 function openDeviceModal(id=''){
   normalizeDevices();
@@ -3790,7 +3844,7 @@ function renderMaintenanceNorms(){
   $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();normalizeMaintenanceNorms();save();renderMaintenanceNorms();});
   $$('[data-edit-maintenance-norm]').forEach(btn=>btn.addEventListener('click',()=>openMaintenanceNormModal(btn.dataset.editMaintenanceNorm)));
   $$('[data-toggle-maintenance-norm]').forEach(btn=>btn.addEventListener('click',()=>{const n=byId(state.maintenanceNorms,btn.dataset.toggleMaintenanceNorm);if(n){n.active=n.active===false;save();renderMaintenanceNorms();}}));
-  $$('[data-delete-maintenance-norm]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteMaintenanceNorm;const n=byId(state.maintenanceNorms,id);if(!n)return;openConfirm({title:'Kustuta hooldusnorm?',message:`${n.type} · ${n.level} · ${n.hours} h`,details:'<div class="muted">Kustutamine eemaldab normi registrist. Tulevikus objektide hooldusprofiilid hakkavad kasutama ainult olemasolevaid aktiivseid norme.</div>',confirmText:'Kustuta',onConfirm:()=>{state.maintenanceNorms=state.maintenanceNorms.filter(x=>x.id!==id);save();renderMaintenanceNorms();}});}));
+  $$('[data-delete-maintenance-norm]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteMaintenanceNorm;const n=byId(state.maintenanceNorms,id);if(!n)return;openConfirm({title:'Kustuta hooldusnorm?',message:`${n.type} · ${n.level} · ${n.hours} h`,details:'<div class="muted">Kustutamine eemaldab normi registrist. Tulevikus objektide hooldusprofiilid hakkavad kasutama ainult olemasolevaid aktiivseid norme.</div>',confirmText:'Arhiveeri',onConfirm:()=>{state.maintenanceNorms=state.maintenanceNorms.filter(x=>x.id!==id);save();renderMaintenanceNorms();}});}));
 }
 function openMaintenanceNormModal(id=''){
   normalizeMaintenanceNorms();
@@ -3868,7 +3922,7 @@ function renderMaintenanceProfiles(){
   $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();normalizeMaintenanceProfiles();save();renderMaintenanceProfiles();});
   $$('[data-edit-maintenance-profile]').forEach(btn=>btn.addEventListener('click',()=>openMaintenanceProfileModal(btn.dataset.editMaintenanceProfile)));
   $$('[data-toggle-maintenance-profile]').forEach(btn=>btn.addEventListener('click',()=>{const p=byId(state.maintenanceProfiles,btn.dataset.toggleMaintenanceProfile); if(p){p.active=p.active===false; save(); renderMaintenanceProfiles();}}));
-  $$('[data-delete-maintenance-profile]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteMaintenanceProfile; const p=byId(state.maintenanceProfiles,id); if(!p)return; openConfirm({title:'Kustuta hooldusprofiil?',message:`${deviceLabel(p.deviceId)} · ${p.type} · ${p.level}`,details:'<div class="muted">Kustutamine eemaldab seadme ja normi seose, kuid seadet ega hooldusnormi ei kustuta.</div>',confirmText:'Kustuta',onConfirm:()=>{state.maintenanceProfiles=state.maintenanceProfiles.filter(x=>x.id!==id); save(); renderMaintenanceProfiles();}})}));
+  $$('[data-delete-maintenance-profile]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteMaintenanceProfile; const p=byId(state.maintenanceProfiles,id); if(!p)return; openConfirm({title:'Kustuta hooldusprofiil?',message:`${deviceLabel(p.deviceId)} · ${p.type} · ${p.level}`,details:'<div class="muted">Kustutamine eemaldab seadme ja normi seose, kuid seadet ega hooldusnormi ei kustuta.</div>',confirmText:'Arhiveeri',onConfirm:()=>{state.maintenanceProfiles=state.maintenanceProfiles.filter(x=>x.id!==id); save(); renderMaintenanceProfiles();}})}));
 }
 function openMaintenanceProfileModal(id=''){
   normalizeMaintenanceProfiles();
@@ -3934,7 +3988,7 @@ function renderGranlundClassifier(){
   $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();normalizeGranlundClassifiers();save();renderGranlundClassifier();});
   $$('[data-edit-granlund-classifier]').forEach(btn=>btn.addEventListener('click',()=>openGranlundClassifierModal(btn.dataset.editGranlundClassifier)));
   $$('[data-toggle-granlund-classifier]').forEach(btn=>btn.addEventListener('click',()=>{const c=byId(state.granlundClassifiers,btn.dataset.toggleGranlundClassifier); if(c){c.active=c.active===false; save(); renderGranlundClassifier();}}));
-  $$('[data-delete-granlund-classifier]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteGranlundClassifier; const c=byId(state.granlundClassifiers,id); if(!c)return; openConfirm({title:'Kustuta Granlundi reegel?',message:`${c.pattern} → ${c.exclude?'välista':c.type+' / '+c.level}`,details:'<div class="muted">Kustutamine eemaldab klassifikaatori reegli. Raporti import ei kasuta seda vastet enam töömahu arvutamisel.</div>',confirmText:'Kustuta',onConfirm:()=>{state.granlundClassifiers=state.granlundClassifiers.filter(x=>x.id!==id); save(); renderGranlundClassifier();}})}));
+  $$('[data-delete-granlund-classifier]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.deleteGranlundClassifier; const c=byId(state.granlundClassifiers,id); if(!c)return; openConfirm({title:'Kustuta Granlundi reegel?',message:`${c.pattern} → ${c.exclude?'välista':c.type+' / '+c.level}`,details:'<div class="muted">Kustutamine eemaldab klassifikaatori reegli. Raporti import ei kasuta seda vastet enam töömahu arvutamisel.</div>',confirmText:'Arhiveeri',onConfirm:()=>{state.granlundClassifiers=state.granlundClassifiers.filter(x=>x.id!==id); save(); renderGranlundClassifier();}})}));
 }
 function openGranlundClassifierModal(id=''){
   normalizeGranlundClassifiers();
