@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260616_1155';
+const APP_BUILD='20260616_1202';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -108,10 +108,23 @@ function mergeAuthUsersIntoPeople(auth,{saveState=false}={}){
   if(changed && saveState) window.VECO_STORAGE?.save?.(state);
   return changed;
 }
-function deleteAuthUserLocal(userId){
+function softDeactivateAuthUser(userId){
   const auth=authLoad();
-  if(auth.users?.[userId]){ delete auth.users[userId]; authSave(auth); }
-  window.VECO_API?.deleteAuthUser?.(userId).catch(err=>console.warn('VECO auth remote delete failed',err));
+  if(auth.users?.[userId]){
+    auth.users[userId].active=false;
+    auth.users[userId].pinResetRequired=false;
+    authSave(auth);
+  }
+  if(window.VECO_API?.deactivateAuthUser){
+    window.VECO_API.deactivateAuthUser(userId).catch(err=>console.warn('VECO auth remote deactivate failed',err));
+  }else{
+    authPushRemote(auth);
+  }
+}
+function deleteAuthUserLocal(userId){
+  // CR-089C: hard delete is intentionally avoided because users can be linked to work orders/acts.
+  // The visible "Kustuta" action now means archive/deactivate, so Supabase does not re-create the user on refresh.
+  softDeactivateAuthUser(userId);
 }
 function normalizeAuthUsers(){
   const auth=authLoad(); auth.users=auth.users||{};
@@ -1816,7 +1829,7 @@ function renderPeople(){
   const filters=`<input class="field" id="peopleSearch" placeholder="Otsi kasutajat..." value="${esc(q)}"><select class="select" id="peopleStatusFilter"><option value="active" ${status==='active'?'selected':''}>Aktiivsed</option><option value="inactive" ${status==='inactive'?'selected':''}>Deaktiveeritud</option><option value="all" ${status==='all'?'selected':''}>Kõik kasutajad</option></select>`;
   const actions=`<button class="btn primary" id="newPersonBtn">${icon('＋')}Lisa kasutaja</button>`;
   const today=dateKeyFromDate(new Date());
-  const rows=list.map(p=>`<tr data-person-id="${p.id}"><td><strong>${esc(p.name)}</strong><div class="muted">${esc(p.id)}</div></td><td>${esc(p.role||'-')}</td><td>${availabilityBadgesHtml(p.id,today,{empty:true})}</td><td>${esc(p.phone||'-')}</td><td>${esc(p.email||'-')}</td><td>${esc(p.region||'-')}</td><td><button class="status ${p.onCallActive?'ok':'red'}" data-toggle-oncall-person="${p.id}" type="button" title="Lisa/eemalda valvegraafikust">${p.onCallActive?'Aktiivne':'Ei osale'}</button><div class="muted">Jrk ${Number(p.onCallOrder||0)||'-'}</div></td><td><span class="status ${p.active?'ok':'red'}">${p.active?'Aktiivne':'Deaktiveeritud'}</span></td><td>${pinStatusHtml(p)}</td><td><button class="btn small" data-edit-person="${p.id}" type="button">Muuda</button> <button class="btn small" data-reset-pin="${p.id}" type="button">Luba uus PIN</button> <button class="btn small" data-temp-pin="${p.id}" type="button">Määra PIN</button> <button class="btn small ${p.active?'danger':'primary'}" data-toggle-person="${p.id}" type="button">${p.active?'Deaktiveeri':'Aktiveeri'}</button> <button class="btn small danger" data-delete-person="${p.id}" type="button">Kustuta</button></td></tr>`).join('');
+  const rows=list.map(p=>`<tr data-person-id="${p.id}"><td><strong>${esc(p.name)}</strong><div class="muted">${esc(p.id)}</div></td><td>${esc(p.role||'-')}</td><td>${availabilityBadgesHtml(p.id,today,{empty:true})}</td><td>${esc(p.phone||'-')}</td><td>${esc(p.email||'-')}</td><td>${esc(p.region||'-')}</td><td><button class="status ${p.onCallActive?'ok':'red'}" data-toggle-oncall-person="${p.id}" type="button" title="Lisa/eemalda valvegraafikust">${p.onCallActive?'Aktiivne':'Ei osale'}</button><div class="muted">Jrk ${Number(p.onCallOrder||0)||'-'}</div></td><td><span class="status ${p.active?'ok':'red'}">${p.active?'Aktiivne':'Deaktiveeritud'}</span></td><td>${pinStatusHtml(p)}</td><td><button class="btn small" data-edit-person="${p.id}" type="button">Muuda</button> <button class="btn small" data-reset-pin="${p.id}" type="button">Luba uus PIN</button> <button class="btn small" data-temp-pin="${p.id}" type="button">Määra PIN</button> <button class="btn small ${p.active?'danger':'primary'}" data-toggle-person="${p.id}" type="button">${p.active?'Deaktiveeri':'Aktiveeri'}</button> <button class="btn small danger" data-delete-person="${p.id}" type="button">Arhiveeri</button></td></tr>`).join('');
   const main=header('Tehnikute administreerimine',filters,actions,'TEHNIKUD')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Kasutajaid',state.people.length)}${summaryBox('Aktiivseid',state.people.filter(p=>p.active).length)}${summaryBox('Tehnikuid',state.people.filter(p=>authRoleFromPersonRole(p.role)==='technician').length)}${summaryBox('Valve aktiivsed',state.people.filter(p=>p.onCallActive).length)}</div>${superadminPanelHtml()}${table(['Nimi','Roll','Saadavus täna','Telefon','E-post','Piirkond','Valvegraafik','Staatus','PIN','Tegevused'],rows)}</div>`;
   shell(main,'',{wide:true});
   $('#peopleSearch')?.addEventListener('input',renderPeople);
@@ -1828,7 +1841,7 @@ function renderPeople(){
   $$('[data-temp-pin]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.tempPin); if(!p) return; const role=authRoleFromPersonRole(p.role); const pin=prompt(`${p.name} uus PIN (${AUTH_RULES[role].label})`); if(pin===null) return; if(!setUserTempPin(p.id,pin)){alert(`PIN peab olema ${AUTH_RULES[role].label}.`); return;} renderPeople();}));
   $('#resetAdminPinsBtn')?.addEventListener('click',async()=>{const ok=await openVecoConfirm({title:'Lähtesta admin PIN-id?',message:'Kõigi adminide vana PIN unustatakse. Järgmisel sisselogimisel saavad nad uue PIN-i määrata.',confirmText:'Lähtesta',cancelText:'Loobu',danger:true}); if(ok){resetAdminPins(); renderPeople();}});
   $$('[data-edit-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openPersonModal(btn.dataset.editPerson);}))
-  $$('[data-toggle-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.togglePerson);if(p){p.active=!p.active;save();authPersist(normalizeAuthUsers());renderPeople();}}));
+  $$('[data-toggle-person]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const p=byId(state.people,btn.dataset.togglePerson);if(p){p.active=!p.active;save();const auth=normalizeAuthUsers();authPersist(auth);if(window.VECO_API?.saveAuthUser){window.VECO_API.saveAuthUser(auth.users[p.id]).catch(err=>console.warn('VECO auth remote user update failed',err));}renderPeople();}}));
   $$('[data-delete-person]').forEach(btn=>btn.addEventListener('click',async e=>{
     e.stopPropagation();
     const id=btn.dataset.deletePerson;
@@ -1844,26 +1857,27 @@ function renderPeople(){
     const used=Object.values(related).some(Boolean);
     const detailRows=`<div class="confirm-kv"><span>Kasutaja</span><strong>${esc(p.name)}</strong></div>`+(used?`<div class="confirm-warning">⚠ Kasutaja on seotud: ${related.works} tööd, ${related.projects} projekti, ${related.objects} objekti, ${related.absences} puudumist, ${related.oncall} valvet.</div>`:'');
     const ok=await openVecoConfirm({
-      title:'Kustuta kasutaja?',
-      message:used?'Kasutaja on seotud teiste kirjetega. Kustutamine võib jätta viited tühjaks.':'Kas soovid selle kasutaja kustutada?',
+      title:'Arhiveeri kasutaja?',
+      message:'Kasutajat ei kustutata andmebaasist, vaid märgitakse mitteaktiivseks. Nii ei tule ta Supabase-ist tagasi aktiivsena ja ajalugu jääb alles.',
       details:detailRows,
-      confirmText:'Kustuta',
+      confirmText:'Arhiveeri',
       cancelText:'Loobu',
       danger:true
     });
     if(!ok) return;
-    state.people=state.people.filter(x=>x.id!==id);
+    p.active=false;
     deleteAuthUserLocal(id);
     save();
-    authPersist(normalizeAuthUsers());
+    const auth=normalizeAuthUsers();
+    authPersist(auth);
     renderPeople();
-  }));
+  }))
 }
 function openPersonModal(id=''){
   const p=id?byId(state.people,id):{name:'',role:'Tehnik',phone:'',email:'',region:'',skills:'',active:true,onCallActive:false,onCallOrder:nextOncallOrder()};
   openModal(`<form id="personForm"><div class="dialog-head"><h2>${id?'Muuda kasutajat':'Lisa kasutaja'}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Nimi<input class="field" name="name" required value="${esc(p.name)}"></label><label>Roll<select class="select" name="role">${['Admin','Hooldusjuht','Tehnik'].map(r=>`<option value="${r}" ${p.role===r?'selected':''}>${r}</option>`).join('')}</select></label><label>Telefon<input class="field" name="phone" value="${esc(p.phone||'')}"></label><label>E-post<input class="field" name="email" type="email" value="${esc(p.email||'')}"></label><label>Piirkond<input class="field" name="region" value="${esc(p.region||'')}"></label><label>Oskused<input class="field" name="skills" value="${esc(p.skills||'')}"></label><label>Staatus<select class="select" name="active"><option value="true" ${p.active?'selected':''}>Aktiivne</option><option value="false" ${!p.active?'selected':''}>Deaktiveeritud</option></select></label><label>Valvegraafik<select class="select" name="onCallActive"><option value="true" ${p.onCallActive?'selected':''}>Aktiivne</option><option value="false" ${!p.onCallActive?'selected':''}>Ei osale</option></select></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
-  $('#personForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('U'),name:f.name.value,role:f.role.value,phone:f.phone.value,email:f.email.value,region:f.region.value,skills:f.skills.value,active:f.active.value==='true',onCallActive:f.onCallActive.value==='true',onCallOrder:p.onCallOrder||nextOncallOrder()};if(id){Object.assign(p,next)}else{state.people.push(next)}save();authPersist(normalizeAuthUsers());closeModal();renderPeople();});
+  $('#personForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('U'),name:f.name.value,role:f.role.value,phone:f.phone.value,email:f.email.value,region:f.region.value,skills:f.skills.value,active:f.active.value==='true',onCallActive:f.onCallActive.value==='true',onCallOrder:p.onCallOrder||nextOncallOrder()};if(id){Object.assign(p,next)}else{state.people.push(next)}save();const auth=normalizeAuthUsers();authPersist(auth);if(window.VECO_API?.saveAuthUser){window.VECO_API.saveAuthUser(auth.users[next.id]).catch(err=>console.warn('VECO auth remote user save failed',err));}closeModal();renderPeople();});
 }
 
 

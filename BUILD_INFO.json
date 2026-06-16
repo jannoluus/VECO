@@ -1,12 +1,12 @@
 {
-  "build": "20260616_1155",
-  "buildNumber": "20260616_1155",
-  "app_build": "20260616_1155",
+  "build": "20260616_1202",
+  "buildNumber": "20260616_1202",
+  "app_build": "20260616_1202",
   "createdAt": "2026-06-16T11:55:00+03:00",
   "created_at": "2026-06-16T11:55:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
   "version": "v3.19.14",
-  "package": "VECO_V3_20260616_1155.zip",
+  "package": "VECO_V3_20260616_1202.zip",
   "changes": [
     "CR-089A: kasutajate administreerimine viidud Supabase-first loogikale.",
     "Meeskonna vaade sünkroniseerib auth_users tabeliga ja lisab puuduolevad VECO kasutajad keskregistrisse.",

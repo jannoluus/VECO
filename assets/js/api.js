@@ -161,13 +161,24 @@
   function authUsernameFromId(id){
     return String(id||'').trim().replace(/^U-/i,'').toLowerCase();
   }
+  function authUsernameClean(value){
+    return String(value||'')
+      .trim()
+      .toLowerCase()
+      .split('@')[0]
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'')
+      .replace(/õ/g,'o').replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u')
+      .replace(/[^a-z0-9]+/g,'.')
+      .replace(/^\.+|\.+$/g,'');
+  }
   function authIdFromUsername(username){
     const value=String(username||'').trim();
     if(!value) return '';
     return value.toUpperCase().startsWith('U-')?value.toUpperCase():`U-${value.toUpperCase()}`;
   }
   function authRowFromUser(u){
-    const username=authUsernameFromId(u.id||u.username||u.name);
+    const username=authUsernameClean(u.username) || authUsernameClean(u.email) || authUsernameClean(u.name||u.full_name) || authUsernameFromId(u.id);
     if(!username) return null;
     return {
       username,
@@ -216,15 +227,29 @@
     return true;
   }
 
+  async function saveAuthUser(user){
+    const client=getClient();
+    if(!client||!user) return false;
+    const row=authRowFromUser(user);
+    if(!row) return false;
+    const {error}=await client.from(AUTH_TABLE).upsert(row,{onConflict:'username'});
+    if(error) throw error;
+    return true;
+  }
 
-  async function deleteAuthUser(userId){
+  async function deactivateAuthUser(userId){
     const client=getClient();
     if(!client) return false;
     const username=authUsernameFromId(userId);
     if(!username) return false;
-    const {error}=await client.from(AUTH_TABLE).delete().eq('username',username);
+    const {error}=await client.from(AUTH_TABLE).update({active:false,updated_at:new Date().toISOString()}).eq('username',username);
     if(error) throw error;
     return true;
+  }
+
+  async function deleteAuthUser(userId){
+    // Hard delete is kept for future admin tools, but the VECO UI uses soft deactivate.
+    return deactivateAuthUser(userId);
   }
 
   function signature(data){
@@ -244,6 +269,8 @@
   window.VECO_API={
     loadAuthUsers,
     saveAuthUsers,
+    saveAuthUser,
+    deactivateAuthUser,
     deleteAuthUser,
     mode(){return getClient()?'supabase':'local'},
     modeLabel(){return this.mode()==='supabase'?'Supabase':'lokaalne'},
