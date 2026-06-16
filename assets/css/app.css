@@ -3544,3 +3544,50 @@ body.calendar-layout-ready .app.page-calendar .calendar-planner-wrap{
   .auth-card{width:min(420px,100%);padding:22px;gap:13px;}
   .auth-card h1{font-size:23px;}
 }
+
+/* VECO_V3_20260616_1234 / CR-092: allow vertical scrolling on long workspace views.
+   Calendar keeps its fixed viewport layout; other admin/supervisor pages may grow past 100vh. */
+html,body{
+  min-height:100%!important;
+}
+body{
+  overflow-y:auto!important;
+}
+.app:not(.page-calendar):not(.app-mobile){
+  height:auto!important;
+  min-height:100vh!important;
+  overflow:visible!important;
+}
+.app:not(.page-calendar):not(.app-mobile) > main{
+  height:auto!important;
+  min-height:100vh!important;
+  overflow:visible!important;
+}
+.app:not(.page-calendar):not(.app-mobile) > main > .content{
+  height:auto!important;
+  min-height:0!important;
+  overflow:visible!important;
+  align-items:start!important;
+}
+.app:not(.page-calendar):not(.app-mobile) .panel{
+  height:auto!important;
+  max-height:none!important;
+}
+.app.page-oncall:not(.app-mobile) .panel,
+.app.page-people:not(.app-mobile) .panel,
+.app.page-team:not(.app-mobile) .panel,
+.app.page-projects:not(.app-mobile) .panel,
+.app.page-objects:not(.app-mobile) .panel,
+.app.page-clients:not(.app-mobile) .panel,
+.app.page-devices:not(.app-mobile) .panel,
+.app.page-workorders:not(.app-mobile) .panel,
+.app.page-acts:not(.app-mobile) .panel,
+.app.page-vacations:not(.app-mobile) .panel,
+.app.page-unplanned-maintenance:not(.app-mobile) .panel{
+  overflow:visible!important;
+}
+.app:not(.page-calendar):not(.app-mobile) .table-wrap{
+  max-height:none!important;
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+}
