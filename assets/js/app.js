@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260616_1054';
+const APP_BUILD='20260616_1101';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -295,18 +295,21 @@ function save(){
   state=window.VECO_API?.save ? window.VECO_API.save(state) : window.VECO_STORAGE.save(state);
   notifyLocalPeers();
 }
+// CR-084B: multi-tab render guard. Peer sync must not repaint calendar unless data signature changed.
 const LOCAL_SYNC_KEY='veco_v3_sync_pulse';
+const LOCAL_SYNC_TAB_ID=`tab-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 let localSyncChannel=null;
 let localSyncTimer=null;
 let localStateWatchTimer=null;
 let localStateSnapshot='';
+let localRefreshInProgress=false;
 function localStateSignature(data){
   return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.responsibleTechnicianId,(w.participantTechnicianIds||[]).join(','),w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.completedAt||'',w.completedBy||'',w.completionComment||'']));
 }
 function notifyLocalPeers(){
   try{
     localStateSnapshot=localStateSignature(state);
-    const msg={type:'workorders-updated',page,t:Date.now()};
+    const msg={type:'workorders-updated',page,t:Date.now(),tabId:LOCAL_SYNC_TAB_ID,sig:localStateSnapshot};
     localStorage.setItem(LOCAL_SYNC_KEY,JSON.stringify(msg));
     if(localSyncChannel) localSyncChannel.postMessage(msg);
   }catch(e){ /* ignore local sync errors */ }
@@ -328,16 +331,24 @@ function renderCurrentPageWhenIdle(){
   }
   renderCurrentPage();
 }
-function scheduleLocalRefresh(){
+function scheduleLocalRefresh(meta={}){
+  if(meta?.tabId && meta.tabId===LOCAL_SYNC_TAB_ID) return;
+  if(meta?.sig && meta.sig===localStateSnapshot) return;
   clearTimeout(localSyncTimer);
   localSyncTimer=setTimeout(()=>{
+    if(localRefreshInProgress) return;
+    localRefreshInProgress=true;
     try{
       if($('#modal')?.classList.contains('open')) return;
-      state=window.VECO_STORAGE.load();
-      localStateSnapshot=localStateSignature(state);
+      const latest=window.VECO_STORAGE.load();
+      const nextSig=localStateSignature(latest);
+      if(nextSig===localStateSnapshot) return;
+      state=latest;
+      localStateSnapshot=nextSig;
       renderCurrentPageWhenIdle();
     }catch(e){ console.warn('VECO local peer refresh failed',e); }
-  },120);
+    finally{ localRefreshInProgress=false; }
+  },160);
 }
 function startLocalStateWatch(){
   if(localStateWatchTimer) return;
@@ -360,11 +371,15 @@ function bindLocalPeerSync(){
     if('BroadcastChannel' in window && !localSyncChannel){
       localSyncChannel=new BroadcastChannel('veco_v3_sync');
       localSyncChannel.onmessage=(event)=>{
-        if(event?.data?.type==='workorders-updated') scheduleLocalRefresh();
+        if(event?.data?.type==='workorders-updated') scheduleLocalRefresh(event.data);
       };
     }
     window.addEventListener('storage',(event)=>{
-      if(event.key===LOCAL_SYNC_KEY || event.key===window.VECO_STORAGE?.key) scheduleLocalRefresh();
+      if(event.key===LOCAL_SYNC_KEY){
+        try{ scheduleLocalRefresh(JSON.parse(event.newValue||'{}')); }catch(_){ scheduleLocalRefresh(); }
+      }else if(event.key===window.VECO_STORAGE?.key){
+        scheduleLocalRefresh();
+      }
     });
     startLocalStateWatch();
   }catch(e){ console.warn('VECO local peer sync unavailable',e); }
