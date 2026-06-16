@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.19.0';
-const APP_BUILD='20260616_1224';
+const APP_VERSION='v3.19.16';
+const APP_BUILD='20260616_1229';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -32,7 +32,8 @@ const AUTH_LOCK_KEY='veco_v3_auth_locks_v1';
 const AUTH_RULES={technician:{min:4,max:4,label:'4-kohaline PIN'},supervisor:{min:4,max:4,label:'4-kohaline PIN'},admin:{min:6,max:12,label:'vähemalt 6-kohaline PIN'},superadmin:{min:6,max:8,label:'6–8 kohaline PIN'}};
 const ADMIN_PAGES=new Set(['team','people','vacations','oncall','objects','clients','projects','ticker','maintenanceNorms','devices','maintenanceProfiles','granlundClassifier','unplannedMaintenance','mobilePreview','demo','diagnostics']);
 const SUPERVISOR_PAGES=new Set(['calendar','team','mobile','workorders','acts','vacations','oncall','objects','clients','projects','devices','maintenanceProfiles','unplannedMaintenance']);
-const TECH_PAGES=new Set(['mobile','calendar','workorders','acts']);
+// CR-091: technician route guard. Technicians may only use the simplified mobile view.
+const TECH_PAGES=new Set(['mobile']);
 function authLoad(){try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'{}')||{};}catch(_){return {};}}
 function authSave(a){localStorage.setItem(AUTH_KEY,JSON.stringify(a||{}));}
 let authRemoteAvailable=false;
@@ -206,7 +207,24 @@ function authRenderSuperadmin(message=''){
   document.getElementById('backLoginBtn')?.addEventListener('click',()=>authRenderScreen());
   document.getElementById('superForm')?.addEventListener('submit',e=>{e.preventDefault(); const pin=e.currentTarget.elements.pin.value; const pin2=e.currentTarget.elements.pin2?.value; const lock=authLockInfo('superadmin'); if(lock.locked) return authRenderSuperadmin(lockText(lock)); const authNow=normalizeAuthUsers(); if(!authNow.superadmin.pinHash){ if(pin!==pin2) return authRenderSuperadmin('PIN-i kordus ei ühti.'); if(!validatePin('superadmin',pin)) return authRenderSuperadmin(`Superadmin PIN peab olema ${AUTH_RULES.superadmin.label}.`); authNow.superadmin.pinHash=authHash(pin); authNow.superadmin.pinSetAt=new Date().toISOString(); authPersist(authNow); authSetSession({id:'SUPERADMIN',name:'Superadmin',role:'superadmin'}); location.href='people.html'; return; } if(!authVerify(pin,authNow.superadmin.pinHash)){const l=authRegisterFailure('superadmin'); return authRenderSuperadmin(l.locked?lockText(l):'Vale superadmin PIN.');} authClearFailure('superadmin'); authSetSession({id:'SUPERADMIN',name:'Superadmin',role:'superadmin'}); location.href='people.html'; });
 }
-function requireAuthOrRender(){ normalizeAuthUsers(); if(!currentAuthUser()){authRenderScreen(); return false;} if(!canAccessPage(page)){ shell(header('Ligipääs puudub','','','LIGIPÄÄS PUUDUB')+`<div class="detail-body"><p class="muted">Sinu rollil puudub selle vaate kasutamise õigus.</p><button class="btn" id="authLogoutBtn">Logi välja</button></div>`,'',{wide:true}); document.getElementById('authLogoutBtn')?.addEventListener('click',()=>{localStorage.removeItem(ADMIN_VIEW_AS_KEY); authClearSession(); location.href='index.html';}); return false;} return true; }
+function requireAuthOrRender(){
+  normalizeAuthUsers();
+  const user=currentAuthUser();
+  if(!user){authRenderScreen(); return false;}
+  // CR-091: URL based route guard. A technician must not reach admin/manager pages by editing the address bar.
+  // Redirect instead of rendering protected content.
+  if(user.role==='technician' && page!=='mobile'){
+    location.replace('mobile.html');
+    return false;
+  }
+  if(!canAccessPage(page)){
+    shell(header('Ligipääs puudub','','','LIGIPÄÄS PUUDUB')+`<div class="detail-body"><p class="muted">Sinu rollil puudub selle vaate kasutamise õigus.</p><div class="actions"><button class="btn primary" id="goMobileBtn" type="button">Mine tehniku vaatesse</button><button class="btn" id="authLogoutBtn" type="button">Logi välja</button></div></div>`,'',{wide:true});
+    document.getElementById('goMobileBtn')?.addEventListener('click',()=>{location.href='mobile.html';});
+    document.getElementById('authLogoutBtn')?.addEventListener('click',()=>{localStorage.removeItem(ADMIN_VIEW_AS_KEY); authClearSession(); location.href='mobile.html';});
+    return false;
+  }
+  return true;
+}
 function authStatusPill(){const u=currentAuthUser(); if(!u) return ''; return `<button class="auth-user-pill" id="authLogoutBtn" type="button" title="Logi välja">${esc(u.name)} · ${u.role==='admin'?'Admin':u.role==='superadmin'?'Superadmin':'Tehnik'} · Välju</button>`;}
 const ADMIN_VIEW_AS_KEY='veco_admin_view_as_user_id';
 function adminViewAsId(){

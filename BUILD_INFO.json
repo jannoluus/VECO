@@ -1,17 +1,16 @@
 {
-  "build": "20260616_1224",
-  "buildNumber": "20260616_1224",
-  "app_build": "20260616_1224",
-  "createdAt": "2026-06-16T12:24:00+03:00",
-  "created_at": "2026-06-16T12:24:00+03:00",
+  "build": "20260616_1229",
+  "buildNumber": "20260616_1229",
+  "app_build": "20260616_1229",
+  "createdAt": "2026-06-16T12:29:00+03:00",
+  "created_at": "2026-06-16T12:29:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
-  "version": "v3.19.15",
-  "package": "VECO_V3_20260616_1224.zip",
+  "version": "v3.19.16",
+  "package": "VECO_V3_20260616_1229.zip",
   "changes": [
-    "CR-089E Fix: valvegraafiku osalus ja järjekord salvestuvad Supabase auth_users väljadele.",
-    "Mitteosalejatele ei kuvata enam järjekorranumbrit.",
-    "Valvejärjekorra arvutus arvestab ainult aktiivseid valvegraafikus osalejaid.",
-    "Vana valvekirje ei lisa kasutajat automaatselt rotatsiooni; osalus tuleb määrata Tehnikute vaates."
+    "CR-091: technician route guard – tehniku roll saab kasutada ainult mobile.html vaadet.",
+    "Kui technician avab URL-iga index/team/people/projects/objects/oncall/workorders/acts vms, suunatakse ta automaatselt mobile.html lehele.",
+    "Admini ja superadmini ligipääsud jäid muutmata."
   ],
-  "base": "VECO_V3_20260616_1215"
+  "base": "VECO_V3_20260616_1224"
 }
