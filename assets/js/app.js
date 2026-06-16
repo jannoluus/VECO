@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260616_1133';
+const APP_BUILD='20260616_1142';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -34,6 +34,23 @@ const ADMIN_PAGES=new Set(['team','people','vacations','oncall','objects','clien
 const TECH_PAGES=new Set(['mobile','calendar','workorders','acts']);
 function authLoad(){try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'{}')||{};}catch(_){return {};}}
 function authSave(a){localStorage.setItem(AUTH_KEY,JSON.stringify(a||{}));}
+let authRemoteAvailable=false;
+let authPushTimer=null;
+function authPushRemote(auth=null){
+  if(!authRemoteAvailable||!window.VECO_API?.saveAuthUsers) return;
+  clearTimeout(authPushTimer);
+  const snapshot=JSON.parse(JSON.stringify(auth||authLoad()));
+  authPushTimer=setTimeout(()=>window.VECO_API.saveAuthUsers(snapshot).catch(err=>console.warn('VECO auth remote save failed',err)),120);
+}
+function authPersist(auth){authSave(auth); authPushRemote(auth);}
+async function authLoadRemoteIntoLocal(){
+  if(window.VECO_API?.mode?.()!=='supabase'||!window.VECO_API?.loadAuthUsers) return false;
+  try{
+    const remote=await window.VECO_API.loadAuthUsers();
+    if(remote && Object.keys(remote.users||{}).length){ authSave(remote); authRemoteAvailable=true; return true; }
+    authRemoteAvailable=true; authPushRemote(normalizeAuthUsers()); return true;
+  }catch(err){ console.warn('VECO auth remote unavailable',err); authRemoteAvailable=false; return false; }
+}
 function authLocksLoad(){try{return JSON.parse(localStorage.getItem(AUTH_LOCK_KEY)||'{}')||{};}catch(_){return {};}}
 function authLocksSave(l){localStorage.setItem(AUTH_LOCK_KEY,JSON.stringify(l||{}));}
 function normalizeAuthUsers(){
@@ -70,14 +87,14 @@ function authRenderScreen(message=''){
   const form=document.getElementById('authLoginForm');
   const syncPinMode=()=>{const authNow=normalizeAuthUsers(); const u=authNow.users?.[form.elements.userId.value]; const reset=u?.pinResetRequired===true; const role=u?.role==='admin'?'admin':'technician'; const pin2=form.elements.pin2; document.getElementById('authPinRepeatLabel')?.classList.toggle('hidden',!reset); if(pin2) pin2.required=reset; const pinLabel=document.getElementById('authPinLabel'); if(pinLabel) pinLabel.childNodes[0].nodeValue=reset?'Uus PIN':'PIN'; const help=document.getElementById('authHelpText'); if(help) help.textContent=reset?`Admin lubas PIN-i uuesti seadistada. Sisesta uus ${AUTH_RULES[role].label} kaks korda.`:'Vali kasutaja ja sisesta PIN.'; const btn=document.getElementById('authSubmitBtn'); if(btn) btn.textContent=reset?'Salvesta PIN ja logi sisse':'Logi sisse';};
   form.elements.userId.addEventListener('change',syncPinMode); syncPinMode();
-  form.addEventListener('submit',e=>{e.preventDefault(); const uid=form.elements.userId.value; const pin=form.elements.pin.value; const pin2=form.elements.pin2?.value; const authNow=normalizeAuthUsers(); const u=authNow.users?.[uid]; if(!u) return authRenderScreen('Kasutajat ei leitud.'); const role=u.role==='admin'?'admin':'technician'; const lock=authLockInfo(role); if(lock.locked) return authRenderScreen(lockText(lock)); if(u.pinResetRequired===true){ if(pin!==pin2) return authRenderScreen('PIN-i kordus ei ühti.'); if(!validatePin(role,pin)) return authRenderScreen(`PIN peab olema ${AUTH_RULES[role].label}.`); u.pinHash=authHash(pin); u.pinSetAt=new Date().toISOString(); u.pinResetRequired=false; authNow.users[uid]=u; authSave(authNow); authClearFailure(role); authSetSession(u); location.reload(); return; } if(!u.pinHash){ return authRenderScreen(`${u.name}: PIN puudub. Admin peab kasutajale lubama PIN-i uuesti seadistamise või määrama ajutise PIN-i.`); } if(!authVerify(pin,u.pinHash)){const l=authRegisterFailure(role); return authRenderScreen(l.locked?lockText(l):'Vale PIN.');} authClearFailure(role); authSetSession(u); location.reload(); });
+  form.addEventListener('submit',e=>{e.preventDefault(); const uid=form.elements.userId.value; const pin=form.elements.pin.value; const pin2=form.elements.pin2?.value; const authNow=normalizeAuthUsers(); const u=authNow.users?.[uid]; if(!u) return authRenderScreen('Kasutajat ei leitud.'); const role=u.role==='admin'?'admin':'technician'; const lock=authLockInfo(role); if(lock.locked) return authRenderScreen(lockText(lock)); if(u.pinResetRequired===true){ if(pin!==pin2) return authRenderScreen('PIN-i kordus ei ühti.'); if(!validatePin(role,pin)) return authRenderScreen(`PIN peab olema ${AUTH_RULES[role].label}.`); u.pinHash=authHash(pin); u.pinSetAt=new Date().toISOString(); u.pinResetRequired=false; authNow.users[uid]=u; authPersist(authNow); authClearFailure(role); authSetSession(u); location.reload(); return; } if(!u.pinHash){ return authRenderScreen(`${u.name}: PIN puudub. Admin peab kasutajale lubama PIN-i uuesti seadistamise või määrama ajutise PIN-i.`); } if(!authVerify(pin,u.pinHash)){const l=authRegisterFailure(role); return authRenderScreen(l.locked?lockText(l):'Vale PIN.');} authClearFailure(role); authSetSession(u); location.reload(); });
 }
 function authRenderSuperadmin(message=''){
   applyTheme?.();
   const auth=normalizeAuthUsers(); const setup=!auth.superadmin?.pinHash;
   document.body.innerHTML=`<div class="auth-page"><form class="auth-card" id="superForm"><div class="auth-brand">VECO</div><h1>Superadmin</h1><p class="muted">${setup?'Loo esmane superadmin PIN.':'Sisesta superadmin PIN süsteemi taastamiseks.'}</p>${message?`<div class="auth-message">${esc(message)}</div>`:''}<label>${setup?'Uus superadmin PIN':'Superadmin PIN'}<input class="field" name="pin" type="password" inputmode="numeric" autocomplete="current-password" required></label>${setup?`<label>Korda PIN-i<input class="field" name="pin2" type="password" inputmode="numeric" autocomplete="new-password" required></label>`:''}<button class="btn primary" type="submit">${setup?'Loo PIN':'Sisene'}</button><button class="btn ghost" type="button" id="backLoginBtn">Tagasi</button></form></div>`;
   document.getElementById('backLoginBtn')?.addEventListener('click',()=>authRenderScreen());
-  document.getElementById('superForm')?.addEventListener('submit',e=>{e.preventDefault(); const pin=e.currentTarget.elements.pin.value; const pin2=e.currentTarget.elements.pin2?.value; const lock=authLockInfo('superadmin'); if(lock.locked) return authRenderSuperadmin(lockText(lock)); const authNow=normalizeAuthUsers(); if(!authNow.superadmin.pinHash){ if(pin!==pin2) return authRenderSuperadmin('PIN-i kordus ei ühti.'); if(!validatePin('superadmin',pin)) return authRenderSuperadmin(`Superadmin PIN peab olema ${AUTH_RULES.superadmin.label}.`); authNow.superadmin.pinHash=authHash(pin); authNow.superadmin.pinSetAt=new Date().toISOString(); authSave(authNow); authSetSession({id:'SUPERADMIN',name:'Superadmin',role:'superadmin'}); location.href='people.html'; return; } if(!authVerify(pin,authNow.superadmin.pinHash)){const l=authRegisterFailure('superadmin'); return authRenderSuperadmin(l.locked?lockText(l):'Vale superadmin PIN.');} authClearFailure('superadmin'); authSetSession({id:'SUPERADMIN',name:'Superadmin',role:'superadmin'}); location.href='people.html'; });
+  document.getElementById('superForm')?.addEventListener('submit',e=>{e.preventDefault(); const pin=e.currentTarget.elements.pin.value; const pin2=e.currentTarget.elements.pin2?.value; const lock=authLockInfo('superadmin'); if(lock.locked) return authRenderSuperadmin(lockText(lock)); const authNow=normalizeAuthUsers(); if(!authNow.superadmin.pinHash){ if(pin!==pin2) return authRenderSuperadmin('PIN-i kordus ei ühti.'); if(!validatePin('superadmin',pin)) return authRenderSuperadmin(`Superadmin PIN peab olema ${AUTH_RULES.superadmin.label}.`); authNow.superadmin.pinHash=authHash(pin); authNow.superadmin.pinSetAt=new Date().toISOString(); authPersist(authNow); authSetSession({id:'SUPERADMIN',name:'Superadmin',role:'superadmin'}); location.href='people.html'; return; } if(!authVerify(pin,authNow.superadmin.pinHash)){const l=authRegisterFailure('superadmin'); return authRenderSuperadmin(l.locked?lockText(l):'Vale superadmin PIN.');} authClearFailure('superadmin'); authSetSession({id:'SUPERADMIN',name:'Superadmin',role:'superadmin'}); location.href='people.html'; });
 }
 function requireAuthOrRender(){ normalizeAuthUsers(); if(!currentAuthUser()){authRenderScreen(); return false;} if(!canAccessPage(page)){ shell(header('Ligipääs puudub','','','LIGIPÄÄS PUUDUB')+`<div class="detail-body"><p class="muted">Sinu rollil puudub selle vaate kasutamise õigus.</p><button class="btn" id="authLogoutBtn">Logi välja</button></div>`,'',{wide:true}); document.getElementById('authLogoutBtn')?.addEventListener('click',()=>{localStorage.removeItem(ADMIN_VIEW_AS_KEY); authClearSession(); location.href='index.html';}); return false;} return true; }
 function authStatusPill(){const u=currentAuthUser(); if(!u) return ''; return `<button class="auth-user-pill" id="authLogoutBtn" type="button" title="Logi välja">${esc(u.name)} · ${u.role==='admin'?'Admin':u.role==='superadmin'?'Superadmin':'Tehnik'} · Välju</button>`;}
@@ -117,9 +134,9 @@ function adminViewAsControl(){
 }
 function scopeNotice(){const p=scopedPerson(); return p?`<div class="scope-notice">Kuvatakse kasutaja <strong>${esc(p.name)}</strong> vaadet. Teiste tehnikute tööd ja kalendrid on peidetud.</div>`:'';}
 
-function requestUserPinReset(userId){const auth=normalizeAuthUsers(); if(auth.users?.[userId]){auth.users[userId].pinHash=''; auth.users[userId].pinSetAt=''; auth.users[userId].pinResetRequired=true; authSave(auth);}}
-function setUserTempPin(userId,pin){const auth=normalizeAuthUsers(); const u=auth.users?.[userId]; if(!u) return false; const role=u.role==='admin'?'admin':'technician'; if(!validatePin(role,pin)) return false; u.pinHash=authHash(pin); u.pinSetAt=new Date().toISOString(); u.pinResetRequired=false; auth.users[userId]=u; authSave(auth); return true;}
-function resetAdminPins(){const auth=normalizeAuthUsers(); Object.values(auth.users||{}).filter(u=>u.role==='admin').forEach(u=>{u.pinHash='';u.pinSetAt='';u.pinResetRequired=true;}); authSave(auth);}
+function requestUserPinReset(userId){const auth=normalizeAuthUsers(); if(auth.users?.[userId]){auth.users[userId].pinHash=''; auth.users[userId].pinSetAt=''; auth.users[userId].pinResetRequired=true; authPersist(auth);}}
+function setUserTempPin(userId,pin){const auth=normalizeAuthUsers(); const u=auth.users?.[userId]; if(!u) return false; const role=u.role==='admin'?'admin':'technician'; if(!validatePin(role,pin)) return false; u.pinHash=authHash(pin); u.pinSetAt=new Date().toISOString(); u.pinResetRequired=false; auth.users[userId]=u; authPersist(auth); return true;}
+function resetAdminPins(){const auth=normalizeAuthUsers(); Object.values(auth.users||{}).filter(u=>u.role==='admin').forEach(u=>{u.pinHash='';u.pinSetAt='';u.pinResetRequired=true;}); authPersist(auth);}
 
 (state.acts||[]).forEach(a=>{ if(a.archived===undefined) a.archived=false;});
 normalizeOncallPeople();
@@ -4110,10 +4127,11 @@ function renderCurrentPage(){
 }
 async function bootstrapApp(){
   bindLocalPeerSync();
-  renderCurrentPage();
   if(window.VECO_API?.mode?.()==='supabase'){
+    document.body.innerHTML='<div class="auth-page"><div class="auth-card"><div class="auth-brand">VECO</div><h1>Laen andmeid…</h1><p class="muted">Kontrollin keskset kasutajate ja PIN-ide andmehoidlat.</p></div></div>';
     try{
       state=await window.VECO_API.load();
+      await authLoadRemoteIntoLocal();
       selectedObjectId=state.objects?.[0]?.id||selectedObjectId||'';
       selectedClientId=state.clients?.[0]?.id||selectedClientId||'';
       selectedProjectId=state.projects?.[0]?.id||selectedProjectId||'';
@@ -4127,7 +4145,10 @@ async function bootstrapApp(){
       if(!realtimeStarted) window.VECO_API.startWorkorderPolling?.(onRemoteWorkorders);
     }catch(err){
       console.warn('VECO bootstrap Supabase load failed',err);
+      renderCurrentPage();
     }
+  }else{
+    renderCurrentPage();
   }
 }
 bootstrapApp();

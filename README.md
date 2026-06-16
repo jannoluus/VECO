@@ -1,3 +1,25 @@
+Build: 20260616_1142
+
+VECO_V3_20260616_1142:
+- CR-088A: lisatud keskse kasutajate/PIN-ide andmehoidla adapter Supabase jaoks.
+- Kui Supabase `auth_users` tabel on olemas, saab sama PIN-iga sisse logida ka inkognitos, telefonis ja teises brauseris.
+- Admini tegevused “Luba uus PIN”, “Määra PIN” ja admin PIN reset kirjutatakse keskandmetesse.
+- Kui tabelit veel pole, töötab rakendus endiselt lokaalse fallbackiga.
+
+Supabase tabeli minimaalne SQL:
+```sql
+create table if not exists public.auth_users (
+  user_id text primary key,
+  name text,
+  role text,
+  active boolean default true,
+  pin_hash text,
+  pin_set_at timestamptz,
+  pin_reset_required boolean default false,
+  updated_at timestamptz default now()
+);
+```
+
 Build: 20260616_1133
 
 VECO_V3_20260616_1133:

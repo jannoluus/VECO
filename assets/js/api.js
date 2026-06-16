@@ -2,6 +2,7 @@
   const URL_KEY='veco_supabase_url';
   const KEY_KEY='veco_supabase_key';
   const TABLE='workorders';
+  const AUTH_TABLE='auth_users';
   let pollingTimer=null;
   let realtimeChannel=null;
   let realtimeDebounce=null;
@@ -142,6 +143,56 @@
     }
   }
 
+
+  function authRowFromUser(u){
+    return {
+      user_id:String(u.id||'').trim(),
+      name:u.name||u.id||'',
+      role:u.role||'technician',
+      active:u.active!==false,
+      pin_hash:u.pinHash||'',
+      pin_set_at:u.pinSetAt||null,
+      pin_reset_required:u.pinResetRequired===true,
+      updated_at:new Date().toISOString()
+    };
+  }
+  function authUserFromRow(row){
+    return {
+      id:row.user_id,
+      name:row.name||row.user_id,
+      role:row.role||'technician',
+      active:row.active!==false,
+      pinHash:row.pin_hash||'',
+      pinSetAt:row.pin_set_at||'',
+      pinResetRequired:row.pin_reset_required===true
+    };
+  }
+  async function loadAuthUsers(){
+    const client=getClient();
+    if(!client) return null;
+    const {data,error}=await client.from(AUTH_TABLE).select('*').order('name',{ascending:true});
+    if(error) throw error;
+    const auth={users:{},superadmin:{role:'superadmin',pinHash:'',pinSetAt:''}};
+    (data||[]).forEach(row=>{
+      const u=authUserFromRow(row);
+      if(u.id==='SUPERADMIN') auth.superadmin={role:'superadmin',pinHash:u.pinHash||'',pinSetAt:u.pinSetAt||''};
+      else auth.users[u.id]=u;
+    });
+    return auth;
+  }
+  async function saveAuthUsers(auth){
+    const client=getClient();
+    if(!client||!auth) return false;
+    const rows=Object.values(auth.users||{}).map(authRowFromUser);
+    if(auth.superadmin){
+      rows.push(authRowFromUser({id:'SUPERADMIN',name:'Superadmin',role:'superadmin',active:true,pinHash:auth.superadmin.pinHash||'',pinSetAt:auth.superadmin.pinSetAt||'',pinResetRequired:false}));
+    }
+    if(!rows.length) return true;
+    const {error}=await client.from(AUTH_TABLE).upsert(rows,{onConflict:'user_id'});
+    if(error) throw error;
+    return true;
+  }
+
   function signature(data){
     return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.completedAt||'',w.completedBy||'',w.completionComment||'']));
   }
@@ -157,6 +208,8 @@
   }
 
   window.VECO_API={
+    loadAuthUsers,
+    saveAuthUsers,
     mode(){return getClient()?'supabase':'local'},
     modeLabel(){return this.mode()==='supabase'?'Supabase':'lokaalne'},
     configure(){
