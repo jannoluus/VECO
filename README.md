@@ -7,7 +7,7 @@ Muudatused:
 - Kalendri nähtav kõrgus arvutatakse nüüd lõpliku viewporti/asukohaga, mitte vananenud flex-kõrguse järgi.
 - Ümberarvutus käivitub renderi järel, filtrite avamisel/sulgemisel, resize/orientation muutusel ja layouti muutustel.
 - Parandatud filtrite toggle järel vale funktsioonikõne.
-- Diagnostika vaates kuvatakse selgelt hetkel laaditud build: VECO_V3_20260616_1101.
+- Diagnostika vaates kuvatakse selgelt hetkel laaditud build: VECO_V3_20260616_1109.
 - Ticker/statusriba jääb eemaldatuks.
 
 Põhimõte:
@@ -16,6 +16,9 @@ Põhimõte:
 - Vaikimisi sihtvaade jääb 07:00–18:00.
 - Päiseid, filtreid ja päevade laiuseid ei muudetud.
 
+
+VECO_V3_20260616_1109:
+- CR-085A: kalendri päevavaates töökaardid ei kata enam kogu päeva laiust; paremale jääb klikiriba uue töö lisamiseks.
 
 VECO_V3_20260616_1101:
 - CR-082A: vasaku menüü olek püsib pärast refreshi.

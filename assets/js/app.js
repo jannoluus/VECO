@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260616_1101';
+const APP_BUILD='20260616_1109';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -2998,7 +2998,7 @@ function renderCalendar(){
       const dayLabel=totalSpan>1?`${totalSpan} päeva`:'1 päev';
       const endLabel=totalSpan>1?`${fmtShortDate(workorderEndDate(w))} ${endTime}`:endTime;
       const overlapStyle=overlap&&!spanEvent
-        ? `left:calc(8px + (100% - 16px) * ${overlap.left/100});right:auto;width:calc((100% - 16px) * ${overlap.width/100} - 3px);`
+        ? `left:calc(8px + (100% - 16px - var(--calendar-click-gutter, 22px)) * ${overlap.left/100});right:auto;width:calc((100% - 16px - var(--calendar-click-gutter, 22px)) * ${overlap.width/100} - 3px);`
         : '';
       const style=spanEvent
         ? `--span-start:${spanStartIndex};--span-days:${spanDays};top:calc(40px + (100% - 40px) * ${topPct/100});height:calc(((100% - 40px) / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px`
