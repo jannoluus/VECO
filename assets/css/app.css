@@ -3545,7 +3545,7 @@ body.calendar-layout-ready .app.page-calendar .calendar-planner-wrap{
   .auth-card h1{font-size:23px;}
 }
 
-/* VECO_V3_20260616_1234 / CR-092: allow vertical scrolling on long workspace views.
+/* VECO_V3_20260616_1240 / CR-092: allow vertical scrolling on long workspace views.
    Calendar keeps its fixed viewport layout; other admin/supervisor pages may grow past 100vh. */
 html,body{
   min-height:100%!important;
@@ -3591,3 +3591,6 @@ body{
   overflow-x:auto!important;
   overflow-y:visible!important;
 }
+
+.mobile-timebox{border:1px solid rgba(148,163,184,.22);border-radius:12px;padding:8px 10px;background:rgba(15,23,42,.18);display:grid;gap:4px;}
+.mobile-timebox .kv{margin:0;}

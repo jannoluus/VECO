@@ -1,3 +1,3 @@
-VECO V3 build 20260616_1234
+VECO V3 build 20260616_1240
 
-CR-092: workspace vertical scroll fix for long non-calendar views.
+CR-078A: tehniku tööaja timestamp MVP.

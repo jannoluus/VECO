@@ -10,6 +10,7 @@
   let pendingWorkorders=null;
   let supabaseSupportsPlannedHours=true;
   let supabaseSupportsCompletedFields=true;
+  let supabaseSupportsTimestampFields=true;
 
   function cleanUrl(value){
     return String(value||'').trim().replace(/\/rest\/v1\/?$/,'').replace(/\/+$/,'');
@@ -49,6 +50,11 @@
       row.completed_by=w.completedBy||w.completed_by||null;
       row.completion_comment=w.completionComment||w.completion_comment||null;
     }
+    if(supabaseSupportsTimestampFields){
+      row.started_at=w.startedAt||w.started_at||null;
+      row.paused_at=w.pausedAt||w.paused_at||null;
+      row.started_by=w.startedByUuid||w.started_by||null;
+    }
     return row;
   }
   function fromDb(row){
@@ -67,7 +73,10 @@
       hours:Number(row.planned_hours||2)||2,
       completedAt:row.completed_at||'',
       completedBy:row.completed_by||'',
-      completionComment:row.completion_comment||''
+      completionComment:row.completion_comment||'',
+      startedAt:row.started_at||'',
+      pausedAt:row.paused_at||'',
+      startedByUuid:row.started_by||''
     };
   }
   function mergeWorkorders(localData, remoteRows){
@@ -98,6 +107,12 @@
       delete fallback.completed_by;
       delete fallback.completion_comment;
     }
+    if(msg.includes('started_at')||msg.includes('paused_at')||msg.includes('started_by')){
+      supabaseSupportsTimestampFields=false;
+      delete fallback.started_at;
+      delete fallback.paused_at;
+      delete fallback.started_by;
+    }
     return fallback;
   }
   async function syncWorkorders(workorders){
@@ -117,14 +132,14 @@
         if(found.error && found.error.code!=='PGRST116') throw found.error;
         if(found.data?.id){
           let {error}=await client.from(TABLE).update(row).eq('id',found.data.id);
-          if(error && /planned_hours|completed_at|completed_by|completion_comment/.test(String(error.message||''))){
+          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by/.test(String(error.message||''))){
             const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).update(fallback).eq('id',found.data.id));
           }
           if(error) throw error;
         }else{
           let {error}=await client.from(TABLE).insert(row);
-          if(error && /planned_hours|completed_at|completed_by|completion_comment/.test(String(error.message||''))){
+          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by/.test(String(error.message||''))){
             const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).insert(fallback));
           }
@@ -197,6 +212,7 @@
     const username=row.username||'';
     return {
       id:authIdFromUsername(username),
+      dbId:row.id||'',
       username,
       name:row.full_name||username,
       role:authRoleToApp(row.role),
@@ -281,7 +297,7 @@
   }
 
   function signature(data){
-    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.completedAt||'',w.completedBy||'',w.completionComment||'']));
+    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.startedAt||'',w.pausedAt||'',w.completedAt||'',w.startedByUuid||'',w.completedBy||'',w.completionComment||'']));
   }
   async function pullAndNotify(onChange){
     try{

@@ -1,16 +1,17 @@
 {
-  "build": "20260616_1234",
-  "buildNumber": "20260616_1234",
-  "app_build": "20260616_1234",
-  "createdAt": "2026-06-16T12:34:00+03:00",
-  "created_at": "2026-06-16T12:34:00+03:00",
+  "build": "20260616_1240",
+  "buildNumber": "20260616_1240",
+  "app_build": "20260616_1240",
+  "createdAt": "2026-06-16T12:40:00+03:00",
+  "created_at": "2026-06-16T12:40:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
-  "version": "v3.19.17",
-  "package": "VECO_V3_20260616_1234.zip",
+  "version": "v3.19.18",
+  "package": "VECO_V3_20260616_1240.zip",
   "changes": [
-    "CR-092: lubatud vertikaalne scroll pikkadel tööruumi vaadetel.",
-    "Parandatud oncall 12 nädala graafiku allapoole kerimine.",
-    "Sama scrolliparandus rakendatud people/team/projects/objects/clients/devices/workorders/acts/vacations vaadetele; kalendrivaate fixed layout jäi puutumata."
+    "CR-078A: tehniku mobile-vaatesse lisatud tööaja timestamp MVP.",
+    "Lisatud Alusta tööd / Paus / Jätka / Töö valmis töövoog.",
+    "started_at, paused_at, completed_at ja started_by salvestuvad töökaardilt Supabase workorders tabelisse.",
+    "Töökaart kuvab alustatud, pausi ja lõpetamise ajatemplid."
   ],
-  "base": "VECO_V3_20260616_1229"
+  "base": "VECO_V3_20260616_1240"
 }
