@@ -144,6 +144,20 @@
   }
 
 
+
+  function authRoleToDb(role){
+    const r=String(role||'').trim().toLowerCase();
+    if(r==='admin') return 'admin';
+    if(r==='supervisor'||r==='hooldusjuht'||r==='vanemtehnik') return 'supervisor';
+    return 'technician';
+  }
+  function authRoleToApp(role){
+    const r=String(role||'').trim().toLowerCase();
+    if(r==='admin') return 'admin';
+    if(r==='supervisor'||r==='hooldusjuht'||r==='vanemtehnik') return 'supervisor';
+    return 'technician';
+  }
+
   function authUsernameFromId(id){
     return String(id||'').trim().replace(/^U-/i,'').toLowerCase();
   }
@@ -158,7 +172,7 @@
     return {
       username,
       full_name:u.name||u.full_name||u.id||username,
-      role:u.role||'technician',
+      role:authRoleToDb(u.role),
       active:u.active!==false,
       pin_hash:u.pinHash||null,
       pin_reset_required:u.pinResetRequired===true,
@@ -171,7 +185,7 @@
       id:authIdFromUsername(username),
       username,
       name:row.full_name||username,
-      role:row.role||'technician',
+      role:authRoleToApp(row.role),
       active:row.active!==false,
       pinHash:row.pin_hash||'',
       pinSetAt:row.updated_at||'',
@@ -202,6 +216,17 @@
     return true;
   }
 
+
+  async function deleteAuthUser(userId){
+    const client=getClient();
+    if(!client) return false;
+    const username=authUsernameFromId(userId);
+    if(!username) return false;
+    const {error}=await client.from(AUTH_TABLE).delete().eq('username',username);
+    if(error) throw error;
+    return true;
+  }
+
   function signature(data){
     return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.completedAt||'',w.completedBy||'',w.completionComment||'']));
   }
@@ -219,6 +244,7 @@
   window.VECO_API={
     loadAuthUsers,
     saveAuthUsers,
+    deleteAuthUser,
     mode(){return getClient()?'supabase':'local'},
     modeLabel(){return this.mode()==='supabase'?'Supabase':'lokaalne'},
     configure(){

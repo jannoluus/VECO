@@ -1,16 +1,17 @@
 {
-  "build": "20260616_1150",
-  "buildNumber": "20260616_1150",
-  "app_build": "20260616_1150",
-  "createdAt": "2026-06-16T11:50:00+03:00",
-  "created_at": "2026-06-16T11:50:00+03:00",
+  "build": "20260616_1155",
+  "buildNumber": "20260616_1155",
+  "app_build": "20260616_1155",
+  "createdAt": "2026-06-16T11:55:00+03:00",
+  "created_at": "2026-06-16T11:55:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
-  "version": "v3.19.13",
-  "package": "VECO_V3_20260616_1150.zip",
+  "version": "v3.19.14",
+  "package": "VECO_V3_20260616_1155.zip",
   "changes": [
-    "CR-088E: auth_users Supabase päring parandatud olemasolevale skeemile (full_name, username).",
-    "Eemaldatud vale order=name.asc, mis tekitas 400 vea.",
-    "PIN-i lugemine ja salvestamine kasutab auth_users.username/full_name/pin_hash välju."
+    "CR-089A: kasutajate administreerimine viidud Supabase-first loogikale.",
+    "Meeskonna vaade sünkroniseerib auth_users tabeliga ja lisab puuduolevad VECO kasutajad keskregistrisse.",
+    "Uue kasutaja lisamine/muutmine/deaktiveerimine uuendab keskset auth_users andmeallikat.",
+    "Lisatud Hooldusjuht / supervisor rolli tugi."
   ],
-  "base": "VECO_V3_20260616_1142"
+  "base": "VECO_V3_20260616_1150"
 }
