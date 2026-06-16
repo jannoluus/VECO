@@ -3483,3 +3483,16 @@ body:has(.app.page-calendar){
 .app.page-calendar .calendar-planner{
   margin-bottom:0!important;
 }
+
+/* VECO_V3_20260616_1054 / CR-084: smooth calendar first paint.
+   Hide the planner only while final column width, hour height and initial
+   scroll position are being calculated, so users do not see intermediate
+   layout passes as flicker. */
+body.calendar-layout-preparing .app.page-calendar .calendar-planner-wrap{
+  opacity:0!important;
+  pointer-events:none!important;
+}
+body.calendar-layout-ready .app.page-calendar .calendar-planner-wrap{
+  opacity:1!important;
+  transition:opacity 120ms ease!important;
+}

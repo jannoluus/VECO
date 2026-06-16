@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260615_1834';
+const APP_BUILD='20260616_1054';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -2687,23 +2687,23 @@ function captureCalendarScrollState(){
     hasWrap:!!wrap
   };
 }
-function restoreCalendarScrollState(pos){
+function applyCalendarScrollStateNow(pos){
   if(!pos) return;
-  const apply=()=>{
-    const wrap=document.querySelector('.calendar-planner-wrap');
-    const grid=document.querySelector('.calendar-planner-grid');
-    if(wrap){
-      const planner=document.querySelector('.calendar-planner');
-      const initialHour=Number(planner?.dataset?.initialScrollHour||7);
-      const hourPx=parseFloat(getComputedStyle(planner||wrap).getPropertyValue('--calendar-hour-px'))||72;
-      const initialTop=Math.max(0,Math.round(initialHour*hourPx));
-      wrap.scrollTop=pos.hasWrap?(pos.wrapTop||0):initialTop;
-      wrap.scrollLeft=pos.wrapLeft||0;
-    }
-    if(grid) grid.scrollLeft=pos.gridLeft||0;
-    if(pos.hasWrap || pos.winY || pos.winX) window.scrollTo(pos.winX||0,pos.winY||0);
-  };
-  requestAnimationFrame(()=>requestAnimationFrame(apply));
+  const wrap=document.querySelector('.calendar-planner-wrap');
+  const grid=document.querySelector('.calendar-planner-grid');
+  if(wrap){
+    const planner=document.querySelector('.calendar-planner');
+    const initialHour=Number(planner?.dataset?.initialScrollHour||7);
+    const hourPx=parseFloat(getComputedStyle(planner||wrap).getPropertyValue('--calendar-hour-px'))||72;
+    const initialTop=Math.max(0,Math.round(initialHour*hourPx));
+    wrap.scrollTop=pos.hasWrap?(pos.wrapTop||0):initialTop;
+    wrap.scrollLeft=pos.wrapLeft||0;
+  }
+  if(grid) grid.scrollLeft=pos.gridLeft||0;
+  if(pos.hasWrap || pos.winY || pos.winX) window.scrollTo(pos.winX||0,pos.winY||0);
+}
+function restoreCalendarScrollState(pos){
+  requestAnimationFrame(()=>requestAnimationFrame(()=>applyCalendarScrollStateNow(pos)));
 }
 
 
@@ -2764,10 +2764,9 @@ function syncCalendarStickyHeader(){
   return true;
 }
 function scheduleCalendarStickyHeaderSync(){
-  const run=()=>syncCalendarStickyHeader();
-  requestAnimationFrame(()=>requestAnimationFrame(run));
-  setTimeout(run,120);
-  setTimeout(run,360);
+  // CR-084: keep sticky header sync as a single animation-frame pass.
+  // The older delayed retries caused visible column/header jumps during first paint.
+  requestAnimationFrame(()=>syncCalendarStickyHeader());
 }
 
 // Build 20260615_1504: adaptive workday calendar hour height; ticker removed.
@@ -2811,33 +2810,58 @@ function applyCalendarResponsiveHourHeight(){
   planner.dataset.viewportHeight=String(availableH);
   return true;
 }
+let calendarLayoutTimer=null;
+let calendarLayoutSeq=0;
+function setCalendarLayoutPreparing(){
+  document.body.classList.remove('calendar-layout-ready');
+  document.body.classList.add('calendar-layout-preparing');
+}
+function setCalendarLayoutReady(){
+  document.body.classList.remove('calendar-layout-preparing');
+  document.body.classList.add('calendar-layout-ready');
+}
+function scheduleCalendarLayoutSync({scrollState=null,delay=40}={}){
+  const seq=++calendarLayoutSeq;
+  clearTimeout(calendarLayoutTimer);
+  calendarLayoutTimer=setTimeout(()=>{
+    requestAnimationFrame(()=>{
+      if(seq!==calendarLayoutSeq) return;
+      applyCalendarResponsiveHourHeight();
+      syncCalendarStickyHeader();
+      applyCalendarScrollStateNow(scrollState);
+      syncCalendarStickyHeader();
+      setCalendarLayoutReady();
+    });
+  },delay);
+}
 function scheduleCalendarResponsiveHourHeight(){
-  const run=()=>{
-    if(applyCalendarResponsiveHourHeight()) scheduleCalendarStickyHeaderSync();
-  };
-  requestAnimationFrame(()=>requestAnimationFrame(run));
-  setTimeout(run,80);
-  setTimeout(run,180);
-  setTimeout(run,360);
-  setTimeout(run,720);
+  scheduleCalendarLayoutSync({delay:70});
 }
 function bindCalendarResponsiveHeightObserver(){
-  if(window.__VECO_CALENDAR_RESPONSIVE_OBSERVER_BOUND__) return;
-  window.__VECO_CALENDAR_RESPONSIVE_OBSERVER_BOUND__=true;
-  if('ResizeObserver' in window){
-    const ro=new ResizeObserver(()=>scheduleCalendarResponsiveHourHeight());
+  if(!window.__VECO_CALENDAR_RESPONSIVE_RO__ && 'ResizeObserver' in window){
+    window.__VECO_CALENDAR_RESPONSIVE_RO__=new ResizeObserver(()=>{
+      if(document.body.classList.contains('calendar-layout-preparing')) return;
+      scheduleCalendarLayoutSync({delay:90});
+    });
+  }
+  const ro=window.__VECO_CALENDAR_RESPONSIVE_RO__;
+  if(ro){
     const bind=()=>{
       const wrap=document.querySelector('.calendar-planner-wrap');
       const panel=document.querySelector('.app.page-calendar .panel');
       const head=document.querySelector('.calendar-compact-head');
-      if(wrap) ro.observe(wrap);
-      if(panel) ro.observe(panel);
-      if(head) ro.observe(head);
+      [wrap,panel,head].filter(Boolean).forEach(el=>{
+        if(el.dataset.calendarRoObserved==='true') return;
+        el.dataset.calendarRoObserved='true';
+        ro.observe(el);
+      });
     };
     requestAnimationFrame(bind);
-    setTimeout(bind,300);
   }
-  window.addEventListener('load',()=>scheduleCalendarResponsiveHourHeight(),{once:false,passive:true});
+  if(!window.__VECO_CALENDAR_RESPONSIVE_LOAD_BOUND__){
+    window.__VECO_CALENDAR_RESPONSIVE_LOAD_BOUND__=true;
+    window.addEventListener('load',()=>scheduleCalendarLayoutSync({delay:90}),{once:false,passive:true});
+  }
 }
 if(!window.__VECO_CALENDAR_STICKY_SYNC_BOUND__){
   window.__VECO_CALENDAR_STICKY_SYNC_BOUND__=true;
@@ -2885,6 +2909,7 @@ function calendarCompactHeader({rangeLabel='',visibleDays=[],mode='week',current
 }
 
 function renderCalendar(){
+  setCalendarLayoutPreparing();
   const calendarScrollState=captureCalendarScrollState();
   const storedDate=localStorage.getItem('veco_calendar_week')||weekStartKeyFrom('');
   const currentDate=storedDate;
@@ -3051,9 +3076,7 @@ function renderCalendar(){
   const compactHeader=calendarCompactHeader({rangeLabel:calendarRangeLabel(mode,visibleDays,currentDate),visibleDays,mode,currentDate,calendarTechFilterHtml,hideWeekend,statusFilter});
   const main=compactHeader+`<div class="calendar-planner-wrap">${scopeNotice()}${body}</div>`;
   shell(main,'',{wide:true});
-  scheduleCalendarResponsiveHourHeight();
-  restoreCalendarScrollState(calendarScrollState);
-  scheduleCalendarStickyHeaderSync();
+  scheduleCalendarLayoutSync({scrollState:calendarScrollState,delay:30});
   document.querySelector('.calendar-planner-grid')?.addEventListener('scroll',()=>syncCalendarStickyHeader(),{passive:true});
   document.querySelector('.calendar-planner-wrap')?.addEventListener('scroll',()=>syncCalendarStickyHeader(),{passive:true});
   $('#calendarWeekStart')?.addEventListener('change',e=>{localStorage.setItem('veco_calendar_week',e.target.value);renderCalendar();}); $('#calendarTechFilter')?.addEventListener('change',renderCalendar); $('#calendarStatusFilter')?.addEventListener('change',renderCalendar); $('#calendarViewMode')?.addEventListener('change',renderCalendar);
@@ -3074,7 +3097,8 @@ function renderCalendar(){
       e.currentTarget.setAttribute('aria-expanded',next?'true':'false');
       e.currentTarget.innerHTML=`☷ Filtrid ${next?'⌃':'⌄'}`;
     }
-    setTimeout(()=>{syncCalendarStickyHeader();scheduleCalendarResponsiveHourHeight();},220);
+    setCalendarLayoutPreparing();
+    scheduleCalendarLayoutSync({scrollState:captureCalendarScrollState(),delay:220});
   });
   $('#calendarImportWorkBtn')?.addEventListener('click',()=>openCalendarImportModal(currentDate));
   $$('[data-add-date]').forEach(el=>el.addEventListener('click',e=>{ if(e.target.closest('[data-calendar-edit]')) return; const date=el.dataset.addDate; const time=el.dataset.addTime||'09:00'; openCalendarWorkorderModal(date,time); }));
