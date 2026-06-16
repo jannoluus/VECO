@@ -1,6 +1,6 @@
-Build: 20260616_1142
+Build: 20260616_1150
 
-VECO_V3_20260616_1142:
+VECO_V3_20260616_1150:
 - CR-088A: lisatud keskse kasutajate/PIN-ide andmehoidla adapter Supabase jaoks.
 - Kui Supabase `auth_users` tabel on olemas, saab sama PIN-iga sisse logida ka inkognitos, telefonis ja teises brauseris.
 - Admini tegevused “Luba uus PIN”, “Määra PIN” ja admin PIN reset kirjutatakse keskandmetesse.

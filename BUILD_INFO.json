@@ -1,18 +1,16 @@
 {
-  "build": "20260616_1142",
-  "buildNumber": "20260616_1142",
-  "app_build": "20260616_1142",
-  "createdAt": "2026-06-16T11:42:00+03:00",
-  "created_at": "2026-06-16T11:42:00+03:00",
+  "build": "20260616_1150",
+  "buildNumber": "20260616_1150",
+  "app_build": "20260616_1150",
+  "createdAt": "2026-06-16T11:50:00+03:00",
+  "created_at": "2026-06-16T11:50:00+03:00",
   "timezone": "Europe/Tallinn (EEST)",
-  "version": "v3.19.12",
-  "package": "VECO_V3_20260616_1142.zip",
+  "version": "v3.19.13",
+  "package": "VECO_V3_20260616_1150.zip",
   "changes": [
-    "CR-088A: keskse kasutajate/PIN-ide andmehoidla Supabase adapter lisatud.",
-    "Logini eel laaditakse Supabase olemasolul auth_users tabelist kasutajate PIN olekud lokaalsesse vahemällu.",
-    "PIN-i määramine, Luba uus PIN ja admin PIN reset kirjutatakse lisaks localStorage'ile ka Supabase auth_users tabelisse.",
-    "Kui auth_users tabel puudub või ühendus ei tööta, jääb rakendus fallbackina lokaalseks ja kuvab konsoolis hoiatuse.",
-    "Lisatud laadimisekraan keskse autentimise kontrolliks."
+    "CR-088E: auth_users Supabase päring parandatud olemasolevale skeemile (full_name, username).",
+    "Eemaldatud vale order=name.asc, mis tekitas 400 vea.",
+    "PIN-i lugemine ja salvestamine kasutab auth_users.username/full_name/pin_hash välju."
   ],
-  "base": "VECO_V3_20260616_1133"
+  "base": "VECO_V3_20260616_1142"
 }

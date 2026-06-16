@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.0';
-const APP_BUILD='20260616_1142';
+const APP_BUILD='20260616_1150';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -57,8 +57,9 @@ function normalizeAuthUsers(){
   const auth=authLoad(); auth.users=auth.users||{};
   (state.people||[]).forEach(p=>{
     if(!p.id) return;
-    const role=String(p.role||'Tehnik').toLowerCase()==='admin'?'admin':'technician';
-    auth.users[p.id]={id:p.id,name:p.name||p.id,role,active:p.active!==false,pinHash:auth.users[p.id]?.pinHash||'',pinSetAt:auth.users[p.id]?.pinSetAt||'',pinResetRequired:auth.users[p.id]?.pinResetRequired===true};
+    const existing=auth.users[p.id]||{};
+    const role=existing.role || (String(p.role||'Tehnik').toLowerCase()==='admin'?'admin':'technician');
+    auth.users[p.id]={id:p.id,name:existing.name||p.name||p.id,role,active:p.active!==false,pinHash:existing.pinHash||'',pinSetAt:existing.pinSetAt||'',pinResetRequired:existing.pinResetRequired===true};
   });
   auth.superadmin=auth.superadmin||{role:'superadmin',pinHash:'',pinSetAt:''};
   authSave(auth);

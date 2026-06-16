@@ -144,38 +144,50 @@
   }
 
 
+  function authUsernameFromId(id){
+    return String(id||'').trim().replace(/^U-/i,'').toLowerCase();
+  }
+  function authIdFromUsername(username){
+    const value=String(username||'').trim();
+    if(!value) return '';
+    return value.toUpperCase().startsWith('U-')?value.toUpperCase():`U-${value.toUpperCase()}`;
+  }
   function authRowFromUser(u){
+    const username=authUsernameFromId(u.id||u.username||u.name);
+    if(!username) return null;
     return {
-      user_id:String(u.id||'').trim(),
-      name:u.name||u.id||'',
+      username,
+      full_name:u.name||u.full_name||u.id||username,
       role:u.role||'technician',
       active:u.active!==false,
-      pin_hash:u.pinHash||'',
-      pin_set_at:u.pinSetAt||null,
+      pin_hash:u.pinHash||null,
       pin_reset_required:u.pinResetRequired===true,
       updated_at:new Date().toISOString()
     };
   }
   function authUserFromRow(row){
+    const username=row.username||'';
     return {
-      id:row.user_id,
-      name:row.name||row.user_id,
+      id:authIdFromUsername(username),
+      username,
+      name:row.full_name||username,
       role:row.role||'technician',
       active:row.active!==false,
       pinHash:row.pin_hash||'',
-      pinSetAt:row.pin_set_at||'',
+      pinSetAt:row.updated_at||'',
       pinResetRequired:row.pin_reset_required===true
     };
   }
   async function loadAuthUsers(){
     const client=getClient();
     if(!client) return null;
-    const {data,error}=await client.from(AUTH_TABLE).select('*').order('name',{ascending:true});
+    const {data,error}=await client.from(AUTH_TABLE).select('id,username,full_name,role,pin_hash,pin_reset_required,active,created_at,updated_at').order('full_name',{ascending:true});
     if(error) throw error;
     const auth={users:{},superadmin:{role:'superadmin',pinHash:'',pinSetAt:''}};
     (data||[]).forEach(row=>{
       const u=authUserFromRow(row);
-      if(u.id==='SUPERADMIN') auth.superadmin={role:'superadmin',pinHash:u.pinHash||'',pinSetAt:u.pinSetAt||''};
+      if(!u.id) return;
+      if(u.username==='superadmin') auth.superadmin={role:'superadmin',pinHash:u.pinHash||'',pinSetAt:u.pinSetAt||''};
       else auth.users[u.id]=u;
     });
     return auth;
@@ -183,12 +195,9 @@
   async function saveAuthUsers(auth){
     const client=getClient();
     if(!client||!auth) return false;
-    const rows=Object.values(auth.users||{}).map(authRowFromUser);
-    if(auth.superadmin){
-      rows.push(authRowFromUser({id:'SUPERADMIN',name:'Superadmin',role:'superadmin',active:true,pinHash:auth.superadmin.pinHash||'',pinSetAt:auth.superadmin.pinSetAt||'',pinResetRequired:false}));
-    }
+    const rows=Object.values(auth.users||{}).map(authRowFromUser).filter(Boolean);
     if(!rows.length) return true;
-    const {error}=await client.from(AUTH_TABLE).upsert(rows,{onConflict:'user_id'});
+    const {error}=await client.from(AUTH_TABLE).upsert(rows,{onConflict:'username'});
     if(error) throw error;
     return true;
   }
