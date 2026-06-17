@@ -960,6 +960,10 @@ function openModal(html){
   };
   document.addEventListener('keydown',modalEscHandler);
   setupAutoTextareas(modal);
+  // CR-099.1 fix: every modal opened through openModal must wire the standard close buttons.
+  // Some newly added photo/workorder modals did not call bindClose() separately,
+  // which left the "× Sulge" button inactive.
+  bindClose();
 }
 function setupAutoTextareas(root=document){
   const resize=(ta)=>{

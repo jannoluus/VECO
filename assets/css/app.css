@@ -3633,3 +3633,60 @@ body.calendar-drag-active .calendar-planner-grid{
 .photo-preview-wrap{display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.06);border-radius:14px;overflow:hidden;min-height:220px;}
 .photo-preview-wrap img{max-width:100%;max-height:72vh;display:block;object-fit:contain;}
 @media (max-width:640px){.photo-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.photo-section-title{align-items:stretch;flex-direction:column}.photo-section-title .btn{width:100%;justify-content:center}.photo-actions{flex-direction:column}.photo-actions .btn{width:100%;}.photo-meta{min-height:auto}}
+
+/* Build 20260617_0928: CR-099 modal close + scroll usability fix */
+body.modal-open{
+  overflow:hidden!important;
+}
+.modal.open{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  overflow:auto!important;
+  padding:24px 14px!important;
+  box-sizing:border-box!important;
+}
+.dialog{
+  box-sizing:border-box!important;
+  width:min(980px, calc(100vw - 28px))!important;
+  max-width:calc(100vw - 28px)!important;
+  max-height:calc(100dvh - 48px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+}
+.dialog-head{
+  position:sticky!important;
+  top:0!important;
+  z-index:5!important;
+  background:var(--panel)!important;
+}
+.dialog-actions{
+  position:sticky!important;
+  bottom:0!important;
+  z-index:5!important;
+  background:var(--panel)!important;
+}
+.dialog .detail-body,
+.dialog .form-grid,
+.dialog .card,
+.dialog textarea,
+.dialog input,
+.dialog select{
+  max-width:100%!important;
+  box-sizing:border-box!important;
+}
+.dialog textarea{
+  resize:vertical!important;
+}
+@media(max-width:760px){
+  .modal.open{
+    padding:10px!important;
+  }
+  .dialog,
+  .app-mobile .dialog{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:calc(100dvh - 20px)!important;
+  }
+}
