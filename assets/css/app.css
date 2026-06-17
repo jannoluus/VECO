@@ -3900,7 +3900,7 @@ html.photo-lightbox-open,body.photo-lightbox-open{overflow:hidden!important;}
 @media(max-width:760px){.photo-lightbox{padding:6px;align-items:stretch}.photo-lightbox-dialog{width:100%;max-height:calc(100dvh - 12px)}.photo-lightbox-head,.photo-lightbox-meta{padding:12px;align-items:stretch;flex-direction:column}.photo-lightbox-actions .btn{width:100%;}.photo-lightbox-body img{max-height:calc(100dvh - 250px)}}
 
 
-/* VECO_V3_20260617_1347 / CR-UI-001: non-calendar admin views use the calendar header pattern */
+/* VECO_V3_20260617_1402 / CR-UI-001: non-calendar admin views use the calendar header pattern */
 .app:not(.page-calendar):not(.app-mobile) .admin-compact-head{
   padding:14px 16px 10px!important;
   border-bottom:1px solid var(--line)!important;
@@ -3981,7 +3981,7 @@ html.photo-lightbox-open,body.photo-lightbox-open{overflow:hidden!important;}
 }
 
 
-/* VECO_V3_20260617_1347 / CR-UI-001: admin header period block aligned with calendar header */
+/* VECO_V3_20260617_1402 / CR-UI-001: admin header period block aligned with calendar header */
 .app:not(.page-calendar):not(.app-mobile) .admin-unified-head .admin-compact-left{
   align-items:center!important;
   gap:10px!important;
@@ -4040,7 +4040,7 @@ html.photo-lightbox-open,body.photo-lightbox-open{overflow:hidden!important;}
   .app:not(.page-calendar):not(.app-mobile) .admin-unified-head .admin-period-title{width:100%!important;}
 }
 
-/* VECO_V3_20260617_1347 / P0: delete confirmation must always be above workorder modal and lightbox */
+/* VECO_V3_20260617_1402 / P0: delete confirmation must always be above workorder modal and lightbox */
 #vecoConfirm.confirm-modal,
 .confirm-modal.open{
   position:fixed!important;

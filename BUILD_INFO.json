@@ -1,18 +1,20 @@
 {
-  "build": "VECO_V3_20260617_1347",
-  "buildNumber": "VECO_V3_20260617_1347",
-  "version": "20260617_1347",
-  "created_at": "2026-06-17T13:32:00+03:00",
-  "base": "VECO_V3_20260617_1136",
+  "build": "VECO_V3_20260617_1402",
+  "buildNumber": "VECO_V3_20260617_1402",
+  "version": "20260617_1402",
+  "created_at": "2026-06-17T14:02:00+03:00",
+  "base": "VECO_V3_20260617_1347",
   "changes": [
-    "P0 Delete confirmation modal fix",
-    "Kustutuse kinnituse overlay tõstetud workorder modali ja pildi lightboxi kohale",
-    "Lisatud confirm-open lukustus: taustamodalid ei reageeri kinnituse ajal klikile",
-    "ESC sulgeb esmalt kinnituse, mitte töökäsu modali",
-    "Kalendri päist, vasakut menüüd, pildimoodulit ja mobile.html vaadet ei muudetud sisuliselt",
-    "Asset cache-busting uuendatud 20260617_1347 peale"
+    "CR-WF-001 töökäsu elutsükli esimene rakendus",
+    "Lisatud staatus Teostatud",
+    "Tehniku nupu “Töö valmis” tulemus on nüüd Teostatud, mitte kohe Lõpetatud",
+    "Teostatud tööd kaovad tehniku aktiivsetest vaadetest nagu lõpetatud tööd",
+    "Akt vajalik = Jah korral luuakse vajadusel akt endise loogika järgi",
+    "Akt vajalik = Ei ja Teostatud üle 7 päeva -> automaatne Lõpetatud rakenduse avamisel",
+    "Kalendri päist, vasakut menüüd ja pildimoodulit ei muudetud",
+    "Asset cache-busting uuendatud 20260617_1402 peale"
   ],
-  "app_build": "20260617_1347",
-  "notes": "CR-UI-001 unified admin header period block; calendar header unchanged",
-  "baseline": "VECO_V3_20260617_1332"
+  "app_build": "20260617_1402",
+  "notes": "CR-WF-001 workorder lifecycle: technician finish -> Teostatud; non-act items auto-close after 7 days.",
+  "baseline": "VECO_V3_20260617_1347"
 }
