@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.19.19';
-const APP_BUILD='20260617_0849';
+const APP_VERSION='v3.19.20';
+const APP_BUILD='20260617_0914';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -24,7 +24,7 @@ document.addEventListener('click',e=>{
   }
 },true);
 let state=window.VECO_STORAGE.load();
-state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[]; state.maintenanceNorms=state.maintenanceNorms||[]; state.maintenanceProfiles=state.maintenanceProfiles||[]; state.granlundClassifiers=state.granlundClassifiers||[]; state.unplannedMaintenance=state.unplannedMaintenance||[];
+state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[]; state.maintenanceNorms=state.maintenanceNorms||[]; state.maintenanceProfiles=state.maintenanceProfiles||[]; state.granlundClassifiers=state.granlundClassifiers||[]; state.unplannedMaintenance=state.unplannedMaintenance||[]; state.photos=state.photos||[];
 
 const AUTH_KEY='veco_v3_auth_v1';
 const AUTH_SESSION_KEY='veco_v3_auth_session_v1';
@@ -260,6 +260,215 @@ function workorderVisibleToCurrentScope(w){const id=scopedPersonId(); return !id
 function actVisibleToCurrentScope(a){const id=scopedPersonId(); if(!id) return true; const w=byId(state.workorders,a.workorderId); return w ? workorderMatchesPerson(w,id) : false;}
 function scopedWorkorders(){return (state.workorders||[]).filter(workorderVisibleToCurrentScope);}
 function scopedActs(list=null){return (list||state.acts||[]).filter(actVisibleToCurrentScope);}
+
+
+// CR-099.1: töökäsu pildigalerii. Pildid salvestatakse Supabase Storage bucketisse
+// workorder-photos ning metaandmed tabelisse photos. Kui Supabase insert ebaõnnestub,
+// jääb pilt lokaalsesse vahemällu ja kasutaja saab tööd jätkata.
+const PHOTO_BUCKET='workorder-photos';
+const PHOTO_TYPE_OPTIONS=[['general','Üldine'],['before','Enne tööd'],['during','Töö käigus'],['after','Pärast tööd'],['defect','Puudus'],['device','Seade'],['document','Dokument']];
+const photoCacheLoading=new Set();
+function vecoCleanSupabaseUrl(value){return String(value||'').trim().replace(/\/rest\/v1\/?$/,'').replace(/\/+$/,'');}
+function vecoSupabaseClient(){
+  if(window.__VECO_SUPABASE_CLIENT__) return window.__VECO_SUPABASE_CLIENT__;
+  const url=vecoCleanSupabaseUrl(window.VECO_SUPABASE_URL||localStorage.getItem('veco_supabase_url'));
+  const key=String(window.VECO_SUPABASE_KEY||localStorage.getItem('veco_supabase_key')||'').trim();
+  if(!url||!key||!window.supabase) return null;
+  window.__VECO_SUPABASE_URL__=url;
+  window.__VECO_SUPABASE_KEY__=key;
+  window.__VECO_SUPABASE_CLIENT__=window.supabase.createClient(url,key);
+  return window.__VECO_SUPABASE_CLIENT__;
+}
+function isUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value||''));}
+function stableUuidFromText(value){
+  const str=String(value||'photo');
+  let h1=0x811c9dc5,h2=0x811c9dc5^0x9e3779b9,h3=0x811c9dc5^0x85ebca6b,h4=0x811c9dc5^0xc2b2ae35;
+  for(let i=0;i<str.length;i++){const c=str.charCodeAt(i); h1=Math.imul(h1^c,16777619); h2=Math.imul(h2^c,2246822507); h3=Math.imul(h3^c,3266489909); h4=Math.imul(h4^c,668265263);}
+  const hex=n=>(n>>>0).toString(16).padStart(8,'0');
+  const raw=(hex(h1)+hex(h2)+hex(h3)+hex(h4)).slice(0,32).split('');
+  raw[12]='4';
+  raw[16]=(['8','9','a','b'][(parseInt(raw[16]||'0',16)%4)]);
+  const x=raw.join('');
+  return `${x.slice(0,8)}-${x.slice(8,12)}-${x.slice(12,16)}-${x.slice(16,20)}-${x.slice(20)}`;
+}
+function photoDbId(value,prefix=''){return isUuid(value)?String(value):stableUuidFromText(`${prefix}:${value}`);}
+function photoNullableUuid(value,prefix=''){return value ? photoDbId(value,prefix) : null;}
+function photoWorkorderDbId(workorderId){return photoDbId(workorderId,'workorder');}
+function photoUserDbId(){
+  const u=currentMobileActionUser?.() || currentEffectiveUser?.() || currentAuthUser?.() || null;
+  return isUuid(u?.dbId)?u.dbId:(isUuid(u?.id)?u.id:null);
+}
+function photoUserName(){
+  const u=currentMobileActionUser?.() || currentEffectiveUser?.() || currentAuthUser?.() || null;
+  return u?.name||u?.full_name||u?.username||'';
+}
+function photoFromDb(row){
+  return {
+    id:row.id,
+    clientId:row.client_id||'',
+    objectId:row.object_id||'',
+    deviceId:row.device_id||'',
+    workorderId:row.workorder_id||'',
+    actId:row.act_id||'',
+    fileUrl:row.file_url||'',
+    filePath:row.file_path||'',
+    category:row.category||'',
+    comment:row.comment||'',
+    includeInAct:row.include_in_act===true,
+    uploadedBy:row.uploaded_by||'',
+    uploadedByName:row.uploaded_by_name||'',
+    createdAt:row.created_at||'',
+    takenAt:row.taken_at||'',
+    isCover:row.is_cover===true,
+    sortOrder:Number(row.sort_order||0)||0,
+    photoType:row.photo_type||row.category||'general',
+    deletedAt:row.deleted_at||'',
+    previewUrl:row.preview_url||''
+  };
+}
+function photoToDb(photo){
+  return {
+    id:photo.id,
+    client_id:photo.clientId||null,
+    object_id:photo.objectId||null,
+    device_id:photo.deviceId||null,
+    workorder_id:photo.workorderId||null,
+    act_id:photo.actId||null,
+    file_url:photo.fileUrl||photo.filePath,
+    file_path:photo.filePath,
+    category:photo.category||photo.photoType||'general',
+    comment:photo.comment||null,
+    include_in_act:photo.includeInAct===true,
+    uploaded_by:photo.uploadedBy||null,
+    taken_at:photo.takenAt||null,
+    is_cover:photo.isCover===true,
+    sort_order:Number(photo.sortOrder||0)||0,
+    photo_type:photo.photoType||'general',
+    deleted_at:photo.deletedAt||null
+  };
+}
+function mergePhotoCache(list){
+  state.photos=state.photos||[];
+  const byKey=new Map(state.photos.map(p=>[p.id,p]));
+  (list||[]).forEach(p=>byKey.set(p.id,{...(byKey.get(p.id)||{}),...p}));
+  state.photos=Array.from(byKey.values());
+  try{window.VECO_STORAGE.save(state);}catch(_){/* ignore cache save */}
+}
+function workorderPhotos(workorderId){
+  const key=photoWorkorderDbId(workorderId);
+  return (state.photos||[]).filter(p=>!p.deletedAt && (p.workorderId===key || p.workorderNo===workorderId)).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')) || Number(a.sortOrder||0)-Number(b.sortOrder||0));
+}
+function photoPreviewSrc(p){return p.previewUrl||p.signedUrl||p.fileUrl||'';}
+async function signedPhotoUrl(path){
+  const client=vecoSupabaseClient();
+  if(!client||!path) return '';
+  const {data,error}=await client.storage.from(PHOTO_BUCKET).createSignedUrl(path,60*60);
+  if(error) return '';
+  return data?.signedUrl||'';
+}
+async function loadWorkorderPhotos(workorderId,force=false){
+  const key=photoWorkorderDbId(workorderId);
+  if(!force && workorderPhotos(workorderId).some(p=>p.previewUrl)) return workorderPhotos(workorderId);
+  if(photoCacheLoading.has(key)) return workorderPhotos(workorderId);
+  const client=vecoSupabaseClient();
+  if(!client) return workorderPhotos(workorderId);
+  photoCacheLoading.add(key);
+  try{
+    const {data,error}=await client.from('photos').select('*').eq('workorder_id',key).is('deleted_at',null).order('created_at',{ascending:false});
+    if(error) throw error;
+    const rows=(data||[]).map(photoFromDb);
+    for(const p of rows){p.previewUrl=await signedPhotoUrl(p.filePath);}
+    mergePhotoCache(rows);
+  }catch(err){console.warn('VECO photos load failed',err);}finally{photoCacheLoading.delete(key);}
+  return workorderPhotos(workorderId);
+}
+function workorderPhotoGalleryHtml(workorderId,opts={}){
+  const photos=workorderPhotos(workorderId);
+  const empty=photoCacheLoading.has(photoWorkorderDbId(workorderId))?'Pilte laetakse...':'Pilte pole lisatud.';
+  const cards=photos.map(p=>`<div class="photo-card" data-photo-id="${esc(p.id)}"><button class="photo-thumb" data-photo-preview="${esc(p.id)}" type="button">${photoPreviewSrc(p)?`<img src="${esc(photoPreviewSrc(p))}" alt="${esc(p.comment||'Töökäsu foto')}">`:'<span>📷</span>'}</button><div class="photo-meta"><strong>${esc(p.comment||PHOTO_TYPE_OPTIONS.find(x=>x[0]===p.photoType)?.[1]||'Foto')}</strong><span class="muted">${esc(fmtDateTimeShort(p.createdAt)||'')} ${p.includeInAct?'· aktile':''}</span></div><div class="photo-actions"><button class="btn small" data-photo-comment="${esc(p.id)}" type="button">✎</button><button class="btn small danger" data-photo-delete="${esc(p.id)}" type="button">Kustuta</button></div></div>`).join('');
+  return `<div class="section-title photo-section-title"><span>📷 Pildid</span><button class="btn small primary" data-add-workorder-photo="${esc(workorderId)}" type="button">＋ Lisa pilt</button></div><div class="photo-gallery" data-photo-gallery="${esc(workorderId)}">${cards||`<div class="muted photo-empty">${empty}</div>`}</div><input class="hidden" type="file" accept="image/*" multiple data-workorder-photo-input="${esc(workorderId)}">${opts.hint?`<div class="muted">${esc(opts.hint)}</div>`:''}`;
+}
+function bindWorkorderPhotos(renderFn){
+  $$('[data-add-workorder-photo]').forEach(btn=>btn.addEventListener('click',()=>{
+    const id=btn.dataset.addWorkorderPhoto;
+    document.querySelector(`[data-workorder-photo-input="${CSS.escape(id)}"]`)?.click();
+  }));
+  $$('[data-workorder-photo-input]').forEach(input=>input.addEventListener('change',async()=>{
+    const id=input.dataset.workorderPhotoInput;
+    const files=Array.from(input.files||[]);
+    input.value='';
+    if(files.length) await uploadWorkorderPhotos(id,files,renderFn);
+  }));
+  $$('[data-photo-preview]').forEach(btn=>btn.addEventListener('click',()=>openPhotoPreview(btn.dataset.photoPreview,renderFn)));
+  $$('[data-photo-comment]').forEach(btn=>btn.addEventListener('click',()=>openPhotoComment(btn.dataset.photoComment,renderFn)));
+  $$('[data-photo-delete]').forEach(btn=>btn.addEventListener('click',()=>deletePhoto(btn.dataset.photoDelete,renderFn)));
+}
+async function openPhotoMetaModal(files){
+  return new Promise(resolve=>{
+    const count=files.length;
+    const types=PHOTO_TYPE_OPTIONS.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('');
+    openModal(`<form id="photoMetaForm"><div class="dialog-head"><h2>Lisa pilt${count>1?'e':''}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${count} faili valitud</strong><span class="muted">Kommentaar rakendub kõigile valitud piltidele.</span></div><div class="form-grid"><label class="full">Kommentaar<textarea name="comment" placeholder="nt Lekke koht, enne tööd, pärast tööd..."></textarea></label><label>Tüüp<select class="select" name="photoType">${types}</select></label><label class="check-card"><input type="checkbox" name="includeInAct"> <span>Lisa hiljem aktile</span></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Laadi üles</button></div></form>`);
+    bindClose(()=>resolve(null));
+    $('#photoMetaForm')?.addEventListener('submit',e=>{e.preventDefault(); const f=e.currentTarget.elements; const result={comment:String(f.comment.value||'').trim(),photoType:f.photoType.value||'general',includeInAct:!!f.includeInAct.checked}; closeModal(); resolve(result);});
+  });
+}
+async function uploadWorkorderPhotos(workorderId,files,renderFn){
+  const w=byId(state.workorders,workorderId);
+  if(!w||!files?.length) return;
+  const meta=await openPhotoMetaModal(files);
+  if(!meta) return;
+  const client=vecoSupabaseClient();
+  const object=byId(state.objects,w.objectId)||{};
+  const clientId=object.clientId||'';
+  const uploaded=[];
+  for(const file of files){
+    if(!String(file.type||'').startsWith('image/')) continue;
+    const ext=(file.name?.split('.').pop()||file.type.split('/').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+    const id=(crypto?.randomUUID?.()||photoDbId(`${workorderId}:${file.name}:${Date.now()}:${Math.random()}`));
+    const path=`clients/${clientId||'unknown'}/objects/${w.objectId||'unknown'}/workorders/${workorderId}/${id}.${ext}`;
+    let ok=false;
+    if(client){
+      const up=await client.storage.from(PHOTO_BUCKET).upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type||undefined});
+      if(up.error){console.warn('VECO photo upload failed',up.error); alert(`Pildi üleslaadimine ebaõnnestus: ${up.error.message||up.error}`); continue;}
+      ok=true;
+    }
+    const photo={id,clientId:photoNullableUuid(clientId,'client'),objectId:photoNullableUuid(w.objectId,'object'),deviceId:null,workorderId:photoWorkorderDbId(workorderId),workorderNo:workorderId,actId:null,fileUrl:path,filePath:path,category:meta.photoType,comment:meta.comment,includeInAct:meta.includeInAct,uploadedBy:photoUserDbId(),uploadedByName:photoUserName(),createdAt:new Date().toISOString(),takenAt:null,isCover:false,sortOrder:0,photoType:meta.photoType,deletedAt:'',previewUrl:URL.createObjectURL(file)};
+    if(client && ok){
+      const ins=await client.from('photos').insert(photoToDb(photo)).select('*').maybeSingle();
+      if(ins.error){console.warn('VECO photo metadata insert failed',ins.error); alert(`Pildi metaandmete salvestus ebaõnnestus: ${ins.error.message||ins.error}`);}
+      else if(ins.data){Object.assign(photo,photoFromDb(ins.data)); photo.previewUrl=await signedPhotoUrl(photo.filePath)||URL.createObjectURL(file);}
+    }
+    uploaded.push(photo);
+  }
+  if(uploaded.length){mergePhotoCache(uploaded); if(typeof renderFn==='function') renderFn();}
+}
+function openPhotoPreview(photoId,renderFn){
+  const p=(state.photos||[]).find(x=>x.id===photoId); if(!p) return;
+  openModal(`<div class="dialog-head"><h2>${esc(p.comment||'Foto')}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="photo-preview-wrap">${photoPreviewSrc(p)?`<img src="${esc(photoPreviewSrc(p))}" alt="${esc(p.comment||'Foto')}">`:'<div class="muted">Eelvaadet ei ole.</div>'}</div><div class="muted">${esc(fmtDateTimeShort(p.createdAt)||'')} ${p.includeInAct?'· lisatakse aktile':''}</div></div><div class="dialog-actions"><button type="button" class="btn" id="photoEditCommentBtn">Muuda kommentaari</button><button type="button" class="btn danger" id="photoDeleteModalBtn">Kustuta</button></div>`);
+  bindClose();
+  $('#photoEditCommentBtn')?.addEventListener('click',()=>{closeModal();openPhotoComment(photoId,renderFn);});
+  $('#photoDeleteModalBtn')?.addEventListener('click',async()=>{closeModal();await deletePhoto(photoId,renderFn);});
+}
+async function openPhotoComment(photoId,renderFn){
+  const p=(state.photos||[]).find(x=>x.id===photoId); if(!p) return;
+  const types=PHOTO_TYPE_OPTIONS.map(([v,l])=>`<option value="${esc(v)}" ${p.photoType===v?'selected':''}>${esc(l)}</option>`).join('');
+  openModal(`<form id="photoCommentForm"><div class="dialog-head"><h2>Muuda pilti</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label class="full">Kommentaar<textarea name="comment">${esc(p.comment||'')}</textarea></label><label>Tüüp<select class="select" name="photoType">${types}</select></label><label class="check-card"><input type="checkbox" name="includeInAct" ${p.includeInAct?'checked':''}> <span>Lisa hiljem aktile</span></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  bindClose();
+  $('#photoCommentForm')?.addEventListener('submit',async e=>{e.preventDefault(); const f=e.currentTarget.elements; p.comment=String(f.comment.value||'').trim(); p.photoType=f.photoType.value||'general'; p.category=p.photoType; p.includeInAct=!!f.includeInAct.checked; const client=vecoSupabaseClient(); if(client){const {error}=await client.from('photos').update({comment:p.comment,photo_type:p.photoType,category:p.photoType,include_in_act:p.includeInAct}).eq('id',p.id); if(error) console.warn('VECO photo update failed',error);} mergePhotoCache([p]); closeModal(); if(typeof renderFn==='function') renderFn();});
+}
+async function deletePhoto(photoId,renderFn){
+  const p=(state.photos||[]).find(x=>x.id===photoId); if(!p) return;
+  const ok=await openVecoConfirm({title:'Kustuta pilt',message:'Kas soovid pildi töökäsu vaates peita?',details:'Faili ei kustutata Storage’ist. Täidetakse deleted_at.',confirmText:'Kustuta',cancelText:'Loobu'});
+  if(!ok) return;
+  p.deletedAt=new Date().toISOString();
+  const client=vecoSupabaseClient();
+  if(client){const {error}=await client.from('photos').update({deleted_at:p.deletedAt}).eq('id',p.id); if(error) console.warn('VECO photo soft delete failed',error);}
+  mergePhotoCache([p]);
+  if(typeof renderFn==='function') renderFn();
+}
+function refreshWorkorderPhotosThen(workorderId,renderFn){
+  loadWorkorderPhotos(workorderId,true).then(()=>{if(typeof renderFn==='function') renderFn();}).catch(err=>console.warn('VECO photo refresh failed',err));
+}
 function adminViewAsControl(){
   if(authRole()!=='admin') return '';
   const current=adminViewAsId();
@@ -1067,7 +1276,7 @@ function workorderDetailHtml(){
   const activeAct=activeActForWorkorder(w.id);
   const archivedAct=archivedActForWorkorder(w.id);
   const actState=activeAct?'Aktiivne':(archivedAct?'Akt arhiveeritud':'Akt puudub');
-  const body=`<div class="summary-grid">${summaryBox('Aktid',acts.length)}${summaryBox('Kuupäev',fmtActDate(w.date))}${summaryBox('Kell',w.time)}${summaryBox('Staatus',w.status)}</div>${card(w.title,[['Klient',clientName(objectClientId(w.objectId))],['Objekt',objectName(w.objectId)],['Projekt',projectName(w.projectId)],['Vastutaja',techName(workorderResponsibleId(w))],['Osalejad',workorderParticipantIds(w).map(techName).join(', ')||'-'],['Aeg',`${fmtActDate(w.date)} ${w.time}`],['Akt vajalik',workorderActRequired(w)?'Jah':'Ei'],['Akti seis',actState]],w.status,`<div class="section-title">Kirjeldus</div><div class="muted">${esc(problemDescriptionText(w))}</div><div class="section-title">Töö tulemus</div><div class="muted">${esc(completionCommentText(w)||'-')}</div>`)}<div class="section-title">Aktid</div><div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="status ${statusClass(a.status)}">${esc(a.archived?'Arhiivis':a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
+  const body=`<div class="summary-grid">${summaryBox('Pilte',workorderPhotos(w.id).length)}${summaryBox('Aktid',acts.length)}${summaryBox('Kuupäev',fmtActDate(w.date))}${summaryBox('Staatus',w.status)}</div>${card(w.title,[['Klient',clientName(objectClientId(w.objectId))],['Objekt',objectName(w.objectId)],['Projekt',projectName(w.projectId)],['Vastutaja',techName(workorderResponsibleId(w))],['Osalejad',workorderParticipantIds(w).map(techName).join(', ')||'-'],['Aeg',`${fmtActDate(w.date)} ${w.time}`],['Akt vajalik',workorderActRequired(w)?'Jah':'Ei'],['Akti seis',actState]],w.status,`<div class="section-title">Kirjeldus</div><div class="muted">${esc(problemDescriptionText(w))}</div><div class="section-title">Töö tulemus</div><div class="muted">${esc(completionCommentText(w)||'-')}</div>`)}${workorderPhotoGalleryHtml(w.id,{hint:'Pildid on seotud töökäsuga. Märge “Lisa hiljem aktile” võimaldab need hiljem akti kaasa võtta.'})}<div class="section-title">Aktid</div><div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="status ${statusClass(a.status)}">${esc(a.archived?'Arhiivis':a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
   const completed=isCompletedStatus(w.status);
   const actButtonLabel=activeAct?'Ava akt':(archivedAct?'Taasta akt':'＋ Loo akt');
   const actButtonClass=archivedAct?'btn small warn':'btn small primary';
@@ -1087,6 +1296,8 @@ function bindWorkorderDetail(){
   $('#printWorkorderActBtn')?.addEventListener('click',()=>{const a=ensureActForWorkorder(selectedWorkorderId); if(a) printAct(a.id);});
   $('#pdfWorkorderActBtn')?.addEventListener('click',()=>{const a=ensureActForWorkorder(selectedWorkorderId); if(a) saveActPdf(a.id);});
   $('#workorderDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.workorders=false;renderWorkorders();});
+  bindWorkorderPhotos(renderWorkorders);
+  if(selectedWorkorderId) refreshWorkorderPhotosThen(selectedWorkorderId,renderWorkorders);
 }
 function workorderCopyDefaults(source){
   if(!source) return {};
@@ -2793,9 +3004,11 @@ function openMobileWorkModal(id){
   const editCompletion=shouldEditCompletionInWorkorder(w);
   const actNotice=workorderActEditNotice(w);
   const completionFields=editCompletion?`<label class="full">Teostatud tööd<textarea name="done">${esc(performedWorkText(w))}</textarea></label><label class="full">Töö tulemus / märkused<textarea name="workResult">${esc(workResultText(w))}</textarea></label><label class="full">Soovitused / puudused<textarea name="recommendations">${esc(workRecommendationsText(w))}</textarea></label>`:`<input type="hidden" name="done" value="${esc(performedWorkText(w))}"><input type="hidden" name="workResult" value="${esc(workResultText(w))}"><input type="hidden" name="recommendations" value="${esc(workRecommendationsText(w))}">${actNotice}`;
-  openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Probleemi kirjeldus<textarea readonly>${esc(problemDescriptionText(w)||'-')}</textarea></label>${completionFields}<label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label class="check-card"><input type="checkbox" name="actRequired" ${workorderActRequired(w)?'checked':''}> <span>Akt vajalik</span></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Foto lisamine tuleb järgmises etapis"></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Probleemi kirjeldus<textarea readonly>${esc(problemDescriptionText(w)||'-')}</textarea></label>${completionFields}<label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label class="check-card"><input type="checkbox" name="actRequired" ${workorderActRequired(w)?'checked':''}> <span>Akt vajalik</span></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Vaba märkus foto kohta"></label><div class="full">${workorderPhotoGalleryHtml(w.id,{hint:'Saad lisada mitu pilti korraga. Pildid jäävad töökäsu külge.'})}</div></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
   $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;const note=String(f.done.value||'').trim();if(nextStatus==='Lõpetatud'){const result=isCompletedStatus(w.status)?{comment:(note||performedWorkText(w)),performedWork:(note||performedWorkText(w)),workResult:String(f.workResult?.value||workResultText(w)||'').trim(),recommendations:String(f.recommendations?.value||workRecommendationsText(w)||'').trim(),materials:workMaterialsText(w),actType:w.actType||'Väljakutse akt'}:normalizeCompletionResult(await openCompletionCommentModal(w,note));if(!result||!result.comment)return;const actor=currentMobileActionUser();w.completedAt=w.completedAt||new Date().toISOString();w.completedBy=w.completedBy||(actor?.name||completedByLabel(w));w.completedByUuid=w.completedByUuid||(actor?.dbId||'');w.completionComment=result.comment;w.actType=result.actType;w.done=result.comment;w.workDone=result.comment;w.performedWork=result.performedWork||result.comment;w.workResult=result.workResult||'';w.recommendations=result.recommendations||'';w.materials=result.materials||'';}else{w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';w.workResult=String(f.workResult?.value||w.workResult||'').trim();w.recommendations=String(f.recommendations?.value||w.recommendations||'').trim(); if(!isCompletedStatus(w.status)){w.completedAt='';w.completedBy=''; if(!note) w.completionComment='';}}w.status=nextStatus;w.actRequired=!!f.actRequired?.checked;w.photoNote=f.photoNote.value;save();if(isCompletedStatus(w.status) && workorderActRequired(w) && !actForWorkorder(w.id)){ ensureActForWorkorder(w.id); }closeModal();state=window.VECO_STORAGE.load();renderMobile();});
+  bindWorkorderPhotos(()=>{closeModal();openMobileWorkModal(id);});
+  refreshWorkorderPhotosThen(id,()=>{closeModal();openMobileWorkModal(id);});
 }
 function renderMobilePreview(){
   const devices=[['iPhone SE','320px','568px'],['Android 360','360px','740px'],['iPhone 14','390px','844px'],['Large phone','414px','896px'],['Tahvel','768px','1024px']];
