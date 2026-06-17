@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.20';
-const APP_BUILD='20260617_0914';
+const APP_BUILD='20260617_1120';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -825,7 +825,7 @@ function nav(sidebarMode='full'){
     return `<div class="nav-section ${isOpen?'open':'collapsed'}" data-nav-group="${esc(title)}"><button class="nav-section-title" type="button" data-nav-toggle="${esc(title)}" aria-expanded="${isOpen?'true':'false'}"><span>${isOpen?'▾':'▸'}</span>${title}</button><div class="nav-section-items">${visibleItems.map(navItem).join('')}</div></div>`;
   }).join('');
   const toggleTitle=sidebarMode==='hidden'?'Ava menüü':'Peida menüü';
-  return `<aside class="sidebar" data-sidebar-state="${sidebarMode}"><button class="sidebar-toggle-rail" id="sidebarToggleRail" type="button" title="${toggleTitle}" aria-label="${toggleTitle}"></button><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
+  return `<aside class="sidebar" data-sidebar-state="${sidebarMode}"><input id="importDataFile" type="file" accept="application/json" class="hidden"><nav class="nav nav-grouped nav-accordion" aria-label="Põhivaated">${navGroups}</nav></aside>`
 }
 function themeLogo(){
   return `<button class="brand-badge brand-theme-toggle" type="button" data-theme-toggle title="Vaheta hele/tume režiim" aria-label="Vaheta hele/tume režiim"><span class="brand-wordmark">VECO</span></button>`;
@@ -887,8 +887,8 @@ function shell(main,aside='',opts={}){
   // If the menu was closed before refresh, it must stay closed after reload.
   const sidebarMode=setStoredSidebarMode(getStoredSidebarMode());
   const sidebarClass=sidebarMode==='hidden'?'sidebar-hidden':'sidebar-full';
-  const showFloatingToggle=(page!=='mobile' && page!=='calendar');
-  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}${showFloatingToggle?'<button class="sidebar-floating-toggle" id="sidebarFloatingToggle" type="button" aria-label="Ava menüü" title="Ava menüü">☰</button><button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Sulge menüü"></button>':''}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
+  const showFloatingToggle=false;
+  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();
 }
 function activeThemeKey(){
@@ -931,7 +931,6 @@ function bindGlobal(){
   };
   $('#sidebarToggleRail')?.addEventListener('click',sidebarToggleHandler);
   $('#sidebarToggleBtn')?.addEventListener('click',sidebarToggleHandler);
-  $('#sidebarFloatingToggle')?.addEventListener('click',sidebarToggleHandler);
   $('#sidebarScrim')?.addEventListener('click',()=>applySidebarMode('hidden'));
   document.addEventListener('keydown',(event)=>{
     if(event.key==='Escape' && $('.app')?.classList.contains('sidebar-full')) applySidebarMode('hidden');

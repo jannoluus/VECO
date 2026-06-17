@@ -1180,3 +1180,6 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
 }
 .app.sidebar-full .sidebar-floating-toggle{display:none!important;}
 @media(max-width:1120px){.sidebar-floating-toggle{left:8px!important;top:8px!important;}}
+
+/* VECO_V3_20260617_1120: remove legacy floating/burger sidebar toggles from all admin views */
+.sidebar-toggle-rail,#sidebarToggleRail,.sidebar-floating-toggle,#sidebarFloatingToggle,.sidebar-toggle,#sidebarToggleBtn,#toggleSidebarBtn,.menu-toggle-only{display:none!important;visibility:hidden!important;pointer-events:none!important;}
