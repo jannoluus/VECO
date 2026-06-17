@@ -942,14 +942,25 @@ function openModal(html){
   if(!modal) return;
   modal.innerHTML=`<div class="dialog" role="dialog" aria-modal="true">${html}</div>`;
   modal.classList.add('open');
+  document.documentElement.classList.add('modal-open');
   document.body.classList.add('modal-open');
 
-  // Taustale klikk sulgeb akna, akna sees klikk ei sulge.
-  // Kasutame onclicki, et iga uue modali avamisel ei jääks vanu kuulareid külge.
+  // Taustale klikk sulgeb akna. Nupu sulgemine on all delegatsioonina,
+  // et see töötaks ka siis, kui vormi sees on mitu dünaamilist modali.
   modal.onclick=(e)=>{
     if(e.target===modal) closeModal();
   };
   modal.querySelector('.dialog')?.addEventListener('click',e=>e.stopPropagation());
+
+  // Topeltkindlus: seo konkreetsed nupud kohe ning kasuta preventDefaulti,
+  // et vormi sees olev Sulge/Tühista ei prooviks vormi submitida.
+  modal.querySelectorAll('#modalCloseBtn,#cancelModalBtn,[data-modal-close]').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      closeModal();
+    },{capture:true});
+  });
 
   if(modalEscHandler) document.removeEventListener('keydown',modalEscHandler);
   modalEscHandler=(e)=>{
@@ -960,9 +971,6 @@ function openModal(html){
   };
   document.addEventListener('keydown',modalEscHandler);
   setupAutoTextareas(modal);
-  // CR-099.1 fix: every modal opened through openModal must wire the standard close buttons.
-  // Some newly added photo/workorder modals did not call bindClose() separately,
-  // which left the "× Sulge" button inactive.
   bindClose();
 }
 function setupAutoTextareas(root=document){
@@ -984,6 +992,7 @@ function closeModal(){
     modal.onclick=null;
     modal.innerHTML='';
   }
+  document.documentElement.classList.remove('modal-open');
   document.body.classList.remove('modal-open');
   if(modalEscHandler){
     document.removeEventListener('keydown',modalEscHandler);
@@ -1003,7 +1012,23 @@ function showSyncNotice(text='Andmed uuendatud'){
   clearTimeout(window.__VECO_SYNC_NOTICE_TIMER__);
   window.__VECO_SYNC_NOTICE_TIMER__=setTimeout(()=>el.classList.remove('show'),1800);
 }
-function bindClose(){ $('#modalCloseBtn')?.addEventListener('click',closeModal); $('#cancelModalBtn')?.addEventListener('click',closeModal); }
+function bindClose(){
+  $('#modalCloseBtn')?.addEventListener('click',e=>{e.preventDefault(); closeModal();});
+  $('#cancelModalBtn')?.addEventListener('click',e=>{e.preventDefault(); closeModal();});
+}
+
+// Globaalne modali sulgemise delegatsioon. See hoiab ära olukorra, kus
+// dünaamiliselt lisatud Sulge nupp jääb kuulajata või vorm püüab sündmuse kinni.
+document.addEventListener('click',e=>{
+  const btn=e.target?.closest?.('#modalCloseBtn,#cancelModalBtn,[data-modal-close]');
+  if(!btn) return;
+  const modal=$('#modal');
+  if(modal?.classList.contains('open')){
+    e.preventDefault();
+    e.stopPropagation();
+    closeModal();
+  }
+},true);
 
 function openVecoConfirm({title='Kinnitus',message='',details='',confirmText='OK',cancelText='Loobu',danger=false}={}){
   return new Promise(resolve=>{

@@ -3690,3 +3690,78 @@ body.modal-open{
     max-height:calc(100dvh - 20px)!important;
   }
 }
+
+/* Build 20260617_0941: hard fix for modal close/scroll after CR-099 photos */
+html.modal-open,
+body.modal-open{
+  overflow:hidden!important;
+  height:100%!important;
+}
+#modal.modal.open{
+  position:fixed!important;
+  inset:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow:hidden!important;
+  padding:18px!important;
+  box-sizing:border-box!important;
+  z-index:30000!important;
+}
+#modal.modal.open .dialog{
+  width:min(980px, calc(100vw - 36px))!important;
+  max-width:calc(100vw - 36px)!important;
+  max-height:calc(100dvh - 36px)!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+  overflow-x:hidden!important;
+  box-sizing:border-box!important;
+  z-index:30001!important;
+}
+#modal .dialog > form,
+#modal .dialog > div{
+  min-height:0!important;
+  max-height:100%!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+}
+#modal .dialog-head,
+#modal .dialog-actions{
+  flex:0 0 auto!important;
+}
+#modal .dialog .detail-body{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+#modal .dialog textarea,
+#modal .dialog input,
+#modal .dialog select,
+#modal .dialog .field,
+#modal .dialog .select{
+  max-width:100%!important;
+  min-width:0!important;
+}
+#modalCloseBtn,
+#cancelModalBtn,
+[data-modal-close]{
+  pointer-events:auto!important;
+  position:relative!important;
+  z-index:30002!important;
+}
+@media(max-width:760px){
+  #modal.modal.open{
+    align-items:stretch!important;
+    justify-content:stretch!important;
+    padding:8px!important;
+  }
+  #modal.modal.open .dialog{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:calc(100dvh - 16px)!important;
+  }
+}
