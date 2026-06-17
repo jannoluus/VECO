@@ -3861,3 +3861,16 @@ body.modal-open{
   background:linear-gradient(180deg, var(--panel), rgba(15,23,42,.94))!important;
   border-bottom:1px solid rgba(148,163,184,.22)!important;
 }
+
+/* Build 20260617_1048: photo lightbox + calendar burger regression fix */
+.page-calendar .sidebar-floating-toggle{display:none!important;}
+html.photo-lightbox-open,body.photo-lightbox-open{overflow:hidden!important;}
+.photo-lightbox{position:fixed;inset:0;z-index:50000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(2,6,12,.72);}
+.photo-lightbox-dialog{width:min(1120px,calc(100vw - 36px));max-height:calc(100dvh - 36px);display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 28px 80px rgba(0,0,0,.55);overflow:hidden;}
+.photo-lightbox-head,.photo-lightbox-meta{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(148,163,184,.22);}
+.photo-lightbox-meta{border-bottom:0;border-top:1px solid rgba(148,163,184,.22);}
+.photo-lightbox-head h2{margin:0;font-size:20px;}
+.photo-lightbox-body{flex:1 1 auto;min-height:240px;display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto;background:rgba(15,23,42,.35);}
+.photo-lightbox-body img{max-width:100%;max-height:calc(100dvh - 190px);object-fit:contain;display:block;border-radius:8px;}
+.photo-lightbox-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+@media(max-width:760px){.photo-lightbox{padding:6px;align-items:stretch}.photo-lightbox-dialog{width:100%;max-height:calc(100dvh - 12px)}.photo-lightbox-head,.photo-lightbox-meta{padding:12px;align-items:stretch;flex-direction:column}.photo-lightbox-actions .btn{width:100%;}.photo-lightbox-body img{max-height:calc(100dvh - 250px)}}

@@ -1,8 +1,1 @@
-{
-  "build": "VECO_V3_20260617_1033",
-  "created_at": "2026-06-17T10:33:00+03:00",
-  "changes": [
-    "Fix workorders sidebar opener",
-    "Fix workorders row click/detail by removing repeated photo-refresh rerender loop"
-  ]
-}
+{"build":"VECO_V3_20260617_1048","created_at":"2026-06-17T10:48:00+03:00","changes":["Photo preview lightbox renders image independently from workorder modal","Signed Storage URL fallback for preview","Calendar floating burger hidden again"]}

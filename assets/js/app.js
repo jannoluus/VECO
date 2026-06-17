@@ -358,7 +358,26 @@ function workorderPhotos(workorderId){
   const key=photoWorkorderDbId(workorderId);
   return (state.photos||[]).filter(p=>!p.deletedAt && (p.workorderId===key || p.workorderNo===workorderId)).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')) || Number(a.sortOrder||0)-Number(b.sortOrder||0));
 }
-function photoPreviewSrc(p){return p.previewUrl||p.signedUrl||p.fileUrl||'';}
+function photoPreviewSrc(p){return p.previewUrl||p.signedUrl||p.publicUrl||p.fileUrl||'';}
+function isLikelyHttpUrl(value){return /^https?:\/\//i.test(String(value||'')) || /^blob:/i.test(String(value||'')) || /^data:image\//i.test(String(value||''));}
+function photoStoragePath(p){
+  const fp=String(p?.filePath||'').trim();
+  if(fp && !isLikelyHttpUrl(fp)) return fp;
+  const fu=String(p?.fileUrl||'').trim();
+  if(fu && !isLikelyHttpUrl(fu)) return fu;
+  return '';
+}
+async function ensurePhotoPreviewUrl(p){
+  if(!p) return '';
+  const existing=photoPreviewSrc(p);
+  if(existing && isLikelyHttpUrl(existing)) return existing;
+  const path=photoStoragePath(p);
+  if(path){
+    const signed=await signedPhotoUrl(path);
+    if(signed){ p.previewUrl=signed; p.signedUrl=signed; mergePhotoCache([p]); return signed; }
+  }
+  return existing || '';
+}
 async function signedPhotoUrl(path){
   const client=vecoSupabaseClient();
   if(!client||!path) return '';
@@ -399,7 +418,7 @@ function bindWorkorderPhotos(renderFn){
     input.value='';
     if(files.length) await uploadWorkorderPhotos(id,files,renderFn);
   }));
-  $$('[data-photo-preview]').forEach(btn=>btn.addEventListener('click',()=>openPhotoPreview(btn.dataset.photoPreview,renderFn)));
+  $$('[data-photo-preview]').forEach(btn=>btn.addEventListener('click',()=>openPhotoLightbox(btn.dataset.photoPreview,renderFn)));
   $$('[data-photo-comment]').forEach(btn=>btn.addEventListener('click',()=>openPhotoComment(btn.dataset.photoComment,renderFn)));
   $$('[data-photo-delete]').forEach(btn=>btn.addEventListener('click',()=>deletePhoto(btn.dataset.photoDelete,renderFn)));
 }
@@ -442,13 +461,28 @@ async function uploadWorkorderPhotos(workorderId,files,renderFn){
   }
   if(uploaded.length){mergePhotoCache(uploaded); if(typeof renderFn==='function') renderFn();}
 }
-function openPhotoPreview(photoId,renderFn){
-  const p=(state.photos||[]).find(x=>x.id===photoId); if(!p) return;
-  openModal(`<div class="dialog-head"><h2>${esc(p.comment||'Foto')}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="photo-preview-wrap">${photoPreviewSrc(p)?`<img src="${esc(photoPreviewSrc(p))}" alt="${esc(p.comment||'Foto')}">`:'<div class="muted">Eelvaadet ei ole.</div>'}</div><div class="muted">${esc(fmtDateTimeShort(p.createdAt)||'')} ${p.includeInAct?'· lisatakse aktile':''}</div></div><div class="dialog-actions"><button type="button" class="btn" id="photoEditCommentBtn">Muuda kommentaari</button><button type="button" class="btn danger" id="photoDeleteModalBtn">Kustuta</button></div>`);
-  bindClose();
-  $('#photoEditCommentBtn')?.addEventListener('click',()=>{closeModal();openPhotoComment(photoId,renderFn);});
-  $('#photoDeleteModalBtn')?.addEventListener('click',async()=>{closeModal();await deletePhoto(photoId,renderFn);});
+function removePhotoLightbox(){
+  document.getElementById('photoLightbox')?.remove();
+  document.documentElement.classList.remove('photo-lightbox-open');
+  document.body.classList.remove('photo-lightbox-open');
 }
+async function openPhotoLightbox(photoId,renderFn){
+  const p=(state.photos||[]).find(x=>x.id===photoId); if(!p) return;
+  const src=await ensurePhotoPreviewUrl(p);
+  const el=document.createElement('div');
+  el.id='photoLightbox';
+  el.className='photo-lightbox open';
+  el.innerHTML=`<div class="photo-lightbox-dialog" role="dialog" aria-modal="true"><div class="photo-lightbox-head"><h2>${esc(p.comment||'Foto')}</h2><button type="button" class="btn ghost" data-photo-lightbox-close>× Sulge</button></div><div class="photo-lightbox-body">${src?`<img src="${esc(src)}" alt="${esc(p.comment||'Foto')}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'muted',textContent:'Pilti ei õnnestunud laadida. Kontrolli Storage read policy / signed URL.'}))">`:'<div class="muted">Eelvaadet ei ole.</div>'}</div><div class="photo-lightbox-meta"><span class="muted">${esc(fmtDateTimeShort(p.createdAt)||'')} ${p.includeInAct?'· lisatakse aktile':''}</span><div class="photo-lightbox-actions"><button type="button" class="btn" data-photo-lightbox-edit>Muuda kommentaari</button><button type="button" class="btn danger" data-photo-lightbox-delete>Kustuta</button></div></div></div>`;
+  document.body.appendChild(el);
+  document.documentElement.classList.add('photo-lightbox-open');
+  document.body.classList.add('photo-lightbox-open');
+  const close=()=>removePhotoLightbox();
+  el.addEventListener('click',e=>{ if(e.target===el) close(); });
+  el.querySelector('[data-photo-lightbox-close]')?.addEventListener('click',close);
+  el.querySelector('[data-photo-lightbox-edit]')?.addEventListener('click',()=>{ close(); openPhotoComment(photoId,renderFn); });
+  el.querySelector('[data-photo-lightbox-delete]')?.addEventListener('click',async()=>{ close(); await deletePhoto(photoId,renderFn); });
+}
+function openPhotoPreview(photoId,renderFn){ openPhotoLightbox(photoId,renderFn); }
 async function openPhotoComment(photoId,renderFn){
   const p=(state.photos||[]).find(x=>x.id===photoId); if(!p) return;
   const types=PHOTO_TYPE_OPTIONS.map(([v,l])=>`<option value="${esc(v)}" ${p.photoType===v?'selected':''}>${esc(l)}</option>`).join('');
@@ -835,7 +869,8 @@ function shell(main,aside='',opts={}){
   // If the menu was closed before refresh, it must stay closed after reload.
   const sidebarMode=setStoredSidebarMode(getStoredSidebarMode());
   const sidebarClass=sidebarMode==='hidden'?'sidebar-hidden':'sidebar-full';
-  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}${page==='mobile'?'':'<button class="sidebar-floating-toggle" id="sidebarFloatingToggle" type="button" aria-label="Ava menüü" title="Ava menüü">☰</button><button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Sulge menüü"></button>'}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
+  const showFloatingToggle=(page!=='mobile' && page!=='calendar');
+  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}${showFloatingToggle?'<button class="sidebar-floating-toggle" id="sidebarFloatingToggle" type="button" aria-label="Ava menüü" title="Ava menüü">☰</button><button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Sulge menüü"></button>':''}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();
 }
 function activeThemeKey(){
