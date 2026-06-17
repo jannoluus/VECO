@@ -404,7 +404,11 @@ async function loadWorkorderPhotos(workorderId,force=false){
 function workorderPhotoGalleryHtml(workorderId,opts={}){
   const photos=workorderPhotos(workorderId);
   const empty=photoCacheLoading.has(photoWorkorderDbId(workorderId))?'Pilte laetakse...':'Pilte pole lisatud.';
-  const cards=photos.map(p=>`<div class="photo-card" data-photo-id="${esc(p.id)}"><button class="photo-thumb" data-photo-preview="${esc(p.id)}" type="button">${photoPreviewSrc(p)?`<img src="${esc(photoPreviewSrc(p))}" alt="${esc(p.comment||'Töökäsu foto')}">`:'<span>📷</span>'}</button><div class="photo-meta"><strong>${esc(p.comment||PHOTO_TYPE_OPTIONS.find(x=>x[0]===p.photoType)?.[1]||'Foto')}</strong><span class="muted">${esc(fmtDateTimeShort(p.createdAt)||'')}${p.uploadedByName?` · ${esc(p.uploadedByName)}`:''}</span>${p.includeInAct?'<span class="photo-act-flag">✓ Lisatakse aktile</span>':''}</div><div class="photo-actions"><button class="btn small" data-photo-comment="${esc(p.id)}" type="button">✎</button><button class="btn small danger" data-photo-delete="${esc(p.id)}" type="button">Kustuta</button></div></div>`).join('');
+  const cards=photos.map(p=>{
+    const typeLabel=PHOTO_TYPE_OPTIONS.find(x=>x[0]===p.photoType)?.[1]||'Foto';
+    const includeChecked=p.includeInAct?'checked':'';
+    return `<div class="photo-card" data-photo-id="${esc(p.id)}"><button class="photo-thumb" data-photo-preview="${esc(p.id)}" type="button">${photoPreviewSrc(p)?`<img src="${esc(photoPreviewSrc(p))}" alt="${esc(p.comment||'Töökäsu foto')}">`:'<span>📷</span>'}</button><div class="photo-meta"><strong>${esc(p.comment||typeLabel)}</strong><span class="muted">${esc(fmtDateTimeShort(p.createdAt)||'')}${p.uploadedByName?` · ${esc(p.uploadedByName)}`:''}</span><label class="photo-act-toggle" title="Märgi, et see pilt võetakse hiljem akti kaasa"><input type="checkbox" data-photo-include-act="${esc(p.id)}" ${includeChecked}> <span>${p.includeInAct?'Lisatakse aktile':'Lisa hiljem aktile'}</span></label></div><div class="photo-actions"><button class="btn small" data-photo-comment="${esc(p.id)}" type="button">✎</button><button class="btn small danger" data-photo-delete="${esc(p.id)}" type="button">Kustuta</button></div></div>`;
+  }).join('');
   return `<div class="section-title photo-section-title"><span>📷 Pildid</span><button class="btn small primary" data-add-workorder-photo="${esc(workorderId)}" type="button">＋ Lisa pilt</button></div><div class="photo-gallery" data-photo-gallery="${esc(workorderId)}">${cards||`<div class="muted photo-empty">${empty}</div>`}</div><input class="hidden" type="file" accept="image/*" multiple data-workorder-photo-input="${esc(workorderId)}">${opts.hint?`<div class="muted">${esc(opts.hint)}</div>`:''}`;
 }
 function bindWorkorderPhotos(renderFn){
@@ -421,6 +425,19 @@ function bindWorkorderPhotos(renderFn){
   $$('[data-photo-preview]').forEach(btn=>btn.addEventListener('click',()=>openPhotoLightbox(btn.dataset.photoPreview,renderFn)));
   $$('[data-photo-comment]').forEach(btn=>btn.addEventListener('click',()=>openPhotoComment(btn.dataset.photoComment,renderFn)));
   $$('[data-photo-delete]').forEach(btn=>btn.addEventListener('click',()=>deletePhoto(btn.dataset.photoDelete,renderFn)));
+  $$('[data-photo-include-act]').forEach(input=>input.addEventListener('change',()=>togglePhotoIncludeInAct(input.dataset.photoIncludeAct,!!input.checked,renderFn)));
+}
+async function togglePhotoIncludeInAct(photoId,value,renderFn){
+  const p=(state.photos||[]).find(x=>x.id===photoId);
+  if(!p) return;
+  p.includeInAct=value===true;
+  const client=vecoSupabaseClient();
+  if(client){
+    const {error}=await client.from('photos').update({include_in_act:p.includeInAct}).eq('id',p.id);
+    if(error){console.warn('VECO photo include_in_act update failed',error); alert(`Pildi akti märkimine ebaõnnestus: ${error.message||error}`);}
+  }
+  mergePhotoCache([p]);
+  if(typeof renderFn==='function') renderFn();
 }
 async function openPhotoMetaModal(files){
   return new Promise(resolve=>{
@@ -472,13 +489,14 @@ async function openPhotoLightbox(photoId,renderFn){
   const el=document.createElement('div');
   el.id='photoLightbox';
   el.className='photo-lightbox open';
-  el.innerHTML=`<div class="photo-lightbox-dialog" role="dialog" aria-modal="true"><div class="photo-lightbox-head"><h2>${esc(p.comment||'Foto')}</h2><button type="button" class="btn ghost" data-photo-lightbox-close>× Sulge</button></div><div class="photo-lightbox-body">${src?`<img src="${esc(src)}" alt="${esc(p.comment||'Foto')}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'muted',textContent:'Pilti ei õnnestunud laadida. Kontrolli Storage read policy / signed URL.'}))">`:'<div class="muted">Eelvaadet ei ole.</div>'}</div><div class="photo-lightbox-meta"><span class="muted">${esc(fmtDateTimeShort(p.createdAt)||'')} ${p.includeInAct?'· lisatakse aktile':''}</span><div class="photo-lightbox-actions"><button type="button" class="btn" data-photo-lightbox-edit>Muuda kommentaari</button><button type="button" class="btn danger" data-photo-lightbox-delete>Kustuta</button></div></div></div>`;
+  el.innerHTML=`<div class="photo-lightbox-dialog" role="dialog" aria-modal="true"><div class="photo-lightbox-head"><h2>${esc(p.comment||'Foto')}</h2><button type="button" class="btn ghost" data-photo-lightbox-close>× Sulge</button></div><div class="photo-lightbox-body">${src?`<img src="${esc(src)}" alt="${esc(p.comment||'Foto')}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'muted',textContent:'Pilti ei õnnestunud laadida. Kontrolli Storage read policy / signed URL.'}))">`:'<div class="muted">Eelvaadet ei ole.</div>'}</div><div class="photo-lightbox-meta"><span class="muted">${esc(fmtDateTimeShort(p.createdAt)||'')} ${p.includeInAct?'· lisatakse aktile':''}</span><div class="photo-lightbox-actions"><button type="button" class="btn" data-photo-lightbox-include>${p.includeInAct?'Ära lisa aktile':'Lisa hiljem aktile'}</button><button type="button" class="btn" data-photo-lightbox-edit>Muuda kommentaari</button><button type="button" class="btn danger" data-photo-lightbox-delete>Kustuta</button></div></div></div>`;
   document.body.appendChild(el);
   document.documentElement.classList.add('photo-lightbox-open');
   document.body.classList.add('photo-lightbox-open');
   const close=()=>removePhotoLightbox();
   el.addEventListener('click',e=>{ if(e.target===el) close(); });
   el.querySelector('[data-photo-lightbox-close]')?.addEventListener('click',close);
+  el.querySelector('[data-photo-lightbox-include]')?.addEventListener('click',async()=>{ await togglePhotoIncludeInAct(photoId,!p.includeInAct,renderFn); close(); });
   el.querySelector('[data-photo-lightbox-edit]')?.addEventListener('click',()=>{ close(); openPhotoComment(photoId,renderFn); });
   el.querySelector('[data-photo-lightbox-delete]')?.addEventListener('click',async()=>{ close(); await deletePhoto(photoId,renderFn); });
 }
