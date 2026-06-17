@@ -1156,3 +1156,27 @@ body:has(.global-ticker-restore) .app.page-calendar .calendar-planner-wrap{
   backface-visibility:hidden!important;
   contain:layout paint!important;
 }
+
+
+/* VECO_V3_20260617_1033: reliable floating menu opener on workorders/admin pages */
+.sidebar-floating-toggle{
+  position:fixed!important;
+  left:10px!important;
+  top:12px!important;
+  z-index:1305!important;
+  width:36px!important;
+  height:36px!important;
+  border-radius:10px!important;
+  border:1px solid var(--line)!important;
+  background:var(--panel)!important;
+  color:var(--ink)!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  font-size:18px!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+  box-shadow:0 10px 28px rgba(0,0,0,.18)!important;
+}
+.app.sidebar-full .sidebar-floating-toggle{display:none!important;}
+@media(max-width:1120px){.sidebar-floating-toggle{left:8px!important;top:8px!important;}}

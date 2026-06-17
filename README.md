@@ -1,3 +1,3 @@
-VECO V3 build 20260616_1240
-
-CR-078A: tehniku tööaja timestamp MVP.
+VECO_V3_20260617_1033
+- Workorders menüü avamine parandatud
+- Workorders rea klikk/detail parandatud

@@ -3821,3 +3821,43 @@ body.modal-open{
   #modal.modal.open .dialog-head{padding:14px 14px!important;}
   #modal.modal.open .dialog-actions{padding:10px 14px!important;}
 }
+
+/* Build 20260617_1006: CR-099.2 admin workorder photos + modal polish */
+.photo-act-flag{
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  margin-top:2px;
+  padding:3px 7px;
+  border-radius:999px;
+  background:rgba(34,197,94,.14);
+  color:#86efac;
+  font-size:11px;
+  font-weight:800;
+}
+.workorder-modal-photos{
+  border-top:1px solid rgba(148,163,184,.22);
+  padding-top:12px;
+  margin-top:4px;
+}
+#modal.modal.open .check-card{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:flex-start!important;
+  gap:10px!important;
+  text-align:left!important;
+}
+#modal.modal.open .check-card input[type="checkbox"]{
+  flex:0 0 auto!important;
+  width:18px!important;
+  height:18px!important;
+  margin-top:2px!important;
+}
+#modal.modal.open .dialog-actions{
+  background:linear-gradient(180deg, rgba(15,23,42,.86), var(--panel) 28%)!important;
+  border-top:1px solid rgba(148,163,184,.22)!important;
+}
+#modal.modal.open .dialog-head{
+  background:linear-gradient(180deg, var(--panel), rgba(15,23,42,.94))!important;
+  border-bottom:1px solid rgba(148,163,184,.22)!important;
+}

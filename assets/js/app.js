@@ -385,7 +385,7 @@ async function loadWorkorderPhotos(workorderId,force=false){
 function workorderPhotoGalleryHtml(workorderId,opts={}){
   const photos=workorderPhotos(workorderId);
   const empty=photoCacheLoading.has(photoWorkorderDbId(workorderId))?'Pilte laetakse...':'Pilte pole lisatud.';
-  const cards=photos.map(p=>`<div class="photo-card" data-photo-id="${esc(p.id)}"><button class="photo-thumb" data-photo-preview="${esc(p.id)}" type="button">${photoPreviewSrc(p)?`<img src="${esc(photoPreviewSrc(p))}" alt="${esc(p.comment||'Töökäsu foto')}">`:'<span>📷</span>'}</button><div class="photo-meta"><strong>${esc(p.comment||PHOTO_TYPE_OPTIONS.find(x=>x[0]===p.photoType)?.[1]||'Foto')}</strong><span class="muted">${esc(fmtDateTimeShort(p.createdAt)||'')} ${p.includeInAct?'· aktile':''}</span></div><div class="photo-actions"><button class="btn small" data-photo-comment="${esc(p.id)}" type="button">✎</button><button class="btn small danger" data-photo-delete="${esc(p.id)}" type="button">Kustuta</button></div></div>`).join('');
+  const cards=photos.map(p=>`<div class="photo-card" data-photo-id="${esc(p.id)}"><button class="photo-thumb" data-photo-preview="${esc(p.id)}" type="button">${photoPreviewSrc(p)?`<img src="${esc(photoPreviewSrc(p))}" alt="${esc(p.comment||'Töökäsu foto')}">`:'<span>📷</span>'}</button><div class="photo-meta"><strong>${esc(p.comment||PHOTO_TYPE_OPTIONS.find(x=>x[0]===p.photoType)?.[1]||'Foto')}</strong><span class="muted">${esc(fmtDateTimeShort(p.createdAt)||'')}${p.uploadedByName?` · ${esc(p.uploadedByName)}`:''}</span>${p.includeInAct?'<span class="photo-act-flag">✓ Lisatakse aktile</span>':''}</div><div class="photo-actions"><button class="btn small" data-photo-comment="${esc(p.id)}" type="button">✎</button><button class="btn small danger" data-photo-delete="${esc(p.id)}" type="button">Kustuta</button></div></div>`).join('');
   return `<div class="section-title photo-section-title"><span>📷 Pildid</span><button class="btn small primary" data-add-workorder-photo="${esc(workorderId)}" type="button">＋ Lisa pilt</button></div><div class="photo-gallery" data-photo-gallery="${esc(workorderId)}">${cards||`<div class="muted photo-empty">${empty}</div>`}</div><input class="hidden" type="file" accept="image/*" multiple data-workorder-photo-input="${esc(workorderId)}">${opts.hint?`<div class="muted">${esc(opts.hint)}</div>`:''}`;
 }
 function bindWorkorderPhotos(renderFn){
@@ -835,7 +835,7 @@ function shell(main,aside='',opts={}){
   // If the menu was closed before refresh, it must stay closed after reload.
   const sidebarMode=setStoredSidebarMode(getStoredSidebarMode());
   const sidebarClass=sidebarMode==='hidden'?'sidebar-hidden':'sidebar-full';
-  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}${page==='mobile'?'':'<button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Sulge menüü"></button>'}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
+  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}${page==='mobile'?'':'<button class="sidebar-floating-toggle" id="sidebarFloatingToggle" type="button" aria-label="Ava menüü" title="Ava menüü">☰</button><button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Sulge menüü"></button>'}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();
 }
 function activeThemeKey(){
@@ -878,6 +878,7 @@ function bindGlobal(){
   };
   $('#sidebarToggleRail')?.addEventListener('click',sidebarToggleHandler);
   $('#sidebarToggleBtn')?.addEventListener('click',sidebarToggleHandler);
+  $('#sidebarFloatingToggle')?.addEventListener('click',sidebarToggleHandler);
   $('#sidebarScrim')?.addEventListener('click',()=>applySidebarMode('hidden'));
   document.addEventListener('keydown',(event)=>{
     if(event.key==='Escape' && $('.app')?.classList.contains('sidebar-full')) applySidebarMode('hidden');
@@ -1337,7 +1338,8 @@ function bindWorkorderDetail(){
   $('#pdfWorkorderActBtn')?.addEventListener('click',()=>{const a=ensureActForWorkorder(selectedWorkorderId); if(a) saveActPdf(a.id);});
   $('#workorderDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.workorders=false;renderWorkorders();});
   bindWorkorderPhotos(renderWorkorders);
-  if(selectedWorkorderId) refreshWorkorderPhotosThen(selectedWorkorderId,renderWorkorders);
+  // Photos are loaded on demand/upload. Do not refresh here: repeated async refresh caused
+  // the workorders detail panel to rerender continuously and made row clicks appear dead.
 }
 function workorderCopyDefaults(source){
   if(!source) return {};
@@ -1419,10 +1421,23 @@ function openWorkorderModal(id='',defaults={}){
     ${isEdit&&shouldEditCompletionInWorkorder(w)?`<label class="full">Teostatud tööd<textarea name="completionComment" placeholder="Kirjelda, mida tehnik objektil tegi...">${esc(performedWorkText(w))}</textarea></label><label class="full">Töö tulemus / märkused<textarea name="workResult" placeholder="Kirjelda tulemus või seis lahkumisel...">${esc(workResultText(w))}</textarea></label><label class="full">Soovitused / puudused<textarea name="recommendations" placeholder="Lisa puudused või soovitused...">${esc(workRecommendationsText(w))}</textarea></label><label class="full">Materjalid<textarea name="materials" placeholder="Lisa kasutatud materjalid...">${esc(workMaterialsText(w))}</textarea></label>`:''}
     ${isEdit?workorderActEditNotice(w):''}
     ${isEdit?workorderActPanelHtml(w):''}
+    ${isEdit?`<div class="full workorder-modal-photos" data-workorder-modal-photo-wrap="${esc(w.id)}">${workorderPhotoGalleryHtml(w.id,{hint:'Admin näeb siin tehniku lisatud pilte. Märge “Lisa hiljem aktile” võimaldab need hiljem akti kaasa võtta.'})}</div>`:''}
     ${defaults.copiedFromId?`<div class="full muted">Kopeeritakse töökäsk ${esc(defaults.copiedFromId)}. Muuda kuupäeva, vastutajat, osalejaid või aega enne salvestamist.</div>`:(!isEdit?'<div class="full muted">Uue töökäsu loomisel klienti, objekti, projekti ega tehnikut automaatselt ei valita. Kuupäev ja kell võivad tulla kalendris klikitud ajast.</div>':'')}
   </div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Sulge</button>${isEdit?'<button type="button" class="btn" id="copyWorkorderBtn">⧉ Kopeeri</button><button type="button" class="btn danger" id="deleteWorkorderBtn">Kustuta</button>':''}<button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
   if(isEdit) bindWorkorderActPanel(w);
+  const refreshWorkorderModalPhotos=()=>{
+    const wrap=document.querySelector(`[data-workorder-modal-photo-wrap="${CSS.escape(w.id)}"]`);
+    if(!wrap) return;
+    wrap.innerHTML=workorderPhotoGalleryHtml(w.id,{hint:'Admin näeb siin tehniku lisatud pilte. Märge “Lisa hiljem aktile” võimaldab need hiljem akti kaasa võtta.'});
+    bindWorkorderPhotos(refreshWorkorderModalPhotos);
+  };
+  if(isEdit){
+    bindWorkorderPhotos(refreshWorkorderModalPhotos);
+    loadWorkorderPhotos(w.id,true).then(()=>{
+      if(document.querySelector('#workorderForm')) refreshWorkorderModalPhotos();
+    }).catch(err=>console.warn('VECO workorder modal photo refresh failed',err));
+  }
   const form=$('#workorderForm');
   const participantPicker=$('#workorderParticipantPicker');
   let selectedParticipants=[];
