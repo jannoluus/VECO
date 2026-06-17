@@ -3765,3 +3765,59 @@ body.modal-open{
     max-height:calc(100dvh - 16px)!important;
   }
 }
+
+
+/* Build 20260617_0956: verified modal interaction + mobile scroll fix */
+#modal.modal.open{
+  pointer-events:auto!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow:hidden!important;
+}
+#modal.modal.open .dialog{
+  height:min(92dvh, 920px)!important;
+  max-height:calc(100dvh - 24px)!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+#modal.modal.open .dialog > form,
+#modal.modal.open .dialog > div{
+  height:100%!important;
+  min-height:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+#modal.modal.open .dialog-head,
+#modal.modal.open .dialog-actions{
+  flex:0 0 auto!important;
+  position:relative!important;
+  z-index:5!important;
+}
+#modal.modal.open .detail-body{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior:contain!important;
+  padding-bottom:24px!important;
+}
+#modal.modal.open button,
+#modal.modal.open input,
+#modal.modal.open select,
+#modal.modal.open textarea,
+#modal.modal.open label{
+  pointer-events:auto!important;
+}
+@media(max-width:760px){
+  #modal.modal.open{padding:6px!important;align-items:stretch!important;}
+  #modal.modal.open .dialog{
+    width:100%!important;
+    max-width:100%!important;
+    height:calc(100dvh - 12px)!important;
+    max-height:calc(100dvh - 12px)!important;
+    border-radius:9px!important;
+  }
+  #modal.modal.open .dialog-head{padding:14px 14px!important;}
+  #modal.modal.open .dialog-actions{padding:10px 14px!important;}
+}
