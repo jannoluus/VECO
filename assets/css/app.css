@@ -3901,3 +3901,24 @@ html.photo-lightbox-open,body.photo-lightbox-open{overflow:hidden!important;}
 
 /* VECO_V3_20260617_1120: remove legacy floating/burger sidebar toggles from all admin views */
 .sidebar-toggle-rail,#sidebarToggleRail,.sidebar-floating-toggle,#sidebarFloatingToggle,.sidebar-toggle,#sidebarToggleBtn,#toggleSidebarBtn,.menu-toggle-only{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+
+
+/* VECO_V3_20260617_1128: restore left navigation, keep old floating burger hidden */
+body:not(.page-mobile) .app.sidebar-hidden{grid-template-columns:248px minmax(0,1fr)!important;}
+body:not(.page-mobile) .app.sidebar-hidden .sidebar{display:flex!important;visibility:visible!important;pointer-events:auto!important;width:248px!important;min-width:248px!important;padding:18px 16px!important;border-right:1px solid var(--line)!important;background:var(--sidebar-bg)!important;overflow:auto!important;}
+body:not(.page-mobile) .app.sidebar-hidden .nav,
+body:not(.page-mobile) .app.sidebar-hidden .nav-section,
+body:not(.page-mobile) .app.sidebar-hidden .nav-section-items{display:grid!important;visibility:visible!important;pointer-events:auto!important;}
+body:not(.page-mobile) .app.sidebar-hidden .nav-section-title{display:flex!important;visibility:visible!important;pointer-events:auto!important;}
+body:not(.page-mobile) .app.sidebar-hidden .nav a,
+body:not(.page-mobile) .app.sidebar-hidden .nav button,
+body:not(.page-mobile) .app.sidebar-hidden .nav-file-action{display:flex!important;visibility:visible!important;pointer-events:auto!important;}
+.sidebar-toggle-rail,#sidebarToggleRail,.sidebar-floating-toggle,#sidebarFloatingToggle,.sidebar-toggle,#sidebarToggleBtn,#toggleSidebarBtn,.menu-toggle-only{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+@media(max-width:1120px){
+  body:not(.page-mobile) .app.sidebar-hidden{grid-template-columns:1fr!important;}
+  body:not(.page-mobile) .app.sidebar-hidden .sidebar{position:sticky!important;top:0!important;z-index:10!important;width:auto!important;min-width:0!important;flex-direction:row!important;align-items:center!important;overflow-x:auto!important;padding:12px!important;}
+  body:not(.page-mobile) .app.sidebar-hidden .nav{display:flex!important;gap:8px!important;}
+  body:not(.page-mobile) .app.sidebar-hidden .nav-section{display:flex!important;min-width:max-content!important;padding-top:0!important;}
+  body:not(.page-mobile) .app.sidebar-hidden .nav-section+.nav-section{border-top:0!important;padding-top:0!important;}
+  body:not(.page-mobile) .app.sidebar-hidden .nav-section-title{display:none!important;}
+}

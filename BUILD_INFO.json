@@ -1,11 +1,12 @@
 {
-  "build": "VECO_V3_20260617_1120",
-  "created_at": "2026-06-17T11:20:00+03:00",
+  "build": "VECO_V3_20260617_1128",
+  "created_at": "2026-06-17T11:28:00+03:00",
   "changes": [
-    "Updated APP_BUILD and all HTML asset cache-busting versions to 20260617_1120",
-    "Removed legacy sidebar rail button from nav render",
-    "Disabled floating burger/sidebar toggle across all admin views with JS and CSS guard",
-    "Diagnostics now reads current APP_BUILD after cache refresh"
+    "Taastatud vasaku menüü nähtavus ja navigeerimine admin vaadetes.",
+    "Vana floating burger / sidebar rail jäi peidetuks.",
+    "VECO logo funktsionaalsust ei muudetud.",
+    "Uuendatud kõik HTML asset cache-busting viited versioonile 20260617_1128.",
+    "Uuendatud diagnostika build info APP_BUILD väärtusele 20260617_1128."
   ],
-  "notes": "This build is targeted specifically at stale diagnostics/cache-busting and legacy burger removal. Other functions from 1112 are preserved."
+  "notes": "P0 regressiooniparandus pärast 1120 buildi: menüü taastatud ilma uut nuppu lisamata."
 }
