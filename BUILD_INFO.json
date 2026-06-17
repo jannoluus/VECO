@@ -1,12 +1,13 @@
 {
-  "build": "VECO_V3_20260617_1128",
-  "created_at": "2026-06-17T11:28:00+03:00",
+  "build": "VECO_V3_20260617_1136",
+  "created_at": "2026-06-17T11:12:00+03:00",
   "changes": [
-    "Taastatud vasaku menüü nähtavus ja navigeerimine admin vaadetes.",
-    "Vana floating burger / sidebar rail jäi peidetuks.",
-    "VECO logo funktsionaalsust ei muudetud.",
-    "Uuendatud kõik HTML asset cache-busting viited versioonile 20260617_1128.",
-    "Uuendatud diagnostika build info APP_BUILD väärtusele 20260617_1128."
+    "Photo preview lightbox renders image independently from workorder modal",
+    "Signed Storage URL fallback for preview",
+    "Calendar floating burger hidden again"
   ],
-  "notes": "P0 regressiooniparandus pärast 1120 buildi: menüü taastatud ilma uut nuppu lisamata."
+  "notes": "CR-099.3 photo include_in_act toggle visible in workorder photo cards and lightbox.",
+  "buildNumber": "VECO_V3_20260617_1136",
+  "version": "20260617_1136",
+  "createdAt": "2026-06-17T11:36:00+03:00"
 }
