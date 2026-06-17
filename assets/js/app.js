@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.19';
-const APP_BUILD='20260616_1247';
+const APP_BUILD='20260616_1717';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -125,7 +125,7 @@ function mergeAuthUsersIntoPeople(auth,{saveState=false,replace=false}={}){
     const next=asPerson(u,idx);
     if(p){
       if(p.id!==next.id){ p.id=next.id; changed=true; }
-      ['name','role','active','onCallActive','onCallOrder','availabilityStatus'].forEach(k=>{ if(p[k]!==next[k]){ p[k]=next[k]; changed=true; }});
+      ['name','role','active','phone','email','region','skills','onCallActive','onCallOrder','availabilityStatus'].forEach(k=>{ if(p[k]!==next[k]){ p[k]=next[k]; changed=true; }});
     }else{
       state.people.push(next);
       changed=true;
@@ -165,6 +165,10 @@ function normalizeAuthUsers(){
       name:p.name||existing.name||p.id,
       role,
       active:p.active!==false,
+      phone:p.phone||existing.phone||'',
+      email:p.email||existing.email||'',
+      region:p.region||existing.region||'',
+      skills:p.skills||existing.skills||'',
       onCallActive:p.onCallActive===true,
       onCallOrder:p.onCallActive===true ? (Number(p.onCallOrder)||0) : 0,
       availabilityStatus:p.availabilityStatus||'available',

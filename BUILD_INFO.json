@@ -1,9 +1,9 @@
 {
-  "build": "VECO_V3_20260616_1710",
+  "build": "VECO_V3_20260616_1717",
   "buildNumber": "VECO_V3_20260616_1710",
   "app_build": "20260616_1247",
   "createdAt": "2026-06-16T12:47:00+03:00",
-  "created_at": "2026-06-16T17:10:00Z",
+  "created_at": "2026-06-16 17:17",
   "timezone": "Europe/Tallinn (EEST)",
   "version": "v3.19.19",
   "package": "VECO_V3_20260616_1247.zip",
@@ -12,7 +12,8 @@
     "Supabase auth_users dbId kantakse state.people objektidele kaasa.",
     "currentMobileActionUser täiustatud: kui person objektil dbId puudub, võetakse see auth sessionist/auth_users registrist.",
     "Alusta tööd / Töö valmis töövoog ei jäta started_by välja tühjaks, kui kasutaja on Supabase auth_users tabelist laetud.",
-    "CR-094A calendar drag layer fix: body-level ghost z-index and overflow visibility while dragging"
+    "CR-094A calendar drag layer fix: body-level ghost z-index and overflow visibility while dragging",
+    "CR-095: auth_users contact fields load/save (phone, email, region)"
   ],
   "base": "VECO_V3_20260616_1240"
 }
