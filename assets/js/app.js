@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.20';
-const APP_BUILD='20260617_1342';
+const APP_BUILD='20260617_1347';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -1148,9 +1148,14 @@ function openVecoConfirm({title='Kinnitus',message='',details='',confirmText='OK
     document.body.appendChild(el);
     document.body.classList.add('confirm-open');
     document.addEventListener('keydown',onKey,true);
-    el.addEventListener('click',e=>{ e.stopPropagation(); if(e.target===el) cleanup(false); },true);
-    el.querySelector('#vecoConfirmCancel')?.addEventListener('click',()=>cleanup(false));
-    el.querySelector('#vecoConfirmOk')?.addEventListener('click',()=>cleanup(true));
+    el.addEventListener('click',e=>{
+      if(e.target===el){
+        e.preventDefault();
+        cleanup(false);
+      }
+    });
+    el.querySelector('#vecoConfirmCancel')?.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); cleanup(false); });
+    el.querySelector('#vecoConfirmOk')?.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); cleanup(true); });
     setTimeout(()=>el.querySelector('#vecoConfirmCancel')?.focus(),0);
   });
 }

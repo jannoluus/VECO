@@ -1,7 +1,7 @@
 {
-  "build": "VECO_V3_20260617_1342",
-  "buildNumber": "VECO_V3_20260617_1342",
-  "version": "20260617_1342",
+  "build": "VECO_V3_20260617_1347",
+  "buildNumber": "VECO_V3_20260617_1347",
+  "version": "20260617_1347",
   "created_at": "2026-06-17T13:32:00+03:00",
   "base": "VECO_V3_20260617_1136",
   "changes": [
@@ -10,9 +10,9 @@
     "Lisatud confirm-open lukustus: taustamodalid ei reageeri kinnituse ajal klikile",
     "ESC sulgeb esmalt kinnituse, mitte töökäsu modali",
     "Kalendri päist, vasakut menüüd, pildimoodulit ja mobile.html vaadet ei muudetud sisuliselt",
-    "Asset cache-busting uuendatud 20260617_1342 peale"
+    "Asset cache-busting uuendatud 20260617_1347 peale"
   ],
-  "app_build": "20260617_1342",
+  "app_build": "20260617_1347",
   "notes": "CR-UI-001 unified admin header period block; calendar header unchanged",
   "baseline": "VECO_V3_20260617_1332"
 }
