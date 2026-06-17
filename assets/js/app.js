@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.20';
-const APP_BUILD='20260617_1332';
+const APP_BUILD='20260617_1342';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -1126,8 +1126,12 @@ function openVecoConfirm({title='Kinnitus',message='',details='',confirmText='OK
         <button type="button" class="btn ${danger?'danger':'primary'}" id="vecoConfirmOk">${esc(confirmText)}</button>
       </div>
     </div>`;
+    let resolved=false;
     const cleanup=(value)=>{
-      document.removeEventListener('keydown',onKey);
+      if(resolved) return;
+      resolved=true;
+      document.removeEventListener('keydown',onKey,true);
+      document.body.classList.remove('confirm-open');
       el.remove();
       resolve(value);
     };
@@ -1142,8 +1146,9 @@ function openVecoConfirm({title='Kinnitus',message='',details='',confirmText='OK
       }
     };
     document.body.appendChild(el);
-    document.addEventListener('keydown',onKey);
-    el.addEventListener('click',e=>{ if(e.target===el) cleanup(false); });
+    document.body.classList.add('confirm-open');
+    document.addEventListener('keydown',onKey,true);
+    el.addEventListener('click',e=>{ e.stopPropagation(); if(e.target===el) cleanup(false); },true);
     el.querySelector('#vecoConfirmCancel')?.addEventListener('click',()=>cleanup(false));
     el.querySelector('#vecoConfirmOk')?.addEventListener('click',()=>cleanup(true));
     setTimeout(()=>el.querySelector('#vecoConfirmCancel')?.focus(),0);
