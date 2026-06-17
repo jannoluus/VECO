@@ -1,18 +1,18 @@
 {
-  "build": "VECO_V3_20260617_1435",
-  "buildNumber": "VECO_V3_20260617_1435",
-  "version": "20260617_1435",
-  "created_at": "2026-06-17T14:35:00+03:00",
-  "base": "VECO_V3_20260617_1425",
+  "build": "VECO_V3_20260617_1438",
+  "buildNumber": "VECO_V3_20260617_1438",
+  "version": "20260617_1438",
+  "created_at": "2026-06-17T14:38:00+03:00",
+  "base": "VECO_V3_20260617_1435",
   "changes": [
-    "Tiimivaates asendatud vana eraldi töötajavalik sama TÖÖTAJA noppefiltriga, mida kasutavad kalender ja töökäsud.",
-    "Tiimivaates eemaldatud eraldi Admin: kõik tehnikud kontroll päisest; kasutaja/töötaja valik toimub TÖÖTAJA filtri kaudu.",
-    "Tiimivaate terminoloogia korrigeeritud: Tehnikuid/Tehnik -> Töötajaid/Töötaja seal, kus vaade näitab rolliüleseid ressursse.",
-    "Tööjuhi menüügruppi lisatud Tiimivaade, Valvegraafik ja Tehniku vaade; Tehniku vaade avaneb uues aknas.",
-    "Kalendri päist, vasaku menüü avamise/sulgemise loogikat, mobile.html sisu ja töökäsu workflow’d ei muudetud.",
-    "Asset cache-busting uuendatud 20260617_1435 peale."
+    "Parandatud TÖÖTAJA noppevaliku z-index/overflow probleem kalendri vaates.",
+    "TÖÖTAJA dropdown avaneb nüüd kalendri grid’i ja töökäsukaartide peale.",
+    "Sama kihistusparandus lisatud töökäskude vaatele.",
+    "Tiimivaate töötajafiltrit ei muudetud, sest see töötas korrektselt.",
+    "Kalendri päist, vasakut menüüd, mobile.html sisu ja workflow’d ei muudetud.",
+    "Asset cache-busting uuendatud 20260617_1438 peale."
   ],
-  "app_build": "20260617_1435",
+  "app_build": "20260617_1438",
   "baseline": "VECO_V3_20260617_1347",
-  "notes": "CR-TEAM-001 / CR-NAV-001: Tiimivaade viidud TÖÖTAJA noppefiltrile ja Tööjuhi menüü korrastatud."
+  "notes": "CR-FILTER-001: TÖÖTAJA noppevaliku dropdowni kihistus parandatud kalendri ja töökäskude vaates; tiimivaadet ei muudetud."
 }
