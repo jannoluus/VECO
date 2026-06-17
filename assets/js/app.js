@@ -3047,8 +3047,24 @@ function openMobileWorkModal(id){
   openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Probleemi kirjeldus<textarea readonly>${esc(problemDescriptionText(w)||'-')}</textarea></label>${completionFields}<label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label class="check-card"><input type="checkbox" name="actRequired" ${workorderActRequired(w)?'checked':''}> <span>Akt vajalik</span></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Vaba märkus foto kohta"></label><div class="full">${workorderPhotoGalleryHtml(w.id,{hint:'Saad lisada mitu pilti korraga. Pildid jäävad töökäsu külge.'})}</div></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
   $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;const note=String(f.done.value||'').trim();if(nextStatus==='Lõpetatud'){const result=isCompletedStatus(w.status)?{comment:(note||performedWorkText(w)),performedWork:(note||performedWorkText(w)),workResult:String(f.workResult?.value||workResultText(w)||'').trim(),recommendations:String(f.recommendations?.value||workRecommendationsText(w)||'').trim(),materials:workMaterialsText(w),actType:w.actType||'Väljakutse akt'}:normalizeCompletionResult(await openCompletionCommentModal(w,note));if(!result||!result.comment)return;const actor=currentMobileActionUser();w.completedAt=w.completedAt||new Date().toISOString();w.completedBy=w.completedBy||(actor?.name||completedByLabel(w));w.completedByUuid=w.completedByUuid||(actor?.dbId||'');w.completionComment=result.comment;w.actType=result.actType;w.done=result.comment;w.workDone=result.comment;w.performedWork=result.performedWork||result.comment;w.workResult=result.workResult||'';w.recommendations=result.recommendations||'';w.materials=result.materials||'';}else{w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';w.workResult=String(f.workResult?.value||w.workResult||'').trim();w.recommendations=String(f.recommendations?.value||w.recommendations||'').trim(); if(!isCompletedStatus(w.status)){w.completedAt='';w.completedBy=''; if(!note) w.completionComment='';}}w.status=nextStatus;w.actRequired=!!f.actRequired?.checked;w.photoNote=f.photoNote.value;save();if(isCompletedStatus(w.status) && workorderActRequired(w) && !actForWorkorder(w.id)){ ensureActForWorkorder(w.id); }closeModal();state=window.VECO_STORAGE.load();renderMobile();});
-  bindWorkorderPhotos(()=>{closeModal();openMobileWorkModal(id);});
-  refreshWorkorderPhotosThen(id,()=>{closeModal();openMobileWorkModal(id);});
+  const rebindPhotoActions=()=>bindWorkorderPhotos(()=>{closeModal();openMobileWorkModal(id);});
+  rebindPhotoActions();
+
+  // CR-099 fix: ära sulge ja ava mobiili töökäsu modali automaatselt pärast fotode laadimist.
+  // Varasem loogika tegi closeModal()+openMobileWorkModal() iga refreshi järel,
+  // mis käivitas uue refreshi ja tekitas lõputu taasavamise tsükli. Selle tõttu
+  // Sulge/Tühista/Salvesta vajutused näisid mitte töötavat ning scroll hüppas kinni.
+  loadWorkorderPhotos(id,true).then(()=>{
+    const modal=$('#modal');
+    const form=$('#mobileWorkForm');
+    if(!modal?.classList.contains('open') || !form) return;
+    const gallery=modal.querySelector(`[data-photo-gallery="${CSS.escape(id)}"]`);
+    const wrap=gallery?.parentElement;
+    if(wrap){
+      wrap.innerHTML=workorderPhotoGalleryHtml(id,{hint:'Saad lisada mitu pilti korraga. Pildid jäävad töökäsu külge.'});
+      rebindPhotoActions();
+    }
+  }).catch(err=>console.warn('VECO photo refresh failed',err));
 }
 function renderMobilePreview(){
   const devices=[['iPhone SE','320px','568px'],['Android 360','360px','740px'],['iPhone 14','390px','844px'],['Large phone','414px','896px'],['Tahvel','768px','1024px']];
