@@ -1,20 +1,18 @@
 {
-  "build": "VECO_V3_20260617_1402",
-  "buildNumber": "VECO_V3_20260617_1402",
-  "version": "20260617_1402",
-  "created_at": "2026-06-17T14:02:00+03:00",
-  "base": "VECO_V3_20260617_1347",
+  "build": "VECO_V3_20260617_1412",
+  "buildNumber": "VECO_V3_20260617_1412",
+  "version": "20260617_1412",
+  "created_at": "2026-06-17T14:12:00+03:00",
+  "base": "VECO_V3_20260617_1402",
   "changes": [
-    "CR-WF-001 töökäsu elutsükli esimene rakendus",
-    "Lisatud staatus Teostatud",
-    "Tehniku nupu “Töö valmis” tulemus on nüüd Teostatud, mitte kohe Lõpetatud",
-    "Teostatud tööd kaovad tehniku aktiivsetest vaadetest nagu lõpetatud tööd",
-    "Akt vajalik = Jah korral luuakse vajadusel akt endise loogika järgi",
-    "Akt vajalik = Ei ja Teostatud üle 7 päeva -> automaatne Lõpetatud rakenduse avamisel",
-    "Kalendri päist, vasakut menüüd ja pildimoodulit ei muudetud",
-    "Asset cache-busting uuendatud 20260617_1402 peale"
+    "Kalendri filtrites ühendatud TEHNIK ja ADMIN loogika üheks TÖÖTAJA filtriks",
+    "Eemaldatud kalendri päise eraldi ADMIN filter",
+    "TÖÖTAJA filter toetab rolligruppe: kõik töötajad, kõik tehnikud, kõik hooldusjuhid, kõik adminid ja üksiktöötaja",
+    "Workorders ja tiimivaate nimetustes korrigeeritud 'tehnik' -> 'töötaja' seal, kus filter on üldisem",
+    "Kalendri päist, vasakut menüüd, mobile.html vaadet ja töökäsu workflow'd ei muudetud",
+    "Asset cache-busting uuendatud 20260617_1412 peale"
   ],
-  "app_build": "20260617_1402",
-  "notes": "CR-WF-001 workorder lifecycle: technician finish -> Teostatud; non-act items auto-close after 7 days.",
-  "baseline": "VECO_V3_20260617_1347"
+  "app_build": "20260617_1412",
+  "baseline": "VECO_V3_20260617_1347",
+  "notes": "CR-FLT-001: unified employee filter; calendar Admin view-as dropdown removed from visible filter row."
 }
