@@ -2,14 +2,15 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.19.20';
-const APP_BUILD='20260617_1412';
+const APP_VERSION='v3.19.21';
+const APP_BUILD='20260617_1435';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
 document.addEventListener('click',e=>{
   const statusBtn=e.target.closest?.('#teamStatusFilterBtn');
   const peopleBtn=e.target.closest?.('#teamPeopleFilterBtn');
+  const employeeBtn=e.target.closest?.('[data-employee-filter-toggle]');
   if(statusBtn){
     e.preventDefault();
     e.stopPropagation();
@@ -21,6 +22,15 @@ document.addEventListener('click',e=>{
     e.stopPropagation();
     document.querySelector('#teamStatusMenu')?.classList.add('hidden');
     document.querySelector('#teamPeopleMenu')?.classList.toggle('hidden');
+  }
+  if(employeeBtn){
+    e.preventDefault();
+    e.stopPropagation();
+    const scope=employeeBtn.dataset.employeeFilterToggle;
+    document.querySelectorAll('[data-employee-filter-menu]').forEach(menu=>{
+      if(menu.dataset.employeeFilterMenu!==scope) menu.classList.add('hidden');
+    });
+    document.querySelector(`[data-employee-filter-menu="${scope}"]`)?.classList.toggle('hidden');
   }
 },true);
 let state=window.VECO_STORAGE.load();
@@ -71,19 +81,26 @@ function authLocksSave(l){localStorage.setItem(AUTH_LOCK_KEY,JSON.stringify(l||{
 function authRoleFromPersonRole(role){
   const r=String(role||'').trim().toLowerCase();
   if(r==='admin') return 'admin';
-  if(r==='supervisor'||r==='hooldusjuht'||r==='vanemtehnik') return 'supervisor';
+  if(r==='supervisor'||r==='hooldusjuht'||r==='hooldusjuht / juht'||r==='vanemtehnik') return 'supervisor';
+  if(r==='assistant'||r==='assistent') return 'assistant';
+  if(r==='contractor'||r==='alltöövõtja'||r==='alltoovotja') return 'contractor';
+  if(r==='superadmin') return 'superadmin';
   return 'technician';
 }
 function personRoleFromAuthRole(role){
   const r=String(role||'').trim().toLowerCase();
   if(r==='admin') return 'Admin';
   if(r==='supervisor') return 'Hooldusjuht';
+  if(r==='assistant') return 'Assistent';
+  if(r==='contractor') return 'Alltöövõtja';
   return 'Tehnik';
 }
 function authRoleLabel(role){
   const r=String(role||'').trim().toLowerCase();
   if(r==='admin') return 'Admin';
   if(r==='supervisor') return 'Hooldusjuht';
+  if(r==='assistant') return 'Assistent';
+  if(r==='contractor') return 'Alltöövõtja';
   if(r==='superadmin') return 'Superadmin';
   return 'Tehnik';
 }
@@ -257,25 +274,100 @@ function currentEffectiveUser(){
 function activeTechnicians(){return (state.people||[]).filter(p=>p.active!==false && p.id!=='U-DEMO' && String(p.role||'').toLowerCase()!=='demo');}
 function visiblePeopleForCurrentScope(){const id=scopedPersonId(); return id ? activeTechnicians().filter(p=>p.id===id) : activeTechnicians();}
 function personAuthRole(p){return authRoleFromPersonRole(p?.role||'technician');}
-function employeeFilterOptions(selected='all'){
+const EMPLOYEE_FILTER_ROLES=[
+  ['role:admin','Adminid','admin'],
+  ['role:supervisor','Hooldusjuhid','supervisor'],
+  ['role:technician','Tehnikud','technician'],
+  ['role:assistant','Assistendid','assistant'],
+  ['role:contractor','Alltöövõtjad','contractor']
+];
+function employeeFilterStorageKey(scope){return `veco_${scope||'calendar'}_employee_filter_v2`;}
+function currentPersonIdForDefaults(){
+  const u=currentAuthUser();
+  if(!u) return '';
+  return activeTechnicians().some(p=>p.id===u.id)?u.id:'';
+}
+function employeeFilterDefaultTokens(){
   const people=visiblePeopleForCurrentScope();
-  const hasRole=role=>people.some(p=>personAuthRole(p)===role);
-  const roleOptions=[
-    ['role:technician','Kõik tehnikud','technician'],
-    ['role:supervisor','Kõik hooldusjuhid','supervisor'],
-    ['role:admin','Kõik adminid','admin']
-  ].filter(([,label,role])=>hasRole(role)).map(([value,label])=>`<option value="${value}" ${selected===value?'selected':''}>${label}</option>`).join('');
-  const personOptions=people.map(p=>`<option value="${esc(p.id)}" ${selected===p.id?'selected':''}>${esc(p.name)} · ${esc(authRoleLabel(personAuthRole(p)))}</option>`).join('');
-  return `<option value="all" ${selected==='all'?'selected':''}>Kõik töötajad</option>${roleOptions}${personOptions}`;
+  const tokens=[];
+  const mine=currentPersonIdForDefaults();
+  if(mine) tokens.push(mine);
+  if(people.some(p=>personAuthRole(p)==='technician')) tokens.push('role:technician');
+  if(!tokens.length) tokens.push('all');
+  return tokens;
+}
+function parseEmployeeFilterTokens(raw){
+  if(Array.isArray(raw)) return raw.map(String).filter(Boolean);
+  if(raw==null||raw==='') return [];
+  const str=String(raw);
+  if(str.startsWith('[')){try{return (JSON.parse(str)||[]).map(String).filter(Boolean);}catch(_){}}
+  if(str==='all') return ['all'];
+  return str.split(',').map(x=>x.trim()).filter(Boolean);
+}
+function employeeFilterSelected(scope='calendar'){
+  const stored=localStorage.getItem(employeeFilterStorageKey(scope));
+  const tokens=parseEmployeeFilterTokens(stored);
+  return tokens.length?tokens:employeeFilterDefaultTokens();
+}
+function employeeFilterSet(scope,tokens){
+  const next=parseEmployeeFilterTokens(tokens);
+  localStorage.setItem(employeeFilterStorageKey(scope),JSON.stringify(next.length?next:employeeFilterDefaultTokens()));
+}
+function employeeFilterOptionPersonIds(tokens){
+  const selected=parseEmployeeFilterTokens(tokens);
+  const people=visiblePeopleForCurrentScope();
+  if(!selected.length||selected.includes('all')) return people.map(p=>p.id);
+  const ids=new Set();
+  selected.forEach(v=>{
+    if(v.startsWith('role:')){
+      const role=v.slice(5);
+      people.filter(p=>personAuthRole(p)===role).forEach(p=>ids.add(p.id));
+    }else if(people.some(p=>p.id===v)) ids.add(v);
+  });
+  return Array.from(ids);
 }
 function employeeFilterMatchesWorkorder(w,filterValue){
-  const v=String(filterValue||'all');
-  if(v==='all') return true;
-  if(v.startsWith('role:')){
-    const role=v.slice(5);
-    return activeTechnicians().some(p=>personAuthRole(p)===role && workorderMatchesPerson(w,p.id));
-  }
-  return workorderMatchesPerson(w,v);
+  const ids=employeeFilterOptionPersonIds(filterValue);
+  if(!ids.length) return false;
+  return ids.some(id=>workorderMatchesPerson(w,id));
+}
+function employeeFilterLabel(tokens){
+  const selected=parseEmployeeFilterTokens(tokens);
+  if(!selected.length||selected.includes('all')) return 'Kõik töötajad';
+  const parts=[];
+  const mine=currentPersonIdForDefaults();
+  if(mine && selected.includes(mine)) parts.push('Mina');
+  EMPLOYEE_FILTER_ROLES.forEach(([value,label])=>{ if(selected.includes(value)) parts.push(label); });
+  const otherPeople=selected.filter(v=>!v.startsWith('role:')&&v!==mine).map(id=>byId(state.people,id)?.name).filter(Boolean);
+  parts.push(...otherPeople.slice(0,2));
+  if(otherPeople.length>2) parts.push(`+${otherPeople.length-2}`);
+  return parts.join(' + ')||'Töötajad';
+}
+function employeeMultiFilterHtml(scope='calendar',tokens=null,{disabled=false,label='Minu tööd'}={}){
+  const selected=parseEmployeeFilterTokens(tokens||employeeFilterSelected(scope));
+  const people=visiblePeopleForCurrentScope();
+  if(disabled){return `<button class="btn ghost" type="button" disabled>${esc(label)}</button>`;}
+  const hasRole=role=>people.some(p=>personAuthRole(p)===role);
+  const isChecked=value=>selected.includes('all')?value==='all':selected.includes(value);
+  const roleOptions=EMPLOYEE_FILTER_ROLES.filter(([,lbl,role])=>hasRole(role) || role==='assistant' || role==='contractor').map(([value,label,role])=>`<label class="team-people-option"><input type="checkbox" value="${esc(value)}" ${isChecked(value)?'checked':''}> <span>${esc(label)}</span><small>${hasRole(role)?'rolligrupp':'tulevikus'}</small></label>`).join('');
+  const personOptions=people.map(p=>`<label class="team-people-option"><input type="checkbox" value="${esc(p.id)}" ${isChecked(p.id)?'checked':''}> <span>${esc(p.name)}</span><small>${esc(authRoleLabel(personAuthRole(p)))}</small></label>`).join('');
+  return `<div class="team-people-filter employee-multi-filter" data-employee-filter="${esc(scope)}"><button class="btn ghost" type="button" data-employee-filter-toggle="${esc(scope)}">☑ ${esc(employeeFilterLabel(selected))}</button><div class="team-people-menu hidden" data-employee-filter-menu="${esc(scope)}"><div class="team-people-menu-head"><strong>Töötajad vaates</strong><button class="btn small ghost" type="button" data-employee-filter-default="${esc(scope)}">Vaikimisi</button></div><label class="team-people-option"><input type="checkbox" value="all" ${isChecked('all')?'checked':''}> <span>Kõik töötajad</span><small>kõik rollid</small></label><div class="section-title small">Rollid</div>${roleOptions}<div class="section-title small">Isikud</div>${personOptions}<div class="team-people-menu-actions"><button class="btn small ghost" type="button" data-employee-filter-all="${esc(scope)}">Kõik</button><button class="btn small ghost" type="button" data-employee-filter-clear="${esc(scope)}">Tühjenda</button></div></div></div>`;
+}
+function bindEmployeeMultiFilter(scope,renderFn){
+  const wrap=document.querySelector(`[data-employee-filter="${scope}"]`);
+  if(!wrap) return;
+  const read=()=>Array.from(wrap.querySelectorAll('[data-employee-filter-menu] input[type="checkbox"]:checked')).map(i=>i.value);
+  wrap.querySelectorAll('[data-employee-filter-menu] input[type="checkbox"]').forEach(input=>input.addEventListener('change',e=>{
+    e.stopPropagation();
+    let selected=read();
+    if(input.value==='all' && input.checked) selected=['all'];
+    if(input.value!=='all') selected=selected.filter(v=>v!=='all');
+    employeeFilterSet(scope,selected);
+    renderFn();
+  }));
+  wrap.querySelector('[data-employee-filter-default]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();employeeFilterSet(scope,employeeFilterDefaultTokens());renderFn();});
+  wrap.querySelector('[data-employee-filter-all]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();employeeFilterSet(scope,['all']);renderFn();});
+  wrap.querySelector('[data-employee-filter-clear]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();employeeFilterSet(scope,[]);renderFn();});
 }
 function workorderVisibleToCurrentScope(w){const id=scopedPersonId(); return !id || workorderMatchesPerson(w,id);}
 function actVisibleToCurrentScope(a){const id=scopedPersonId(); if(!id) return true; const w=byId(state.workorders,a.workorderId); return w ? workorderMatchesPerson(w,id) : false;}
@@ -837,8 +929,8 @@ function uid(prefix){return `${prefix}-${String(Date.now()).slice(-6)}`}
 function icon(i){return `<span class="icon">${i}</span>`}
 function nav(sidebarMode='full'){
   const groups=[
-    ['Tööjuht',[['calendar','▦'],['unplannedMaintenance','⚠'],['workorders','☑'],['acts','▧']]],
-    ['Tehnikud',[['mobile','▤'],['team','◫'],['people','☷'],['vacations','▤'],['oncall','☎']]],
+    ['Tööjuht',[['calendar','▦'],['unplannedMaintenance','⚠'],['workorders','☑'],['team','◫'],['oncall','☎'],['mobile','▤'],['acts','▧']]],
+    ['Tehnikud',[['people','☷'],['vacations','▤']]],
     ['Kliendid ja objektid',[['objects','⌂'],['clients','▥'],['projects','▣']]],
     ['Hooldusinfo',[['devices','▤'],['maintenanceNorms','≡'],['maintenanceProfiles','☑'],['granlundClassifier','⌁']]],
     ['Süsteem',[['ticker','▭'],['system-database','↔'],['system-export','⇩'],['system-import','⇧']]],
@@ -853,7 +945,8 @@ function nav(sidebarMode='full'){
     if(key==='system-database') return `<button type="button" id="databaseBtn" title="Andmebaas" aria-label="Andmebaas">${icon(ic)}<span class="nav-label">Andmebaas</span><small>${window.VECO_API?.modeLabel?.()||'lokaalne'}</small></button>`;
     if(key==='system-export') return `<button type="button" id="exportDataBtn" title="Varukoopia" aria-label="Varukoopia">${icon(ic)}<span class="nav-label">Varukoopia</span></button>`;
     if(key==='system-import') return `<label class="nav-file-action" for="importDataFile" title="Taasta" aria-label="Taasta">${icon(ic)}<span class="nav-label">Taasta</span></label>`;
-    return `<a class="${page===key?'active':''}" href="${pageFiles[key]}" title="${esc(pageTitles[key]||key)}" aria-label="${esc(pageTitles[key]||key)}">${icon(ic)}<span class="nav-label">${pageTitles[key]}</span></a>`;
+    const externalAttrs=key==='mobile'?' target="_blank" rel="noopener"':'';
+    return `<a class="${page===key?'active':''}" href="${pageFiles[key]}"${externalAttrs} title="${esc(pageTitles[key]||key)}" aria-label="${esc(pageTitles[key]||key)}">${icon(ic)}<span class="nav-label">${pageTitles[key]}${key==='mobile'?' ↗':''}</span></a>`;
   };
   const navGroups=groups.map(([title,items])=>{
     const visibleItems=items.filter(([key])=>key.startsWith('system-') ? authRole()==='admin' : canAccessPage(key));
@@ -901,7 +994,8 @@ function adminHeaderPeriodInfo(){
 function header(title,filters='',actions='',context=''){
   const label=viewContextText(context||title);
   if(page==='mobile') return `<div class="panel-head mobile-head"><div><h2>${esc(label)}</h2><span class="muted">Lihtne tehniku töövaade</span></div></div>`;
-  const controls=`${adminViewAsControl()}${authStatusPill()}`;
+  const employeeFilterPages=['calendar','team','workorders'];
+  const controls=`${employeeFilterPages.includes(page)?'':adminViewAsControl()}${authStatusPill()}`;
   const period=adminHeaderPeriodInfo();
   const valve=currentOncallLabel ? currentOncallLabel(period.days) : '';
   const lowerRow=(filters||controls) ? `<div class="admin-compact-filterbar">${filters||''}${controls?`<div class="admin-compact-controls">${controls}</div>`:''}</div>` : '';
@@ -1410,18 +1504,18 @@ function openProjectModal(id=''){
 
 function renderWorkorders(){
   autoClosePerformedWorkorders();
-  const status=$('#woStatusFilter')?.value||'all'; const tech=$('#woTechFilter')?.value||'all'; const q=($('#woSearch')?.value||'').toLowerCase();
+  const status=$('#woStatusFilter')?.value||'all'; const tech=scopedPersonId()?[scopedPersonId()]:employeeFilterSelected('workorders'); const q=($('#woSearch')?.value||'').toLowerCase();
   const baseWorkorders=scopedWorkorders();
   const statuses=[...new Set(baseWorkorders.map(w=>w.status))];
   const list=baseWorkorders.filter(w=>(status==='all'||w.status===status)&&employeeFilterMatchesWorkorder(w,tech)&&`${w.title} ${w.description} ${objectName(w.objectId)} ${projectName(w.projectId)} ${workorderPeopleLabel(w)}`.toLowerCase().includes(q));
   if(!list.some(w=>w.id===selectedWorkorderId)) selectedWorkorderId=list[0]?.id||baseWorkorders[0]?.id||'';
   const peopleForFilter=visiblePeopleForCurrentScope();
-  const techFilterHtml=scopedPersonId()?`<select class="select" id="woTechFilter" disabled><option value="${esc(scopedPersonId())}">${esc(scopedPerson()?.name||'Minu tööd')}</option></select>`:`<select class="select" id="woTechFilter">${employeeFilterOptions(tech)}</select>`;
+  const techFilterHtml=scopedPersonId()?employeeMultiFilterHtml('workorders',[scopedPersonId()],{disabled:true,label:scopedPerson()?.name||'Minu tööd'}):employeeMultiFilterHtml('workorders',tech);
   const filters=`<input class="field" id="woSearch" placeholder="Otsi töökäsku..." value="${esc(q)}">${techFilterHtml}<select class="select" id="woStatusFilter"><option value="all">Kõik staatused</option>${statuses.map(s=>`<option value="${esc(s)}" ${status===s?'selected':''}>${esc(s)}</option>`).join('')}</select>`;
   const actions=`<button class="btn primary" id="newWorkorderBtn">${icon('＋')}Lisa töökäsk</button>`;
   const rows=list.map(w=>`<tr data-workorder-id="${w.id}" class="${detailOpen.workorders&&w.id===selectedWorkorderId?'selected':''}"><td><strong>${esc(w.title)}</strong><div class="muted">${esc(problemDescriptionText(w))}</div></td><td>${esc(fmtActDate(w.date))} ${esc(w.time)}</td><td>${esc(clientName(objectClientId(w.objectId)))}</td><td>${esc(objectName(w.objectId))}</td><td>${esc(projectName(w.projectId))}</td><td>${esc(workorderAssigneeLabel(w))}</td><td><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></td></tr>`);
   const main=header('Töökäsud',filters,actions,'Töökäsud')+`<div class="detail-body">${scopeNotice()}<div class="summary-grid">${summaryBox('Töökäske',baseWorkorders.length)}${summaryBox('Avatud',baseWorkorders.filter(w=>!isCompletedStatus(w.status)).length)}${summaryBox('Lõpetatud',baseWorkorders.filter(w=>isCompletedStatus(w.status)).length)}${summaryBox('Aktid',scopedActs().length)}</div>${table(['Töö','Aeg','Klient','Objekt','Projekt','Vastutaja / osalejad','Staatus'],rows)}</div>`;
-  shell(main,detailOpen.workorders?workorderDetailHtml():''); $('#woSearch')?.addEventListener('input',renderWorkorders); $('#woTechFilter')?.addEventListener('change',renderWorkorders); $('#woStatusFilter')?.addEventListener('change',renderWorkorders);
+  shell(main,detailOpen.workorders?workorderDetailHtml():''); $('#woSearch')?.addEventListener('input',renderWorkorders); bindEmployeeMultiFilter('workorders',renderWorkorders); $('#woStatusFilter')?.addEventListener('change',renderWorkorders);
   $$('[data-workorder-id]').forEach(row=>row.addEventListener('click',()=>{const id=row.dataset.workorderId; if(detailOpen.workorders&&selectedWorkorderId===id){detailOpen.workorders=false;}else{selectedWorkorderId=id;detailOpen.workorders=true;} renderWorkorders();}));
   $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();selectedWorkorderId=state.workorders[0]?.id||'';detailOpen.workorders=false;renderWorkorders();}); $('#newWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal()); bindWorkorderDetail();
 }
@@ -2492,24 +2586,10 @@ function renderTeam(){
   const inWeek=w=>weekDays.some(date=>workorderOccursOnDay(w,date));
   const statusOk=w=>selectedStatuses.includes(w.status);
   const searchable=w=>`${w.id} ${w.title} ${objectName(w.objectId)} ${clientName(objectClientId(w.objectId))} ${projectName(w.projectId)} ${workorderPeopleLabel(w)}`.toLowerCase().includes(q);
-  const rawSelectedPeople=(()=>{
-    try{ return JSON.parse(localStorage.getItem('veco_team_people_filter')||'[]')||[]; }catch(_){ return []; }
-  })().filter(id=>state.people.some(p=>p.id===id));
   const teamVisiblePeople=visiblePeopleForCurrentScope();
-  const selectedPeople=rawSelectedPeople.length?rawSelectedPeople:teamVisiblePeople.map(p=>p.id);
+  const selectedEmployeeTokens=employeeFilterSelected('team');
+  const selectedPeople=employeeFilterOptionPersonIds(selectedEmployeeTokens);
   const visiblePeople=teamVisiblePeople.filter(p=>selectedPeople.includes(p.id));
-  const preferredCurrentUser=()=>{
-    const stored=localStorage.getItem('veco_team_current_user_id')||'';
-    return state.people.find(p=>p.id===stored)
-      || state.people.find(p=>p.id==='U-JANNO')
-      || state.people.find(p=>String(p.name||'').toLowerCase().includes('janno'))
-      || mobileCurrentUser?.()
-      || state.people.find(p=>p.active)
-      || state.people[0]
-      || null;
-  };
-  const currentTeamUser=preferredCurrentUser();
-  const peopleFilterLabel=rawSelectedPeople.length?`${rawSelectedPeople.length} valitud`:'Kõik töötajad';
   const statusFilterLabel=selectedStatuses.length===allTeamStatuses.length?'Kõik staatused':(selectedStatuses.length===openStatuses.length && openStatuses.every(s=>selectedStatuses.includes(s))?'Avatud tööd':`${selectedStatuses.length} staatust`);
   const weekWorkorders=state.workorders.filter(w=>inWeek(w)&&statusOk(w)&&searchable(w));
   const visibleWorkorders=weekWorkorders.filter(w=>inVisibleRange(w)&&visiblePeople.some(p=>workorderMatchesPerson(w,p.id)));
@@ -2521,7 +2601,7 @@ function renderTeam(){
   const dayNames=['E','T','K','N','R','L','P'];
   const weekDayOptions=weekDays.map((d,i)=>`<option value="${d}" ${selectedDay===d?'selected':''}>${dayNames[i]} ${d}</option>`).join('');
   const teamStatusFilter=`<div class="team-people-filter" id="teamStatusFilterWrap"><button class="btn ghost" type="button" id="teamStatusFilterBtn">☑ ${esc(statusFilterLabel)}</button><div class="team-people-menu hidden" id="teamStatusMenu"><div class="team-people-menu-head"><strong>Staatused vaates</strong><button class="btn small ghost" type="button" id="teamStatusOpenBtn">Avatud</button></div>${allTeamStatuses.map(st=>`<label class="team-people-option"><input type="checkbox" value="${esc(st)}" ${selectedStatuses.includes(st)?'checked':''}> <span>${esc(st)}</span><small>${isCompletedStatus(st)?'lõpetatud':'avatud'}</small></label>`).join('')}<div class="team-people-menu-actions"><button class="btn small ghost" type="button" id="teamStatusAllBtn">Kõik</button><button class="btn small ghost" type="button" id="teamStatusDefaultBtn">Vaikimisi</button></div></div></div>`;
-  const teamPeopleFilter=`<div class="team-people-filter" id="teamPeopleFilter"><button class="btn ghost" type="button" id="teamPeopleFilterBtn">👥 ${esc(peopleFilterLabel)}</button><div class="team-people-menu hidden" id="teamPeopleMenu"><div class="team-people-menu-head"><strong>Töötajad vaates</strong><button class="btn small ghost" type="button" id="teamPeopleAllBtn">Kõik</button></div>${currentTeamUser?`<button class="btn small ghost full" type="button" id="teamPeopleMineBtn">Minu tööd · ${esc(currentTeamUser.name)}</button>`:''}${teamVisiblePeople.map(p=>`<label class="team-people-option"><input type="checkbox" value="${esc(p.id)}" ${selectedPeople.includes(p.id)?'checked':''}> <span>${esc(p.name)}</span><small>${esc(p.role||'Tehnik')}</small></label>`).join('')}</div></div>`;
+  const teamPeopleFilter=employeeMultiFilterHtml('team',selectedEmployeeTokens);
   const viewSwitch=`<select class="select" id="teamViewMode"><option value="cards" ${view==='cards'?'selected':''}>Kaardid</option><option value="matrix" ${view==='matrix'?'selected':''}>Nädalatabel</option><option value="day" ${view==='day'?'selected':''}>Päev</option></select><select class="select" id="teamWeekScope"><option value="workdays" ${scope==='workdays'?'selected':''}>E–R</option><option value="full" ${scope==='full'?'selected':''}>E–P</option></select>${view==='day'?`<select class="select" id="teamDaySelect">${weekDayOptions}</select>`:''}`;
   const filters=`<input class="field" id="teamWeekStart" type="date" value="${esc(currentWeek)}">${teamStatusFilter}${teamPeopleFilter}${viewSwitch}`;
   const actions=`<button class="btn ghost" id="teamPrevWeekBtn" type="button">‹ Eelmine</button><button class="btn primary" id="teamThisWeekBtn" type="button">↕ Täna</button><button class="btn ghost" id="teamNextWeekBtn" type="button">Järgmine ›</button>`;
@@ -2565,7 +2645,7 @@ function renderTeam(){
     const hours=jobs.reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0);
     return `<tr data-team-person="${p.id}" class="${p.id===selectedTeamPersonId?'selected':''}"><th><strong>${esc(p.name)}</strong><span class="muted">${esc(p.role||'Tehnik')} · ${hours} h</span></th>${cells}</tr>`;
   }).join('');
-  const matrixHtml=`<div class="team-matrix-wrap"><table class="team-matrix"><thead><tr><th>Tehnik</th>${visibleDays.map((d,i)=>`<th>${dayNames[weekDays.indexOf(d)]}<span>${esc(fmtActDate(d))}</span></th>`).join('')}</tr></thead><tbody>${matrixRows}</tbody></table></div>`;
+  const matrixHtml=`<div class="team-matrix-wrap"><table class="team-matrix"><thead><tr><th>Töötaja</th>${visibleDays.map((d,i)=>`<th>${dayNames[weekDays.indexOf(d)]}<span>${esc(fmtActDate(d))}</span></th>`).join('')}</tr></thead><tbody>${matrixRows}</tbody></table></div>`;
 
   const dayHtml=`<div class="team-day-view">${visiblePeople.map(p=>{
     const jobs=dayWorkorders.filter(w=>workorderMatchesPerson(w,p.id)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
@@ -2576,26 +2656,16 @@ function renderTeam(){
   }).join('')}</div>`;
 
   const totalHours=visibleWorkorders.reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0);
-  const absentCount=state.people.filter(p=>teamWorkConflictsForPerson(p.id,visibleDays).length||teamOncallConflictsForPerson(p.id,visibleDays).length).length;
-  const overloaded=state.people.filter(p=>personJobs(p).reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0)>=(scope==='full'?42:32)).length;
+  const absentCount=visiblePeople.filter(p=>teamWorkConflictsForPerson(p.id,visibleDays).length||teamOncallConflictsForPerson(p.id,visibleDays).length).length;
+  const overloaded=visiblePeople.filter(p=>personJobs(p).reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0)>=(scope==='full'?42:32)).length;
   const content=view==='matrix'?matrixHtml:(view==='day'?dayHtml:`<div class="grid team-grid">${techCards}</div>`);
   const teamHeaderLabel=formatViewPeriod('Tiimivaade',view==='day'?'day':'week',view==='day'?[selectedDay]:visibleDays,currentWeek,{hideRange:view!=='day'});
   window.__VECO_ONCALL_CONTEXT_DAYS__ = view==='day' ? [selectedDay] : visibleDays;
-  const main=header('Tiimivaade',filters,actions,teamHeaderLabel)+`<div class="detail-body">${scopeNotice()}<div class="summary-grid">${summaryBox('Tehnikuid',visiblePeople.length)}${summaryBox(view==='day'?'Päeva töid':'Vahemiku töid',view==='day'?dayWorkorders.length:visibleWorkorders.length)}${summaryBox('Planeeritud h',view==='day'?dayWorkorders.reduce((sum,w)=>sum+workorderHours(w),0):totalHours)}${summaryBox('Hoiatusi',absentCount+overloaded)}</div><div class="team-view-hint">${view==='cards'?'Kaardivaade näitab tehniku koormust valitud nädalas.':view==='matrix'?'Nädalatabel näitab kogu tiimi päevade kaupa.':'Päevavaade sobib hommikuseks tööde jagamiseks.'}</div>${content}</div>`;
+  const main=header('Tiimivaade',filters,actions,teamHeaderLabel)+`<div class="detail-body">${scopeNotice()}<div class="summary-grid">${summaryBox('Töötajaid',visiblePeople.length)}${summaryBox(view==='day'?'Päeva töid':'Vahemiku töid',view==='day'?dayWorkorders.length:visibleWorkorders.length)}${summaryBox('Planeeritud h',view==='day'?dayWorkorders.reduce((sum,w)=>sum+workorderHours(w),0):totalHours)}${summaryBox('Hoiatusi',absentCount+overloaded)}</div><div class="team-view-hint">${view==='cards'?'Kaardivaade näitab töötaja koormust valitud nädalas.':view==='matrix'?'Nädalatabel näitab valitud töötajaid päevade kaupa.':'Päevavaade sobib hommikuseks tööde jagamiseks.'}</div>${content}</div>`;
   const detail=selectedTeamPersonId?teamDetailHtml(visibleDays,view==='day'?dayWorkorders:visibleWorkorders):'';
   shell(main,detail);
   $('#teamWeekStart')?.addEventListener('change',()=>{const next=weekStartKeyFrom($('#teamWeekStart').value); localStorage.setItem('veco_team_week',next); $('#teamWeekStart').value=next; renderTeam();}); $('#teamViewMode')?.addEventListener('change',renderTeam); $('#teamWeekScope')?.addEventListener('change',renderTeam); $('#teamDaySelect')?.addEventListener('change',renderTeam);
-  $('#teamPeopleFilterBtn')?.addEventListener('click',e=>{ e.stopPropagation(); $('#teamPeopleMenu')?.classList.toggle('hidden'); });
-  $('#teamPeopleAllBtn')?.addEventListener('click',e=>{ e.stopPropagation(); localStorage.setItem('veco_team_people_filter','[]'); renderTeam(); });
-  $('#teamPeopleMineBtn')?.addEventListener('click',e=>{ e.stopPropagation(); if(currentTeamUser) localStorage.setItem('veco_team_people_filter',JSON.stringify([currentTeamUser.id])); renderTeam(); });
-  $$('[data-team-quick="all"]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_team_people_filter','[]');renderTeam();}));
-  $$('[data-team-quick="mine"]').forEach(btn=>btn.addEventListener('click',()=>{if(currentTeamUser)localStorage.setItem('veco_team_people_filter',JSON.stringify([currentTeamUser.id]));renderTeam();}));
-  $$('[data-team-quick-person]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_team_people_filter',JSON.stringify([btn.dataset.teamQuickPerson]));renderTeam();}));
-  $$('#teamPeopleMenu input[type="checkbox"]').forEach(input=>input.addEventListener('change',()=>{
-    const selected=$$('#teamPeopleMenu input[type="checkbox"]:checked').map(i=>i.value);
-    localStorage.setItem('veco_team_people_filter',JSON.stringify(selected));
-    renderTeam();
-  }));
+  bindEmployeeMultiFilter('team',renderTeam);
   $('#teamStatusFilterBtn')?.addEventListener('click',e=>{ e.stopPropagation(); $('#teamStatusMenu')?.classList.toggle('hidden'); });
   $$('#teamStatusMenu input[type="checkbox"]').forEach(input=>input.addEventListener('change',()=>{
     const selected=$$('#teamStatusMenu input[type="checkbox"]:checked').map(i=>i.value);
@@ -2613,10 +2683,10 @@ function renderTeam(){
     renderTeam();
   }));
   document.addEventListener('pointerdown',function teamPeopleOutside(e){
-    const wrap=$('#teamPeopleFilter');
+    const wrap=document.querySelector('[data-employee-filter="team"]');
     if(!document.body.contains(wrap)){ document.removeEventListener('pointerdown',teamPeopleOutside,true); return; }
     const statusWrap=$('#teamStatusFilterWrap');
-    if(wrap&&!wrap.contains(e.target)) $('#teamPeopleMenu')?.classList.add('hidden');
+    if(wrap&&!wrap.contains(e.target)) document.querySelector('[data-employee-filter-menu="team"]')?.classList.add('hidden');
     if(statusWrap&&!statusWrap.contains(e.target)) $('#teamStatusMenu')?.classList.add('hidden');
   },true);
   $('#teamPrevWeekBtn')?.addEventListener('click',()=>{
@@ -3576,7 +3646,7 @@ function renderCalendar(){
   const storedDate=localStorage.getItem('veco_calendar_week')||weekStartKeyFrom('');
   const currentDate=storedDate;
   const scopedId=scopedPersonId();
-  const techFilter=scopedId||($('#calendarTechFilter')?.value||'all');
+  const techFilter=scopedId?[scopedId]:employeeFilterSelected('calendar');
   const statusFilter=$('#calendarStatusFilter')?.value||'open';
   const mode=$('#calendarViewMode')?.value||localStorage.getItem('veco_calendar_view')||'week';
   const hideWeekend=(localStorage.getItem('veco_calendar_hide_weekend')||'false')==='true';
@@ -3610,7 +3680,7 @@ function renderCalendar(){
     return {start:0,end:24};
   };
   const calendarPeople=visiblePeopleForCurrentScope();
-  const calendarTechFilterHtml=scopedId?`<select class="select" id="calendarTechFilter" disabled><option value="${esc(scopedId)}">${esc(scopedPerson()?.name||'Minu kalender')}</option></select>`:`<select class="select" id="calendarTechFilter">${employeeFilterOptions(techFilter)}</select>`;
+  const calendarTechFilterHtml=scopedId?employeeMultiFilterHtml('calendar',[scopedId],{disabled:true,label:scopedPerson()?.name||'Minu kalender'}):employeeMultiFilterHtml('calendar',techFilter);
   const calendarBounds=calendarWorkTimeBounds(filtered,visibleDays);
   const calendarStartHour=calendarBounds.start;
   const calendarEndHour=calendarBounds.end;
@@ -3741,7 +3811,7 @@ function renderCalendar(){
   scheduleCalendarLayoutSync({scrollState:calendarScrollState,delay:30});
   document.querySelector('.calendar-planner-grid')?.addEventListener('scroll',()=>syncCalendarStickyHeader(),{passive:true});
   document.querySelector('.calendar-planner-wrap')?.addEventListener('scroll',()=>syncCalendarStickyHeader(),{passive:true});
-  $('#calendarWeekStart')?.addEventListener('change',e=>{localStorage.setItem('veco_calendar_week',e.target.value);renderCalendar();}); $('#calendarTechFilter')?.addEventListener('change',renderCalendar); $('#calendarStatusFilter')?.addEventListener('change',renderCalendar); $('#calendarViewMode')?.addEventListener('change',renderCalendar);
+  $('#calendarWeekStart')?.addEventListener('change',e=>{localStorage.setItem('veco_calendar_week',e.target.value);renderCalendar();}); bindEmployeeMultiFilter('calendar',renderCalendar); $('#calendarStatusFilter')?.addEventListener('change',renderCalendar); $('#calendarViewMode')?.addEventListener('change',renderCalendar);
   $('#calendarHideWeekend')?.addEventListener('click',()=>{localStorage.setItem('veco_calendar_hide_weekend',hideWeekend?'false':'true');renderCalendar();});
   $('#calendarPrevWeekBtn')?.addEventListener('click',()=>{const base=parseDateKey(currentDate); let next;if(mode==='day') next=addDateDays(base,-1); else if(mode==='week') next=addDateDays(base,-7); else if(mode==='month') next=new Date(base.getFullYear(),base.getMonth()-1,1,12,0,0); else next=new Date(base.getFullYear()-1,0,1,12,0,0); localStorage.setItem('veco_calendar_week',dateKeyFromDate(next));renderCalendar();});
   $('#calendarNextWeekBtn')?.addEventListener('click',()=>{const base=parseDateKey(currentDate); let next;if(mode==='day') next=addDateDays(base,1); else if(mode==='week') next=addDateDays(base,7); else if(mode==='month') next=new Date(base.getFullYear(),base.getMonth()+1,1,12,0,0); else next=new Date(base.getFullYear()+1,0,1,12,0,0); localStorage.setItem('veco_calendar_week',dateKeyFromDate(next));renderCalendar();});

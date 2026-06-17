@@ -1,18 +1,18 @@
 {
-  "build": "VECO_V3_20260617_1412",
-  "buildNumber": "VECO_V3_20260617_1412",
-  "version": "20260617_1412",
-  "created_at": "2026-06-17T14:12:00+03:00",
-  "base": "VECO_V3_20260617_1402",
+  "build": "VECO_V3_20260617_1435",
+  "buildNumber": "VECO_V3_20260617_1435",
+  "version": "20260617_1435",
+  "created_at": "2026-06-17T14:35:00+03:00",
+  "base": "VECO_V3_20260617_1425",
   "changes": [
-    "Kalendri filtrites ühendatud TEHNIK ja ADMIN loogika üheks TÖÖTAJA filtriks",
-    "Eemaldatud kalendri päise eraldi ADMIN filter",
-    "TÖÖTAJA filter toetab rolligruppe: kõik töötajad, kõik tehnikud, kõik hooldusjuhid, kõik adminid ja üksiktöötaja",
-    "Workorders ja tiimivaate nimetustes korrigeeritud 'tehnik' -> 'töötaja' seal, kus filter on üldisem",
-    "Kalendri päist, vasakut menüüd, mobile.html vaadet ja töökäsu workflow'd ei muudetud",
-    "Asset cache-busting uuendatud 20260617_1412 peale"
+    "Tiimivaates asendatud vana eraldi töötajavalik sama TÖÖTAJA noppefiltriga, mida kasutavad kalender ja töökäsud.",
+    "Tiimivaates eemaldatud eraldi Admin: kõik tehnikud kontroll päisest; kasutaja/töötaja valik toimub TÖÖTAJA filtri kaudu.",
+    "Tiimivaate terminoloogia korrigeeritud: Tehnikuid/Tehnik -> Töötajaid/Töötaja seal, kus vaade näitab rolliüleseid ressursse.",
+    "Tööjuhi menüügruppi lisatud Tiimivaade, Valvegraafik ja Tehniku vaade; Tehniku vaade avaneb uues aknas.",
+    "Kalendri päist, vasaku menüü avamise/sulgemise loogikat, mobile.html sisu ja töökäsu workflow’d ei muudetud.",
+    "Asset cache-busting uuendatud 20260617_1435 peale."
   ],
-  "app_build": "20260617_1412",
+  "app_build": "20260617_1435",
   "baseline": "VECO_V3_20260617_1347",
-  "notes": "CR-FLT-001: unified employee filter; calendar Admin view-as dropdown removed from visible filter row."
+  "notes": "CR-TEAM-001 / CR-NAV-001: Tiimivaade viidud TÖÖTAJA noppefiltrile ja Tööjuhi menüü korrastatud."
 }
