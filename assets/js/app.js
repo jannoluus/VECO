@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.20';
-const APP_BUILD='20260617_1148';
+const APP_BUILD='20260617_1332';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -850,13 +850,25 @@ function oncallPill(){
 function viewContextText(value){
   return String(value||'').toUpperCase();
 }
+function adminHeaderPeriodInfo(){
+  const start=localStorage.getItem('veco_calendar_week')||weekStartKeyFrom('');
+  const days=weekDaysFrom(start).slice(0,5);
+  const monthLabel=rangeMonthLabel(days,start);
+  const weekNo=isoWeekNumber(days[0]);
+  return {
+    main:`${monthLabel} · NÄDAL ${weekNo}`.toUpperCase(),
+    range:`${fmtShortDate(days[0])}–${fmtShortDate(days[days.length-1])}`,
+    days
+  };
+}
 function header(title,filters='',actions='',context=''){
   const label=viewContextText(context||title);
   if(page==='mobile') return `<div class="panel-head mobile-head"><div><h2>${esc(label)}</h2><span class="muted">Lihtne tehniku töövaade</span></div></div>`;
   const controls=`${adminViewAsControl()}${authStatusPill()}`;
-  const valve=currentOncallLabel ? currentOncallLabel() : '';
+  const period=adminHeaderPeriodInfo();
+  const valve=currentOncallLabel ? currentOncallLabel(period.days) : '';
   const lowerRow=(filters||controls) ? `<div class="admin-compact-filterbar">${filters||''}${controls?`<div class="admin-compact-controls">${controls}</div>`:''}</div>` : '';
-  return `<div class="admin-compact-head"><div class="admin-compact-main"><div class="admin-compact-left">${themeLogo()}<div class="admin-page-title"><strong>${esc(label)}</strong>${valve?`<span>VALVE: ${esc(valve).toUpperCase()}</span>`:''}</div></div><div class="admin-compact-right">${actions||''}</div></div>${lowerRow}</div>`;
+  return `<div class="admin-compact-head admin-unified-head"><div class="admin-compact-main"><div class="admin-compact-left">${themeLogo()}<div class="admin-page-title"><strong>${esc(label)}</strong></div><div class="admin-period-title"><strong>${esc(period.main)}</strong><span>${esc(period.range)} <b>•</b> <em>VALVE: ${esc(valve).toUpperCase()}</em></span></div></div><div class="admin-compact-right">${actions||''}</div></div>${lowerRow}</div>`;
 }
 
 function detailHeader(title,actions=''){

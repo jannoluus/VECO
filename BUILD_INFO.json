@@ -1,15 +1,18 @@
 {
-  "build": "VECO_V3_20260617_1148",
-  "buildNumber": "VECO_V3_20260617_1148",
-  "version": "20260617_1148",
-  "created_at": "2026-06-17T11:48:00+03:00",
+  "build": "VECO_V3_20260617_1332",
+  "buildNumber": "VECO_V3_20260617_1332",
+  "version": "20260617_1332",
+  "created_at": "2026-06-17T13:32:00+03:00",
   "base": "VECO_V3_20260617_1136",
   "changes": [
     "CR-UI-001: ühtne admin päis kalendri päise malli põhjal",
-    "Töökäsud, kliendid, objektid, seadmed, aktid ja muud admin vaated kasutavad sama compact header struktuuri",
+    "Kõik admin vaated näitavad lehe nime kõrval sama perioodiinfot: kuu, nädal, kuupäevavahemik ja valve",
+    "workorders.html vana päise loogika asendatud unified admin headeriga",
     "Kalendri päist ei muudetud",
     "Vasaku menüü avamise/sulgemise loogikat ei muudetud",
     "Mobile/tehniku vaadet ei muudetud",
-    "Asset cache-busting uuendatud 20260617_1148 peale"
-  ]
+    "Asset cache-busting uuendatud 20260617_1332 peale"
+  ],
+  "app_build": "20260617_1332",
+  "notes": "CR-UI-001 unified admin header period block; calendar header unchanged"
 }
