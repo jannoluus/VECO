@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.20';
-const APP_BUILD='20260617_1136';
+const APP_BUILD='20260617_1148';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -853,7 +853,10 @@ function viewContextText(value){
 function header(title,filters='',actions='',context=''){
   const label=viewContextText(context||title);
   if(page==='mobile') return `<div class="panel-head mobile-head"><div><h2>${esc(label)}</h2><span class="muted">Lihtne tehniku töövaade</span></div></div>`;
-  return `<div class="panel-head view-head"><div class="view-head-left"><div class="brand-row">${themeLogo()}<h2 class="context-pill view-context-pill">${esc(label)}</h2>${oncallPill()}</div>${filters?`<div class="filter-row">${filters}</div>`:''}</div><div class="view-head-right">${adminViewAsControl()}${authStatusPill()}${actions?`<div class="action-row">${actions}</div>`:''}</div></div>`
+  const controls=`${adminViewAsControl()}${authStatusPill()}`;
+  const valve=currentOncallLabel ? currentOncallLabel() : '';
+  const lowerRow=(filters||controls) ? `<div class="admin-compact-filterbar">${filters||''}${controls?`<div class="admin-compact-controls">${controls}</div>`:''}</div>` : '';
+  return `<div class="admin-compact-head"><div class="admin-compact-main"><div class="admin-compact-left">${themeLogo()}<div class="admin-page-title"><strong>${esc(label)}</strong>${valve?`<span>VALVE: ${esc(valve).toUpperCase()}</span>`:''}</div></div><div class="admin-compact-right">${actions||''}</div></div>${lowerRow}</div>`;
 }
 
 function detailHeader(title,actions=''){

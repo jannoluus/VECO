@@ -1,13 +1,15 @@
 {
-  "build": "VECO_V3_20260617_1136",
-  "created_at": "2026-06-17T11:12:00+03:00",
+  "build": "VECO_V3_20260617_1148",
+  "buildNumber": "VECO_V3_20260617_1148",
+  "version": "20260617_1148",
+  "created_at": "2026-06-17T11:48:00+03:00",
+  "base": "VECO_V3_20260617_1136",
   "changes": [
-    "Photo preview lightbox renders image independently from workorder modal",
-    "Signed Storage URL fallback for preview",
-    "Calendar floating burger hidden again"
-  ],
-  "notes": "CR-099.3 photo include_in_act toggle visible in workorder photo cards and lightbox.",
-  "buildNumber": "VECO_V3_20260617_1136",
-  "version": "20260617_1136",
-  "createdAt": "2026-06-17T11:36:00+03:00"
+    "CR-UI-001: ühtne admin päis kalendri päise malli põhjal",
+    "Töökäsud, kliendid, objektid, seadmed, aktid ja muud admin vaated kasutavad sama compact header struktuuri",
+    "Kalendri päist ei muudetud",
+    "Vasaku menüü avamise/sulgemise loogikat ei muudetud",
+    "Mobile/tehniku vaadet ei muudetud",
+    "Asset cache-busting uuendatud 20260617_1148 peale"
+  ]
 }

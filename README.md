@@ -1,5 +1,4 @@
-# VECO V3
+VECO V3 build 20260617_1148
 
-Build: VECO_V3_20260617_1136
-
-CR-STAB-001: Restore stable 1717 navigation + merge photos.
+Build: VECO_V3_20260617_1148
+Base: VECO_V3_20260617_1136

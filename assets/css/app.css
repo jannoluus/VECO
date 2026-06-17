@@ -3898,3 +3898,84 @@ html.photo-lightbox-open,body.photo-lightbox-open{overflow:hidden!important;}
 .photo-lightbox-body img{max-width:100%;max-height:calc(100dvh - 190px);object-fit:contain;display:block;border-radius:8px;}
 .photo-lightbox-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
 @media(max-width:760px){.photo-lightbox{padding:6px;align-items:stretch}.photo-lightbox-dialog{width:100%;max-height:calc(100dvh - 12px)}.photo-lightbox-head,.photo-lightbox-meta{padding:12px;align-items:stretch;flex-direction:column}.photo-lightbox-actions .btn{width:100%;}.photo-lightbox-body img{max-height:calc(100dvh - 250px)}}
+
+
+/* VECO_V3_20260617_1148 / CR-UI-001: non-calendar admin views use the calendar header pattern */
+.app:not(.page-calendar):not(.app-mobile) .admin-compact-head{
+  padding:14px 16px 10px!important;
+  border-bottom:1px solid var(--line)!important;
+  background:linear-gradient(180deg,rgba(10,20,28,.98),rgba(10,20,28,.92))!important;
+  display:grid!important;
+  gap:10px!important;
+}
+.theme-light .app:not(.page-calendar):not(.app-mobile) .admin-compact-head{background:linear-gradient(180deg,#f8fafc,#eef3f6)!important;}
+.app:not(.page-calendar):not(.app-mobile) .admin-compact-main{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:16px!important;
+  min-width:0!important;
+}
+.app:not(.page-calendar):not(.app-mobile) .admin-compact-left,
+.app:not(.page-calendar):not(.app-mobile) .admin-compact-right{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  min-width:0!important;
+}
+.app:not(.page-calendar):not(.app-mobile) .admin-compact-left{flex:1 1 auto!important;}
+.app:not(.page-calendar):not(.app-mobile) .admin-compact-right{flex:0 0 auto!important;justify-content:flex-end!important;}
+.app:not(.page-calendar):not(.app-mobile) .admin-page-title{
+  display:grid!important;
+  gap:2px!important;
+  min-width:170px!important;
+}
+.app:not(.page-calendar):not(.app-mobile) .admin-page-title strong{
+  font-size:20px!important;
+  line-height:1.1!important;
+  letter-spacing:.01em!important;
+  font-weight:900!important;
+  color:var(--ink)!important;
+}
+.app:not(.page-calendar):not(.app-mobile) .admin-page-title span{
+  color:#f7b955!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  letter-spacing:.015em!important;
+}
+.app:not(.page-calendar):not(.app-mobile) .admin-compact-filterbar{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  flex-wrap:wrap!important;
+  min-width:0!important;
+}
+.app:not(.page-calendar):not(.app-mobile) .admin-compact-filterbar .field,
+.app:not(.page-calendar):not(.app-mobile) .admin-compact-filterbar .select{
+  min-width:220px!important;
+}
+.app:not(.page-calendar):not(.app-mobile) .admin-compact-controls{
+  margin-left:auto!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  flex-wrap:wrap!important;
+  justify-content:flex-end!important;
+}
+.app:not(.page-calendar):not(.app-mobile) .admin-compact-right .btn{
+  min-height:40px!important;
+}
+@media(max-width:1120px){
+  .app:not(.page-calendar):not(.app-mobile) .admin-compact-main{align-items:flex-start!important;flex-direction:column!important;}
+  .app:not(.page-calendar):not(.app-mobile) .admin-compact-right{width:100%!important;justify-content:flex-start!important;flex-wrap:wrap!important;}
+  .app:not(.page-calendar):not(.app-mobile) .admin-compact-left{width:100%!important;flex-wrap:wrap!important;}
+  .app:not(.page-calendar):not(.app-mobile) .admin-compact-controls{margin-left:0!important;justify-content:flex-start!important;}
+  .app:not(.page-calendar):not(.app-mobile) .admin-compact-filterbar .field,
+  .app:not(.page-calendar):not(.app-mobile) .admin-compact-filterbar .select{min-width:180px!important;}
+}
+@media(max-width:760px){
+  .app:not(.page-calendar):not(.app-mobile) .admin-compact-right .btn,
+  .app:not(.page-calendar):not(.app-mobile) .admin-compact-filterbar .field,
+  .app:not(.page-calendar):not(.app-mobile) .admin-compact-filterbar .select{width:100%!important;min-width:0!important;}
+  .app:not(.page-calendar):not(.app-mobile) .admin-compact-filterbar{display:grid!important;grid-template-columns:1fr!important;}
+}
