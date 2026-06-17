@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.19';
-const APP_BUILD='20260616_1717';
+const APP_BUILD='20260617_0849';
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -673,13 +673,24 @@ function bindGlobal(){
   document.addEventListener('keydown',(event)=>{
     if(event.key==='Escape' && $('.app')?.classList.contains('sidebar-full')) applySidebarMode('hidden');
   });
-  $$('[data-nav-toggle]').forEach(btn=>btn.addEventListener('click',()=>{
+  $$('[data-nav-toggle]').forEach(btn=>btn.addEventListener('click',(event)=>{
+    event.preventDefault();
+    event.stopPropagation();
     const title=btn.dataset.navToggle;
     let open={};
     try{ open=JSON.parse(localStorage.getItem('veco_nav_open_groups')||'{}')||{}; }catch(_){ open={}; }
     open[title]=!open[title];
     localStorage.setItem('veco_nav_open_groups',JSON.stringify(open));
-    renderCurrentPage();
+
+    const section=btn.closest('.nav-section');
+    const isOpen=!!open[title];
+    if(section){
+      section.classList.toggle('open',isOpen);
+      section.classList.toggle('collapsed',!isOpen);
+    }
+    btn.setAttribute('aria-expanded',isOpen?'true':'false');
+    const arrow=btn.querySelector('span');
+    if(arrow) arrow.textContent=isOpen?'▾':'▸';
   }));
   $('#databaseBtn')?.addEventListener('click',()=>{ if(window.VECO_API?.configure?.()){ location.reload(); } });
   $('#exportDataBtn')?.addEventListener('click',()=>{
