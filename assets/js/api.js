@@ -3,6 +3,7 @@
   const KEY_KEY='veco_supabase_key';
   const TABLE='workorders';
   const AUTH_TABLE='auth_users';
+  const ONCALL_TABLE='oncall_assignments';
   let pollingTimer=null;
   let realtimeChannel=null;
   let realtimeDebounce=null;
@@ -86,6 +87,69 @@
     remote.forEach(w=>byId.set(w.id,{...(byId.get(w.id)||{}),...w}));
     data.workorders=Array.from(byId.values());
     return data;
+  }
+
+  function oncallPersonIdFromName(name,people){
+    const clean=String(name||'').trim().toLowerCase();
+    if(!clean) return '';
+    const found=(people||[]).find(p=>String(p.name||'').trim().toLowerCase()===clean);
+    return found?.id||'';
+  }
+  function oncallPersonNameFromId(id,people){
+    const found=(people||[]).find(p=>String(p.id||'')===String(id||''));
+    return found?.name||'';
+  }
+  function oncallFromDb(row,people){
+    const personId=row.user_id||oncallPersonIdFromName(row.user_name,people);
+    return {
+      id:row.id||`OC-DB-${row.start_date}-${row.end_date}`,
+      personId:personId||'',
+      userName:row.user_name||oncallPersonNameFromId(personId,people)||'',
+      start:row.start_date||'',
+      end:row.end_date||'',
+      note:row.note||'',
+      remoteId:row.id||'',
+      manualOverride:true
+    };
+  }
+  function oncallToDb(o,people){
+    const userName=o.userName||oncallPersonNameFromId(o.personId,people)||o.user_name||'';
+    return {
+      user_id:o.personId||o.user_id||null,
+      user_name:userName||'Valveisik',
+      start_date:o.start||o.start_date||null,
+      end_date:o.end||o.end_date||null,
+      note:o.note||null
+    };
+  }
+  async function loadOncallAssignments(people=[]){
+    const client=getClient();
+    if(!client) return null;
+    const {data,error}=await client.from(ONCALL_TABLE).select('id,user_id,user_name,start_date,end_date,note,created_at').order('start_date',{ascending:true});
+    if(error) throw error;
+    return (data||[]).map(row=>oncallFromDb(row,people)).filter(o=>o.start&&o.end);
+  }
+  async function syncOncallAssignments(oncall=[],people=[]){
+    const client=getClient();
+    if(!client) return false;
+    const rows=(oncall||[]).map(o=>oncallToDb(o,people)).filter(r=>r.user_name&&r.start_date&&r.end_date);
+    const del=await client.from(ONCALL_TABLE).delete().not('id','is',null);
+    if(del.error) throw del.error;
+    if(rows.length){
+      const {error}=await client.from(ONCALL_TABLE).insert(rows);
+      if(error) throw error;
+    }
+    return true;
+  }
+  let oncallSyncTimer=null;
+  function scheduleOncallSync(oncall,people){
+    if(!getClient()) return;
+    clearTimeout(oncallSyncTimer);
+    const snapshot=JSON.parse(JSON.stringify(oncall||[]));
+    const peopleSnapshot=JSON.parse(JSON.stringify(people||[]));
+    oncallSyncTimer=setTimeout(()=>{
+      syncOncallAssignments(snapshot,peopleSnapshot).catch(err=>console.warn('VECO on-call Supabase sync failed',err));
+    },200);
   }
   async function loadWorkorders(){
     const client=getClient();
@@ -322,6 +386,8 @@
     saveAuthUser,
     deactivateAuthUser,
     deleteAuthUser,
+    loadOncallAssignments,
+    syncOncallAssignments,
     mode(){return getClient()?'supabase':'local'},
     modeLabel(){return this.mode()==='supabase'?'Supabase':'lokaalne'},
     configure(){
@@ -341,6 +407,12 @@
       try{
         const rows=await loadWorkorders();
         const merged=mergeWorkorders(local,rows);
+        try{
+          const remoteOncall=await loadOncallAssignments(merged.people||[]);
+          if(Array.isArray(remoteOncall)) merged.oncall=remoteOncall;
+        }catch(oncallErr){
+          console.warn('VECO on-call Supabase load failed, using local on-call data',oncallErr);
+        }
         window.VECO_STORAGE.save(merged);
         return merged;
       }catch(err){
@@ -350,7 +422,10 @@
     },
     save(data){
       const saved=window.VECO_STORAGE.save(data);
-      if(this.mode()==='supabase') syncWorkorders(saved.workorders);
+      if(this.mode()==='supabase'){
+        syncWorkorders(saved.workorders);
+        scheduleOncallSync(saved.oncall,saved.people);
+      }
       return saved;
     },
     async deleteWorkorder(workorderNo){

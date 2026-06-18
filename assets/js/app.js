@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260618_0624';
+const APP_BUILD='20260618_0923';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1014,9 +1014,9 @@ function currentOncallLabel(days=null){
   const contextDays=Array.isArray(days)&&days.length ? days : (Array.isArray(window.__VECO_ONCALL_CONTEXT_DAYS__)&&window.__VECO_ONCALL_CONTEXT_DAYS__.length ? window.__VECO_ONCALL_CONTEXT_DAYS__ : [dateKeyFromDate(new Date())]);
   const start=contextDays[0];
   const end=contextDays[contextDays.length-1];
-  const names=state.oncall
+  const names=(state.oncall||[])
     .filter(o=>o.start<=end&&o.end>=start)
-    .map(o=>techName(o.personId))
+    .map(o=>techName(o.personId)||o.userName||o.user_name||'')
     .filter(name=>name&&name!=='-');
   return [...new Set(names)].length ? [...new Set(names)].join(', ') : 'PUUDUB';
 }
@@ -2876,7 +2876,7 @@ function openOncallModal(id=''){
   const o=id?byId(state.oncall,id):{personId:active[0]?.id||state.people[0]?.id||'',start:today,end:today,note:'Telefonivalve'};
   openModal(`<form id="oncallForm"><div class="dialog-head"><h2>${id?'Muuda valvet':'Lisa valve'}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Tehnik<select class="select" name="personId">${state.people.filter(p=>p.active).map(p=>`<option value="${p.id}" ${o.personId===p.id?'selected':''}>${esc(p.name)}${p.onCallActive?'':' · ei osale rotatsioonis'}</option>`).join('')}</select></label><label>Algus<input class="field" name="start" type="date" required value="${esc(o.start)}"></label><label>Lõpp<input class="field" name="end" type="date" required value="${esc(o.end)}"></label><label>Märkus<input class="field" name="note" value="${esc(o.note||'')}"></label></div><div class="muted">Kui valve kattub puhkuse/puudumise/haigusega, kuvatakse valvegraafikus hoiatus.</div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
-  $('#oncallForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('OC'),personId:f.personId.value,start:f.start.value,end:f.end.value,note:f.note.value,manualOverride:true};if(next.end<next.start){alert('Lõpp ei saa olla enne algust.');return;}if(id){Object.assign(o,next)}else{state.oncall.push(next)}save();closeModal();renderOncall();});
+  $('#oncallForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('OC'),personId:f.personId.value,userName:techName(f.personId.value),start:f.start.value,end:f.end.value,note:f.note.value,manualOverride:true};if(next.end<next.start){alert('Lõpp ei saa olla enne algust.');return;}if(id){Object.assign(o,next)}else{state.oncall.push(next)}save();closeModal();renderOncall();});
 }
 async function generateOncallRotation(){
   const active=activeOncallPeople();
@@ -2888,7 +2888,7 @@ async function generateOncallRotation(){
     if(state.oncall.some(o=>o.start===start&&o.end===end&&o.manualOverride)) continue;
     state.oncall=state.oncall.filter(o=>!(o.start===start&&o.end===end&&!o.manualOverride));
     const p=active[i%active.length];
-    state.oncall.push({id:uid('OC'),personId:p.id,start,end,note:'Telefonivalve',manualOverride:false});
+    state.oncall.push({id:uid('OC'),personId:p.id,userName:p.name||techName(p.id),start,end,note:'Telefonivalve',manualOverride:false});
   }
   save();renderOncall();
 }
