@@ -1,18 +1,1 @@
-{
-  "build": "VECO_V3_20260617_1438",
-  "buildNumber": "VECO_V3_20260617_1438",
-  "version": "20260617_1438",
-  "created_at": "2026-06-17T14:38:00+03:00",
-  "base": "VECO_V3_20260617_1435",
-  "changes": [
-    "Parandatud TÖÖTAJA noppevaliku z-index/overflow probleem kalendri vaates.",
-    "TÖÖTAJA dropdown avaneb nüüd kalendri grid’i ja töökäsukaartide peale.",
-    "Sama kihistusparandus lisatud töökäskude vaatele.",
-    "Tiimivaate töötajafiltrit ei muudetud, sest see töötas korrektselt.",
-    "Kalendri päist, vasakut menüüd, mobile.html sisu ja workflow’d ei muudetud.",
-    "Asset cache-busting uuendatud 20260617_1438 peale."
-  ],
-  "app_build": "20260617_1438",
-  "baseline": "VECO_V3_20260617_1347",
-  "notes": "CR-FILTER-001: TÖÖTAJA noppevaliku dropdowni kihistus parandatud kalendri ja töökäskude vaates; tiimivaadet ei muudetud."
-}
+{"build":"VECO_V3_20260617_1445","created_at":"2026-06-17T14:45:00Z","base":"VECO_V3_20260617_1438","notes":"P0 hard fix: employee dropdown layering/overflow in calendar and workorders."}

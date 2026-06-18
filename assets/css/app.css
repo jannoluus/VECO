@@ -4072,7 +4072,7 @@ body.confirm-open #vecoConfirm *{
   pointer-events:auto!important;
 }
 
-/* Build 20260617_1438: employee multi-select dropdown layer fix
+/* Build 20260617_1445: employee multi-select dropdown layer fix
    Keeps calendar/workorders TÖÖTAJA menu above calendar grid and workorder cards.
    Team view already had a working layer setup; keep it unchanged. */
 .app.page-calendar .panel,
@@ -4104,4 +4104,60 @@ body.confirm-open #vecoConfirm *{
 .app.page-workorders .employee-multi-filter .team-people-menu{
   z-index:9000!important;
   max-height:min(420px, calc(100vh - 180px))!important;
+}
+
+
+/* Build 20260617_1445: hard fix for calendar/workorders employee dropdown layering.
+   Previous fix raised z-index but the calendar filter panel still clipped the menu
+   because the compact header/filter panel used max-height + overflow hidden. */
+.app.page-calendar > main > .content.wide > .panel,
+.app.page-workorders > main > .content.wide > .panel{
+  overflow:visible!important;
+}
+.app.page-calendar .calendar-compact-head,
+.app.page-workorders .view-head,
+.app.page-workorders .admin-page-head{
+  position:relative!important;
+  z-index:20000!important;
+  overflow:visible!important;
+}
+.app.page-calendar .calendar-filter-panel,
+.app.page-calendar .calendar-compact-head.filters-open .calendar-filter-panel,
+.app.page-calendar .calendar-filter-fields,
+.app.page-calendar .filter-row,
+.app.page-workorders .filter-row,
+.app.page-workorders .admin-compact-filterbar{
+  position:relative!important;
+  z-index:20010!important;
+  overflow:visible!important;
+  max-height:none!important;
+}
+.app.page-calendar .team-people-filter,
+.app.page-workorders .team-people-filter,
+.app.page-calendar .employee-multi-filter,
+.app.page-workorders .employee-multi-filter{
+  position:relative!important;
+  z-index:20020!important;
+  overflow:visible!important;
+}
+.app.page-calendar .team-people-menu,
+.app.page-workorders .team-people-menu,
+.app.page-calendar .employee-multi-filter .team-people-menu,
+.app.page-workorders .employee-multi-filter .team-people-menu{
+  position:absolute!important;
+  top:calc(100% + 6px)!important;
+  left:0!important;
+  z-index:20030!important;
+  display:grid;
+  max-height:min(520px, calc(100vh - 170px))!important;
+  overflow:auto!important;
+  box-shadow:0 24px 70px rgba(0,0,0,.45)!important;
+}
+.app.page-calendar .calendar-planner-wrap,
+.app.page-calendar .calendar-planner,
+.app.page-calendar .calendar-planner-grid,
+.app.page-calendar .calendar-event,
+.app.page-workorders .table-wrap,
+.app.page-workorders .data-table{
+  z-index:auto!important;
 }

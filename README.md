@@ -1,4 +1,9 @@
-VECO_V3_20260617_1412
+# VECO V3 build
 
+Build: VECO_V3_20260617_1445
 
-Build VECO_V3_20260617_1438: CR-TEAM-001 and CR-NAV-001 partial.
+Changes:
+- P0 hard fix for TÖÖTAJA dropdown layering in calendar/workorders.
+- Calendar filter panel overflow clipping fixed.
+- Calendar/workorders employee dropdown z-index raised above calendar grid and workorder cards.
+- Team view employee filter not changed.
