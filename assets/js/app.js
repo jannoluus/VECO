@@ -2,8 +2,25 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.19.22';
-const APP_BUILD='20260617_1458';
+const APP_VERSION='v3.19.23';
+const APP_BUILD='20260618_0612';
+window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
+function closeEmployeeFilterMenu(scope,{render=false}={}){
+  const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
+  if(!menu || menu.classList.contains('hidden')) return;
+  menu.classList.add('hidden');
+  if(render && window.__VECO_EMPLOYEE_FILTER_RENDERERS__?.[scope]) window.__VECO_EMPLOYEE_FILTER_RENDERERS__[scope]();
+}
+function closeAllEmployeeFilterMenus({except=null,render=false}={}){
+  document.querySelectorAll('[data-employee-filter-menu]').forEach(menu=>{
+    const scope=menu.dataset.employeeFilterMenu;
+    if(except && scope===except) return;
+    if(!menu.classList.contains('hidden')){
+      menu.classList.add('hidden');
+      if(render && window.__VECO_EMPLOYEE_FILTER_RENDERERS__?.[scope]) window.__VECO_EMPLOYEE_FILTER_RENDERERS__[scope]();
+    }
+  });
+}
 
 // Build 20260613_1138: kalenderi päeva/kuupäeva päis on eraldi sticky overlay ja jääb aktiivses tööalas nähtavale.
 // Keeps filters clickable even if render lifecycle replaces the direct listeners.
@@ -27,12 +44,28 @@ document.addEventListener('click',e=>{
     e.preventDefault();
     e.stopPropagation();
     const scope=employeeBtn.dataset.employeeFilterToggle;
-    document.querySelectorAll('[data-employee-filter-menu]').forEach(menu=>{
-      if(menu.dataset.employeeFilterMenu!==scope) menu.classList.add('hidden');
-    });
-    document.querySelector(`[data-employee-filter-menu="${scope}"]`)?.classList.toggle('hidden');
+    const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
+    const willOpen=menu?.classList.contains('hidden');
+    closeAllEmployeeFilterMenus({except:scope,render:true});
+    if(menu){
+      if(willOpen){
+        menu.classList.remove('hidden');
+      }else{
+        closeEmployeeFilterMenu(scope,{render:true});
+      }
+    }
   }
 },true);
+document.addEventListener('pointerdown',e=>{
+  const wrap=e.target.closest?.('[data-employee-filter]');
+  const menu=e.target.closest?.('[data-employee-filter-menu]');
+  const toggle=e.target.closest?.('[data-employee-filter-toggle]');
+  if(wrap || menu || toggle) return;
+  closeAllEmployeeFilterMenus({render:true});
+},true);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') closeAllEmployeeFilterMenus({render:true});
+});
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[]; state.maintenanceNorms=state.maintenanceNorms||[]; state.maintenanceProfiles=state.maintenanceProfiles||[]; state.granlundClassifiers=state.granlundClassifiers||[]; state.unplannedMaintenance=state.unplannedMaintenance||[]; state.photos=state.photos||[];
 
@@ -353,21 +386,34 @@ function employeeMultiFilterHtml(scope='calendar',tokens=null,{disabled=false,la
   const personOptions=people.map(p=>`<label class="team-people-option"><input type="checkbox" value="${esc(p.id)}" ${isChecked(p.id)?'checked':''}> <span>${esc(p.name)}</span><small>${esc(authRoleLabel(personAuthRole(p)))}</small></label>`).join('');
   return `<div class="team-people-filter employee-multi-filter" data-employee-filter="${esc(scope)}"><button class="btn ghost" type="button" data-employee-filter-toggle="${esc(scope)}">☑ ${esc(employeeFilterLabel(selected))}</button><div class="team-people-menu hidden" data-employee-filter-menu="${esc(scope)}"><div class="team-people-menu-head"><strong>Töötajad vaates</strong><button class="btn small ghost" type="button" data-employee-filter-default="${esc(scope)}">Vaikimisi</button></div><label class="team-people-option"><input type="checkbox" value="all" ${isChecked('all')?'checked':''}> <span>Kõik töötajad</span><small>kõik rollid</small></label><div class="section-title small">Rollid</div>${roleOptions}<div class="section-title small">Isikud</div>${personOptions}<div class="team-people-menu-actions"><button class="btn small ghost" type="button" data-employee-filter-all="${esc(scope)}">Kõik</button><button class="btn small ghost" type="button" data-employee-filter-clear="${esc(scope)}">Tühjenda</button></div></div></div>`;
 }
+function employeeFilterApplyVisualState(wrap,scope){
+  if(!wrap) return;
+  const selected=employeeFilterSelected(scope);
+  const selectedSet=new Set(selected);
+  const allSelected=selectedSet.has('all');
+  wrap.querySelectorAll('[data-employee-filter-menu] input[type="checkbox"]').forEach(input=>{
+    input.checked=allSelected ? input.value==='all' : selectedSet.has(input.value);
+  });
+  const btn=wrap.querySelector('[data-employee-filter-toggle]');
+  if(btn) btn.textContent='☑ '+employeeFilterLabel(selected);
+}
 function bindEmployeeMultiFilter(scope,renderFn){
   const wrap=document.querySelector(`[data-employee-filter="${scope}"]`);
   if(!wrap) return;
+  window.__VECO_EMPLOYEE_FILTER_RENDERERS__[scope]=renderFn;
   const read=()=>Array.from(wrap.querySelectorAll('[data-employee-filter-menu] input[type="checkbox"]:checked')).map(i=>i.value);
+  wrap.querySelectorAll('[data-employee-filter-menu] input[type="checkbox"]').forEach(input=>input.addEventListener('click',e=>e.stopPropagation()));
   wrap.querySelectorAll('[data-employee-filter-menu] input[type="checkbox"]').forEach(input=>input.addEventListener('change',e=>{
     e.stopPropagation();
     let selected=read();
     if(input.value==='all' && input.checked) selected=['all'];
     if(input.value!=='all') selected=selected.filter(v=>v!=='all');
     employeeFilterSet(scope,selected);
-    renderFn();
+    employeeFilterApplyVisualState(wrap,scope);
   }));
-  wrap.querySelector('[data-employee-filter-default]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();employeeFilterSet(scope,employeeFilterDefaultTokens());renderFn();});
-  wrap.querySelector('[data-employee-filter-all]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();employeeFilterSet(scope,['all']);renderFn();});
-  wrap.querySelector('[data-employee-filter-clear]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();employeeFilterSet(scope,[]);renderFn();});
+  wrap.querySelector('[data-employee-filter-default]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();employeeFilterSet(scope,employeeFilterDefaultTokens());employeeFilterApplyVisualState(wrap,scope);});
+  wrap.querySelector('[data-employee-filter-all]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();employeeFilterSet(scope,['all']);employeeFilterApplyVisualState(wrap,scope);});
+  wrap.querySelector('[data-employee-filter-clear]')?.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();employeeFilterSet(scope,[]);employeeFilterApplyVisualState(wrap,scope);});
 }
 function workorderVisibleToCurrentScope(w){const id=scopedPersonId(); return !id || workorderMatchesPerson(w,id);}
 function actVisibleToCurrentScope(a){const id=scopedPersonId(); if(!id) return true; const w=byId(state.workorders,a.workorderId); return w ? workorderMatchesPerson(w,id) : false;}

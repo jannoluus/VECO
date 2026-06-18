@@ -1,8 +1,5 @@
-# VECO V3 build 20260617_1458
+# VECO V3 build
 
-Base: VECO_V3_20260617_1452
+Build: VECO_V3_20260618_0612
 
-Changes:
-- CR-LAYOUT-001: sidebar-open layout no longer allows header/content under the left menu.
-- Calendar workorder click layer fixed: workorder cards are above empty calendar slots.
-- Filter/dropdown logic and team view left unchanged.
+CR-FILTER-003: Employee multi-select UX fix.
