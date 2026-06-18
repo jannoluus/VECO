@@ -1,8 +1,8 @@
 {
-  "build": "VECO_V3_20260618_0612",
-  "base": "VECO_V3_20260617_1452",
-  "created_at": "2026-06-17 14:58",
-  "notes": "CR-LAYOUT-001 sidebar/header/content layout stabilization and calendar workorder click layer fix.",
-  "buildNumber": "VECO_V3_20260618_0612",
-  "timestamp": "2026-06-18T06:12:00Z"
+  "build": "VECO_V3_20260618_0624",
+  "base": "VECO_V3_20260618_0612",
+  "created_at": "2026-06-18 06:24 UTC",
+  "notes": "CR-LAYOUT-002 sidebar click-outside fix: main/header/filter area closes sidebar without blocking controls.",
+  "buildNumber": "VECO_V3_20260618_0624",
+  "timestamp": "2026-06-18T06:24:00Z"
 }

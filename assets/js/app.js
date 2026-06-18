@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260618_0612';
+const APP_BUILD='20260618_0624';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1123,6 +1123,20 @@ function bindGlobal(){
   $('#sidebarToggleRail')?.addEventListener('click',sidebarToggleHandler);
   $('#sidebarToggleBtn')?.addEventListener('click',sidebarToggleHandler);
   $('#sidebarScrim')?.addEventListener('click',()=>applySidebarMode('hidden'));
+
+  // Build 20260618_0624: sidebar click-outside must cover the whole main area,
+  // including header and filter bar. Do not block the original click target.
+  document.addEventListener('click',(event)=>{
+    const appEl=$('.app');
+    if(!appEl?.classList.contains('sidebar-full')) return;
+    const target=event.target;
+    if(!target) return;
+    if(target.closest?.('.sidebar,#sidebarToggleRail,#sidebarToggleBtn,.sidebar-scrim,.modal,.confirm-modal,.photo-lightbox,.team-people-menu,[data-employee-filter-menu]')) return;
+    if(target.closest?.('main,.content,.panel,.calendar-compact-head,.calendar-filter-panel,.calendar-filter-fields,.calendar-planner-wrap,.calendar-planner')){
+      applySidebarMode('hidden');
+    }
+  },true);
+
   document.addEventListener('keydown',(event)=>{
     if(event.key==='Escape' && $('.app')?.classList.contains('sidebar-full')) applySidebarMode('hidden');
   });
