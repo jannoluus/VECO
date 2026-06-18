@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260618_0943';
+const APP_BUILD='20260618_1006';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1124,7 +1124,7 @@ function bindGlobal(){
   $('#sidebarToggleBtn')?.addEventListener('click',sidebarToggleHandler);
   $('#sidebarScrim')?.addEventListener('click',()=>applySidebarMode('hidden'));
 
-  // Build 20260618_0943: sidebar click-outside must cover the whole main area,
+  // Build 20260618_1006: sidebar click-outside must cover the whole main area,
   // including header and filter bar. Do not block the original click target.
   document.addEventListener('click',(event)=>{
     const appEl=$('.app');

@@ -1,6 +1,14 @@
 {
-  "buildNumber": "VECO_V3_20260618_0943",
-  "createdAt": "2026-06-18T09:43:00+03:00",
-  "base": "VECO_V3_20260618_0923",
-  "changes": ["CR-ONCALL-002 direct Supabase save for oncall"]
+  "buildNumber": "VECO_V3_20260618_1006",
+  "createdAt": "2026-06-18T10:06:00+00:00",
+  "base": "VECO_V3_20260618_0943",
+  "changes": [
+    "QA build after Supabase RLS disabled for oncall_assignments",
+    "CR-ONCALL-002 verified package: assets included and cache-busting aligned",
+    "No functional UI changes from 0943"
+  ],
+  "databasePrerequisites": [
+    "oncall_assignments table exists",
+    "row level security disabled for oncall_assignments during MVP"
+  ]
 }
