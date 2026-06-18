@@ -4072,7 +4072,7 @@ body.confirm-open #vecoConfirm *{
   pointer-events:auto!important;
 }
 
-/* Build 20260617_1445: employee multi-select dropdown layer fix
+/* Build 20260617_1452: employee multi-select dropdown layer fix
    Keeps calendar/workorders TÖÖTAJA menu above calendar grid and workorder cards.
    Team view already had a working layer setup; keep it unchanged. */
 .app.page-calendar .panel,
@@ -4107,7 +4107,7 @@ body.confirm-open #vecoConfirm *{
 }
 
 
-/* Build 20260617_1445: hard fix for calendar/workorders employee dropdown layering.
+/* Build 20260617_1452: hard fix for calendar/workorders employee dropdown layering.
    Previous fix raised z-index but the calendar filter panel still clipped the menu
    because the compact header/filter panel used max-height + overflow hidden. */
 .app.page-calendar > main > .content.wide > .panel,
@@ -4160,4 +4160,51 @@ body.confirm-open #vecoConfirm *{
 .app.page-workorders .table-wrap,
 .app.page-workorders .data-table{
   z-index:auto!important;
+}
+
+
+/* Build 20260617_1452: calendar filter toggle hard fix.
+   1445 raised calendar-filter-panel max-height/overflow globally, which left the
+   collapsed filter panel occupying space and allowed invisible controls to stay clickable.
+   Keep closed filters fully collapsed/non-interactive; allow overflow only while open. */
+.app.page-calendar .calendar-compact-head.filters-closed .calendar-filter-panel{
+  max-height:0!important;
+  min-height:0!important;
+  height:0!important;
+  padding-top:0!important;
+  padding-bottom:0!important;
+  margin-top:0!important;
+  margin-bottom:0!important;
+  border-color:transparent!important;
+  opacity:0!important;
+  transform:translateY(-4px)!important;
+  overflow:hidden!important;
+  pointer-events:none!important;
+}
+.app.page-calendar .calendar-compact-head.filters-closed .calendar-filter-fields,
+.app.page-calendar .calendar-compact-head.filters-closed .calendar-filter-fields *{
+  pointer-events:none!important;
+  visibility:hidden!important;
+}
+.app.page-calendar .calendar-compact-head.filters-open .calendar-filter-panel{
+  height:auto!important;
+  max-height:none!important;
+  min-height:0!important;
+  padding:10px!important;
+  opacity:1!important;
+  transform:translateY(0)!important;
+  overflow:visible!important;
+  pointer-events:auto!important;
+  border-color:var(--line)!important;
+  background:rgba(255,255,255,.025)!important;
+}
+.app.page-calendar .calendar-compact-head.filters-open .calendar-filter-fields,
+.app.page-calendar .calendar-compact-head.filters-open .calendar-filter-fields *{
+  visibility:visible!important;
+  pointer-events:auto;
+}
+.app.page-calendar .calendar-compact-head.filters-open .team-people-menu,
+.app.page-calendar .calendar-compact-head.filters-open .employee-multi-filter .team-people-menu{
+  z-index:20030!important;
+  overflow:auto!important;
 }
