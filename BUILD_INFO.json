@@ -1,14 +1,14 @@
 {
-  "buildNumber": "VECO_V3_20260619_1051",
-  "createdAt": "2026-06-19T10:51:00+03:00",
-  "base": "VECO_V3_20260619_1018",
+  "buildNumber": "VECO_V3_20260619_1202",
+  "createdAt": "2026-06-19T12:02:00+03:00",
+  "base": "VECO_V3_20260619_1051",
   "changes": [
-    "CR-AVAIL-002A: saadavuse ülemine navigatsioon tihendatud üheks kompaktseks ribaks",
-    "CR-AVAIL-002A: Eelmine/Järgmine nupud asendatud nooleikoonidega",
-    "CR-AVAIL-002A: kiirvalikud koondatud vahemiku dropdowni [See nädal ▼]",
-    "CR-AVAIL-002A: saadavuse vaates eemaldatud vana üldpäise topeltkuupäeva plokk",
-    "CR-AVAIL-002A: konfliktide paneel täiendatud märkuste/piirangute kokkuvõttega",
-    "Ristkontroll: Supabase skeemi ei muudetud; kalendri, tööde, inimeste, valvegraafiku ja mobiilivaate põhilist loogikat ei muudetud"
+    "CR-AVAIL-002B: saadavuse päis ühtlustatud kalendri päise loogikaga",
+    "CR-AVAIL-002B: VECO logo kõrval kuvatakse ‹ Täna › navigatsioon nagu kalendrivaates",
+    "CR-AVAIL-002B: saadavuse kuupäevavahemik ja VALVE info kuvatakse kalendriga samas formaadis",
+    "CR-AVAIL-002B: eraldi keskmine saadavuse naviriba eemaldatud",
+    "CR-AVAIL-002B: vahemiku valik [See nädal / Täna / Järgmine nädal / See kuu] jäi paremale tegevuste juurde",
+    "Ristkontroll: Supabase skeemi ei muudetud; saadavuse andmeloogikat ei muudetud; kalender, tööd, inimesed, valvegraafik ja mobiilivaade jäid muutmata"
   ],
   "databasePrerequisites": [
     "availability_entries table exists",

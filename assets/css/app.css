@@ -4399,3 +4399,76 @@ body.confirm-open #vecoConfirm *{
 @media(max-width:1180px){.availability-workspace{grid-template-columns:1fr;}.availability-side,.availability-main,.availability-conflicts{width:100%;}.availability-nav{flex-wrap:wrap}.availability-period{order:-1;width:100%;}}
 @media(max-width:760px){.availability-nav-compact{max-width:none;}.availability-period{min-width:100%;}.availability-range-select{width:100%;}.availability-nav-arrow{flex:1;}}
 .theme-light .availability-nav,.theme-light .availability-mini-day,.theme-light .availability-matrix thead th,.theme-light .availability-matrix th:first-child,.theme-light .availability-matrix td:first-child{background:#f8fafc;}
+
+/* VECO_V3_20260619_1112: CR-AVAIL-002B - availability header aligned with calendar header */
+.app.page-vacations .calendar-compact-head{
+  padding:14px 16px 10px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(10,20,28,.98),rgba(10,20,28,.92));
+  display:grid;
+  gap:10px;
+  position:relative!important;
+  z-index:20000!important;
+  overflow:visible!important;
+}
+.theme-light .app.page-vacations .calendar-compact-head{background:linear-gradient(180deg,#f8fafc,#eef3f6);}
+.app.page-vacations .calendar-compact-main{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  min-width:0;
+}
+.app.page-vacations .calendar-compact-left,
+.app.page-vacations .calendar-compact-right,
+.app.page-vacations .calendar-nav-mini{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.app.page-vacations .calendar-compact-left{flex:1 1 auto;}
+.app.page-vacations .calendar-compact-right{flex:0 0 auto;justify-content:flex-end;}
+.app.page-vacations .calendar-nav-mini .btn.square{
+  width:38px;
+  min-width:38px;
+  padding:0;
+  font-size:22px;
+  line-height:1;
+}
+.app.page-vacations .calendar-period-title{
+  display:grid;
+  gap:2px;
+  min-width:190px;
+}
+.app.page-vacations .calendar-period-title strong{
+  font-size:20px;
+  line-height:1.1;
+  letter-spacing:.01em;
+  font-weight:900;
+  color:var(--ink);
+}
+.app.page-vacations .calendar-period-title span{
+  color:var(--ink);
+  opacity:.92;
+  font-size:13px;
+  font-weight:650;
+}
+.app.page-vacations .calendar-period-title span b{color:var(--muted);font-weight:900;padding:0 7px;}
+.app.page-vacations .calendar-period-title span em{
+  color:#f7b955;
+  font-style:normal;
+  font-weight:900;
+  letter-spacing:.015em;
+}
+.app.page-vacations .calendar-compact-right .select{min-width:150px;}
+.app.page-vacations .calendar-compact-right .calendar-top-view{min-width:132px;}
+.app.page-vacations > main > .content.wide > .panel{overflow:visible!important;}
+@media(max-width:760px){
+  .app.page-vacations .calendar-compact-main{align-items:flex-start;flex-direction:column;}
+  .app.page-vacations .calendar-compact-right{width:100%;justify-content:flex-start;flex-wrap:wrap;}
+  .app.page-vacations .calendar-compact-left{width:100%;flex-wrap:wrap;}
+  .app.page-vacations .calendar-period-title strong{font-size:18px;}
+  .app.page-vacations .calendar-compact-right .select,
+  .app.page-vacations .calendar-compact-right .btn{width:100%;}
+}

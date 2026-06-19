@@ -3066,6 +3066,33 @@ function availabilityMonthCalendarHtml(monthDate,rangeStart,rangeEnd){
   const monthName=monthDate.toLocaleString('et-EE',{month:'long',year:'numeric'}).toUpperCase();
   return `<div class="availability-mini-calendar"><div class="availability-mini-head"><button class="btn small ghost" data-availability-month="prev" type="button">‹</button><strong>${esc(monthName)}</strong><button class="btn small ghost" data-availability-month="next" type="button">›</button></div><div class="availability-weekdays"><span>E</span><span>T</span><span>K</span><span>N</span><span>R</span><span>L</span><span>P</span></div><div class="availability-mini-grid">${cells.join('')}</div><div class="availability-mini-legend"><span><i class="dot ok"></i>OK</span><span><i class="dot limited"></i>Piirang</span><span><i class="dot conflict"></i>Konflikt</span><span><i class="dot oncall"></i>Valve</span></div></div>`;
 }
+
+function availabilityCompactHeader(rangeStart,rangeEnd,rangeMode,actions=''){
+  const days=weekDaysFrom(rangeStart);
+  const monthLabel=rangeMonthLabel(days,rangeStart);
+  const weekNo=isoWeekNumber(rangeStart);
+  const mainLabel=`${monthLabel} · NÄDAL ${weekNo}`.toUpperCase();
+  const dateRange=`${fmtShortDate(rangeStart)}–${fmtShortDate(rangeEnd)}`;
+  const rangeSelect=`<select class="select calendar-top-view availability-header-range" id="availabilityRangeSelect" aria-label="Vahemik"><option value="this-week" ${rangeMode==='this-week'?'selected':''}>See nädal</option><option value="today">Täna</option><option value="next-week" ${rangeMode==='next-week'?'selected':''}>Järgmine nädal</option><option value="this-month">See kuu</option>${rangeMode==='custom'?'<option value="custom" selected>Kohandatud</option>':''}</select>`;
+  return `<div class="calendar-compact-head availability-compact-head filters-closed">
+    <div class="calendar-compact-main">
+      <div class="calendar-compact-left">
+        ${themeLogo()}
+        <div class="calendar-nav-mini" aria-label="Saadavuse navigeerimine">
+          <button class="btn ghost square" data-availability-nav="prev" type="button" title="Eelmine">‹</button>
+          <button class="btn primary" data-availability-jump="today" type="button">Täna</button>
+          <button class="btn ghost square" data-availability-nav="next" type="button" title="Järgmine">›</button>
+        </div>
+        <div class="calendar-period-title"><strong>${esc(mainLabel)}</strong><span>${esc(dateRange)} <b>•</b> <em>VALVE: ${esc(currentOncallLabel(days)).toUpperCase()}</em></span></div>
+      </div>
+      <div class="calendar-compact-right">
+        ${rangeSelect}
+        ${actions||''}
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderVacations(){
   const today=dateKeyFromDate(new Date());
   const start=availabilityPeriodStart();
@@ -3091,7 +3118,6 @@ function renderVacations(){
     const status=absenceIsActive(a,today)?'<span class="status warn">Täna</span>':(a.end<today?'<span class="status">Möödunud</span>':'<span class="status ok">Planeeritud</span>');
     return `<tr><td><strong>${esc(techName(a.personId))}</strong><div class="muted">${esc(a.note||'')}</div></td><td><span class="status ${absenceTypeClass(a.type)}">${esc(a.type||'Puudumine')}</span></td><td>${esc(fmtActDate(a.start))}</td><td>${esc(fmtActDate(a.end))}</td><td>${absenceDays(a)} p</td><td>${conflict?`<span class="status warn">⚠ ${esc(conflict)}</span>`:'<span class="status ok">OK</span>'}</td><td>${status}</td><td><button class="btn small" data-edit-absence="${esc(a.id)}" type="button">Muuda</button> <button class="btn small danger" data-delete-absence="${esc(a.id)}" type="button">Kustuta</button></td></tr>`;
   };
-  const quickNav=`<div class="availability-nav availability-nav-compact"><button class="availability-nav-arrow" data-availability-nav="prev" type="button" title="Eelmine nädal">‹</button><div class="availability-period"><strong>${esc(periodTitle)}</strong><span>${esc(fmtActDate(rangeStart))} – ${esc(fmtActDate(rangeEnd))}</span></div><button class="availability-nav-arrow" data-availability-nav="next" type="button" title="Järgmine nädal">›</button><select class="select availability-range-select" id="availabilityRangeSelect" aria-label="Vahemik"><option value="this-week" ${rangeMode==='this-week'?'selected':''}>See nädal</option><option value="today">Täna</option><option value="next-week" ${rangeMode==='next-week'?'selected':''}>Järgmine nädal</option><option value="this-month">See kuu</option>${rangeMode==='custom'?'<option value="custom" selected>Kohandatud</option>':''}</select></div>`;
   const visibleOncalls=entriesInRange(state.oncall||[],rangeStart,rangeEnd);
   const noteItems=[
     ...visibleEntries.map(a=>({kind:'absence',personId:a.personId,type:a.type||'Puudumine',start:a.start,end:a.end,days:absenceDays(a),note:a.note||''})),
@@ -3103,7 +3129,7 @@ function renderVacations(){
   const matrix=`<div class="availability-matrix-wrap"><table class="availability-matrix"><thead><tr><th>Töötaja</th>${days.map(d=>`<th><span>${['E','T','K','N','R','L','P'][days.indexOf(d)]}</span><small>${fmtActDate(d).slice(0,5)}</small></th>`).join('')}</tr></thead><tbody>${matrixRows}</tbody></table></div>`;
   const legend=`<div class="availability-status-legend"><span><i class="availability-cell availability-cell-available">✓</i>Tööl</span><span><i class="availability-cell availability-cell-vacation">P</i>Puhkus</span><span><i class="availability-cell availability-cell-sick">H</i>Haigus</span><span><i class="availability-cell availability-cell-training">K</i>Koolitus</span><span><i class="availability-cell availability-cell-travel">L</i>Lähetus</span><span><i class="availability-cell availability-cell-partial">O</i>Osaliselt</span><span><i class="availability-cell availability-cell-oncall">V</i>Valve</span><span><i class="availability-cell availability-cell-absent">M</i>Mitte saadaval</span></div>`;
   const mini=availabilityMonthCalendarHtml(selectedMonth,rangeStart,rangeEnd);
-  const main=header('Saadavus','Puhkused, haigused, koolitused ja muud saadavuse piirangud.',actions,'SAADAVUS')+`<div class="detail-body availability-page">${quickNav}<div class="team-summary-bar availability-summary-bar"><span>Töötajaid: <strong>${activePeople.length}</strong></span><span>Perioodis saadaval: <strong>${availableInRange}</strong></span><span>Piiranguga: <strong>${limitedInRange}</strong></span><span>Valveid: <strong>${oncallInRange}</strong></span><span>⚠ <strong>${conflictsList.length}</strong></span><span>Tulekul: <strong>${upcoming.length}</strong></span><span>DB: <strong>${esc(dbMode)}</strong></span></div><div class="availability-workspace"><section class="card availability-side"><div class="card-top"><h3>Minikalender</h3><span class="status ${conflictsList.length?'warn':'ok'}">${conflictsList.length?'Hoiatus':'OK'}</span></div>${mini}${legend}</section><section class="card availability-main"><div class="card-top"><h3>Ressursimaatriks</h3><span class="muted">alfabeetiline järjestus</span></div>${matrix}</section><section class="card availability-conflicts"><div class="card-top"><h3>Konfliktid / Märkused</h3><span class="status ${conflictsList.length?'warn':'ok'}">${conflictsList.length?conflictsList.length:'OK'}</span></div><div class="list">${conflictHtml}</div></section></div><div class="section-title">Saadavuse kirjed valitud vahemikus</div>${table(['Töötaja','Tüüp','Algus','Lõpp','Päevi','Konflikt','Staatus','Tegevused'],visibleEntries.map(row))}<div class="muted">Vahemiku vaade näitab kirjeid, mis algavad, lõppevad või kattuvad valitud nädalaga. Valvegraafik jääb eraldi tabelisse ja kuvatakse siin ainult planeerimise infona.</div></div>`;
+  const main=availabilityCompactHeader(rangeStart,rangeEnd,rangeMode,actions)+`<div class="detail-body availability-page"><div class="team-summary-bar availability-summary-bar"><span>Töötajaid: <strong>${activePeople.length}</strong></span><span>Perioodis saadaval: <strong>${availableInRange}</strong></span><span>Piiranguga: <strong>${limitedInRange}</strong></span><span>Valveid: <strong>${oncallInRange}</strong></span><span>⚠ <strong>${conflictsList.length}</strong></span><span>Tulekul: <strong>${upcoming.length}</strong></span><span>DB: <strong>${esc(dbMode)}</strong></span></div><div class="availability-workspace"><section class="card availability-side"><div class="card-top"><h3>Minikalender</h3><span class="status ${conflictsList.length?'warn':'ok'}">${conflictsList.length?'Hoiatus':'OK'}</span></div>${mini}${legend}</section><section class="card availability-main"><div class="card-top"><h3>Ressursimaatriks</h3><span class="muted">alfabeetiline järjestus</span></div>${matrix}</section><section class="card availability-conflicts"><div class="card-top"><h3>Konfliktid / Märkused</h3><span class="status ${conflictsList.length?'warn':'ok'}">${conflictsList.length?conflictsList.length:'OK'}</span></div><div class="list">${conflictHtml}</div></section></div><div class="section-title">Saadavuse kirjed valitud vahemikus</div>${table(['Töötaja','Tüüp','Algus','Lõpp','Päevi','Konflikt','Staatus','Tegevused'],visibleEntries.map(row))}<div class="muted">Vahemiku vaade näitab kirjeid, mis algavad, lõppevad või kattuvad valitud nädalaga. Valvegraafik jääb eraldi tabelisse ja kuvatakse siin ainult planeerimise infona.</div></div>`;
   shell(main,'',{wide:true});
   bindVacations();
 }

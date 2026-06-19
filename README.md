@@ -1,15 +1,18 @@
-VECO_V3_20260619_1051
+# VECO V3 – Build 20260619_1202
 
-CR-AVAIL-002A release build.
-- Base: VECO_V3_20260619_1018.
-- Saadavuse vaates on kuupäevanavigatsioon nüüd ühes kompaktses ribas:
-  ◀ Nädal XX (dd.mm–dd.mm) ▶  [See nädal ▼]
-- Kiirvalikud on koondatud dropdowni: Täna, See nädal, Järgmine nädal, See kuu.
-- Vana topeltkuupäeva päiseplokk on saadavuse vaatest eemaldatud, et aktiivne vahemik oleks üheselt loetav.
-- Konfliktide paneel kuvab nüüd ka valitud perioodi piiranguid ja valveid, mitte ainult tühja OK teadet.
+Base: VECO_V3_20260619_1051
+
+## Muudatused
+
+- CR-AVAIL-002B: saadavuse päis viidud kalendrivaatega samasse loogikasse.
+- VECO logo kõrval on nüüd `‹ Täna ›` navigatsioon.
+- Kuupäevavahemik ja `VALVE:` info kuvatakse samas formaadis nagu kalendris.
+- Eemaldatud eraldi keskmine saadavuse naviriba.
+- Vahemiku dropdown jäi paremale tegevuste juurde.
 - Supabase skeemi ei muudetud.
-- Kalendri, tööde, inimeste, valvegraafiku ja mobiilivaate põhilist loogikat ei muudetud.
 
-Supabase eeldused on samad mis eelmises buildis:
-- availability_entries
-- oncall_assignments
+## Kontroll
+
+- `node --check assets/js/app.js` OK
+- `node --check assets/js/api.js` OK
+- ZIP terviklikkus kontrollitud
