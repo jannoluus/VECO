@@ -3013,39 +3013,117 @@ function absenceConflictSummary(absence){
   if(oncall) bits.push(`${oncall} valve`);
   return bits.join(' · ');
 }
+function availabilityPeriodStart(){
+  const stored=localStorage.getItem('veco_availability_week_start')||'';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(stored)) return weekStartKeyFrom(stored);
+  return weekStartKeyFrom(dateKeyFromDate(new Date()));
+}
+function setAvailabilityPeriodStart(value){
+  localStorage.setItem('veco_availability_week_start',weekStartKeyFrom(value));
+}
+function availabilityStatusForPersonDay(personId,day){
+  const abs=activeAbsencesForPerson(personId,day);
+  const calls=activeOncallForPerson(personId,day);
+  if(abs.length){
+    const priority=['Haigus','Mitte saadaval','Puhkus','Osaliselt saadaval','Koolitus','Lähetus','Puudumine','Muu'];
+    const pick=abs.slice().sort((a,b)=>priority.findIndex(x=>String(a.type||'').toLowerCase().includes(x.toLowerCase()))-priority.findIndex(x=>String(b.type||'').toLowerCase().includes(x.toLowerCase())))[0]||abs[0];
+    const meta=availabilityMeta(pick.type||'Puudumine');
+    return {kind:'absence',type:pick.type||'Puudumine',label:meta.label,icon:meta.icon,cls:meta.cls,title:`${meta.label}: ${fmtActDate(pick.start)}–${fmtActDate(pick.end)}${pick.note?' · '+pick.note:''}`};
+  }
+  if(calls.length){
+    const meta=availabilityMeta('Valve');
+    return {kind:'oncall',type:'Valve',label:meta.label,icon:meta.icon,cls:meta.cls,title:`Valve: ${calls.map(o=>`${fmtActDate(o.start)}–${fmtActDate(o.end)}`).join(', ')}`};
+  }
+  return {kind:'available',type:'Tööl',label:'Tööl',icon:'✓',cls:'available',title:'Tööl / saadaval'};
+}
+function entriesInRange(list,start,end){
+  return (list||[]).filter(x=>x.start<=end && x.end>=start);
+}
+function availabilityConflictItems(entries){
+  return entries.flatMap(a=>[
+    ...absenceWorkConflicts(a).map(w=>({type:'work',personId:a.personId,absence:a,text:`${techName(a.personId)} · ${a.type} kattub tööga: ${w.title} · ${fmtActDate(w.date)}${workorderEndDate(w)!==w.date?'–'+fmtActDate(workorderEndDate(w)):''} · ${objectName(w.objectId)}`})),
+    ...absenceOncallConflicts(a).map(o=>({type:'oncall',personId:a.personId,absence:a,text:`${techName(a.personId)} · ${a.type} kattub valvega: ${fmtActDate(o.start)}–${fmtActDate(o.end)}`}))
+  ]);
+}
+function availabilityMonthCalendarHtml(monthDate,rangeStart,rangeEnd){
+  const y=monthDate.getFullYear();
+  const m=monthDate.getMonth();
+  const first=new Date(y,m,1);
+  const last=new Date(y,m+1,0);
+  const offset=(first.getDay()||7)-1;
+  const cells=[];
+  for(let i=0;i<offset;i++) cells.push('<span class="availability-mini-day empty"></span>');
+  for(let d=1;d<=last.getDate();d++){
+    const key=dateKeyFromDate(new Date(y,m,d));
+    const entries=entriesInRange(state.absences,key,key);
+    const conflicts=availabilityConflictItems(entries).length;
+    const hasOncall=(state.oncall||[]).some(o=>o.start<=key&&o.end>=key);
+    const cls=conflicts?'conflict':entries.length?'limited':hasOncall?'oncall':'ok';
+    const selected=key>=rangeStart&&key<=rangeEnd?' selected':'';
+    cells.push(`<button class="availability-mini-day ${cls}${selected}" data-availability-day="${key}" type="button" title="${esc(fmtActDate(key))}">${d}</button>`);
+  }
+  const monthName=monthDate.toLocaleString('et-EE',{month:'long',year:'numeric'}).toUpperCase();
+  return `<div class="availability-mini-calendar"><div class="availability-mini-head"><button class="btn small ghost" data-availability-month="prev" type="button">‹</button><strong>${esc(monthName)}</strong><button class="btn small ghost" data-availability-month="next" type="button">›</button></div><div class="availability-weekdays"><span>E</span><span>T</span><span>K</span><span>N</span><span>R</span><span>L</span><span>P</span></div><div class="availability-mini-grid">${cells.join('')}</div><div class="availability-mini-legend"><span><i class="dot ok"></i>OK</span><span><i class="dot limited"></i>Piirang</span><span><i class="dot conflict"></i>Konflikt</span><span><i class="dot oncall"></i>Valve</span></div></div>`;
+}
 function renderVacations(){
   const today=dateKeyFromDate(new Date());
+  const start=availabilityPeriodStart();
+  const [rangeStart,rangeEnd]=weekRangeFrom(start,7);
+  const days=weekDaysFrom(rangeStart);
+  const selectedMonth=parseDateKey(localStorage.getItem('veco_availability_month')||rangeStart);
   const sorted=(state.absences||[]).slice().sort((a,b)=>a.start.localeCompare(b.start)||techName(a.personId).localeCompare(techName(b.personId)));
-  const active=sorted.filter(a=>absenceIsActive(a,today));
-  const upcoming=sorted.filter(a=>absenceIsUpcoming(a,today));
-  const past=sorted.filter(a=>a.end<today);
-  const conflicts=sorted.reduce((sum,a)=>sum+absenceWorkConflicts(a).length+absenceOncallConflicts(a).length,0);
-  const activePeople=(state.people||[]).filter(p=>p.active!==false);
-  const availableToday=activePeople.filter(p=>availabilityBadgesForPerson(p.id,today).filter(b=>b.kind!=='oncall').length===0).length;
-  const unavailableToday=activePeople.length-availableToday;
+  const visibleEntries=entriesInRange(sorted,rangeStart,rangeEnd);
+  const upcoming=sorted.filter(a=>a.start>today);
+  const conflictsList=availabilityConflictItems(visibleEntries);
+  const activePeople=(state.people||[]).filter(p=>p.active!==false).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'et'));
+  const availableInRange=activePeople.filter(p=>days.every(day=>availabilityStatusForPersonDay(p.id,day).kind!=='absence')).length;
+  const limitedInRange=activePeople.length-availableInRange;
+  const oncallInRange=(state.oncall||[]).filter(o=>o.start<=rangeEnd&&o.end>=rangeStart).length;
   const dbMode=window.VECO_API?.modeLabel?.()||'lokaalne';
+  const periodTitle=`Nädal ${isoWeekNumber(rangeStart)} (${fmtActDate(rangeStart).slice(0,5)}–${fmtActDate(rangeEnd).slice(0,5)})`;
   const actions='<button class="btn primary" id="newAbsenceBtn" type="button">＋ Lisa saadavuse kirje</button>';
   const row=(a)=>{
     const conflict=absenceConflictSummary(a);
     const status=absenceIsActive(a,today)?'<span class="status warn">Täna</span>':(a.end<today?'<span class="status">Möödunud</span>':'<span class="status ok">Planeeritud</span>');
     return `<tr><td><strong>${esc(techName(a.personId))}</strong><div class="muted">${esc(a.note||'')}</div></td><td><span class="status ${absenceTypeClass(a.type)}">${esc(a.type||'Puudumine')}</span></td><td>${esc(fmtActDate(a.start))}</td><td>${esc(fmtActDate(a.end))}</td><td>${absenceDays(a)} p</td><td>${conflict?`<span class="status warn">⚠ ${esc(conflict)}</span>`:'<span class="status ok">OK</span>'}</td><td>${status}</td><td><button class="btn small" data-edit-absence="${esc(a.id)}" type="button">Muuda</button> <button class="btn small danger" data-delete-absence="${esc(a.id)}" type="button">Kustuta</button></td></tr>`;
   };
-  const activeHtml=active.map(a=>`<div class="event-row"><strong>${esc(techName(a.personId))} · ${esc(a.type)}</strong><span class="muted">${fmtActDate(a.start)}–${fmtActDate(a.end)} · ${absenceDays(a)} p · ${esc(a.note||'')}</span>${absenceConflictSummary(a)?`<span class="status warn">⚠ ${esc(absenceConflictSummary(a))}</span>`:''}</div>`).join('')||'<span class="muted">Täna puudumisi ei ole.</span>';
-  const conflictHtml=sorted.flatMap(a=>[
-    ...absenceWorkConflicts(a).map(w=>`<div class="event-row"><strong>⚠ ${esc(techName(a.personId))} · ${esc(a.type)}</strong><span class="muted">Kattub tööga: ${esc(w.title)} · ${fmtActDate(w.date)}${workorderEndDate(w)!==w.date?'–'+fmtActDate(workorderEndDate(w)):''} · ${esc(objectName(w.objectId))}</span></div>`),
-    ...absenceOncallConflicts(a).map(o=>`<div class="event-row"><strong>⚠ ${esc(techName(a.personId))} · ${esc(a.type)}</strong><span class="muted">Kattub valvega: ${fmtActDate(o.start)}–${fmtActDate(o.end)}</span></div>`)
-  ]).join('')||'<span class="muted">Konflikte ei ole.</span>';
-  const todayPeopleHtml=activePeople.map(p=>{
-    const badges=availabilityBadgesHtml(p.id,today,{empty:true});
-    const warning=activeAbsencesForPerson(p.id,today).length?'<span class="status warn">Piirang</span>':'<span class="status ok">Saadaval</span>';
-    return `<div class="event-row"><strong>${esc(p.name)}</strong><span class="muted">${esc(p.role||'Töötaja')} ${p.region?'· '+esc(p.region):''}</span>${badges}${warning}</div>`;
-  }).join('')||'<span class="muted">Aktiivseid töötajaid ei ole.</span>';
-  const main=header('Saadavus','Puhkused, haigused, koolitused ja muud saadavuse piirangud.',actions,'SAADAVUS')+`<div class="detail-body availability-page"><div class="team-summary-bar availability-summary-bar"><span>Töötajaid: <strong>${activePeople.length}</strong></span><span>Täna saadaval: <strong>${availableToday}</strong></span><span>Täna piirang: <strong>${unavailableToday}</strong></span><span>Tulekul: <strong>${upcoming.length}</strong></span><span>⚠ <strong>${conflicts}</strong></span><span>DB: <strong>${esc(dbMode)}</strong></span></div><div class="grid"><section class="card"><div class="card-top"><h3>Täna</h3><span class="status ${unavailableToday?'warn':'ok'}">${availableToday}/${activePeople.length}</span></div><div class="list">${todayPeopleHtml}</div></section><section class="card"><div class="card-top"><h3>Konfliktid</h3><span class="status ${conflicts?'warn':'ok'}">${conflicts?conflicts:'OK'}</span></div><div class="list">${conflictHtml}</div></section></div><div class="section-title">Saadavuse kirjed</div>${table(['Töötaja','Tüüp','Algus','Lõpp','Päevi','Konflikt','Staatus','Tegevused'],sorted.map(row))}<div class="muted">Saadavuse tabel salvestab puhkused, haigused, koolitused, lähetused ja muud piirangud. Valvegraafik jääb eraldi tabelisse ning seda kuvatakse saadavuse kõrval, mitte ei dubleerita siia.</div></div>`;
+  const quickNav=`<div class="availability-nav"><button class="btn ghost" data-availability-nav="prev" type="button">‹ Eelmine</button><div class="availability-period"><strong>${esc(periodTitle)}</strong><span>${esc(fmtActDate(rangeStart))} – ${esc(fmtActDate(rangeEnd))}</span></div><button class="btn ghost" data-availability-nav="next" type="button">Järgmine ›</button></div><div class="availability-quick"><button class="btn small ghost" data-availability-jump="today" type="button">Täna</button><button class="btn small ghost" data-availability-jump="this-week" type="button">See nädal</button><button class="btn small ghost" data-availability-jump="next-week" type="button">Järgmine nädal</button><button class="btn small ghost" data-availability-jump="this-month" type="button">See kuu</button></div>`;
+  const conflictHtml=conflictsList.map(c=>`<div class="event-row"><strong>⚠ ${esc(techName(c.personId))}</strong><span class="muted">${esc(c.text)}</span></div>`).join('')||'<span class="muted">Valitud vahemikus konflikte ei leitud.</span>';
+  const matrixRows=activePeople.map(p=>`<tr><th><strong>${esc(p.name)}</strong><div class="muted">${esc(p.role||'Töötaja')}</div></th>${days.map(day=>{const s=availabilityStatusForPersonDay(p.id,day);return `<td><span class="availability-cell availability-cell-${esc(s.cls)}" title="${esc(s.title)}"><b>${esc(s.icon)}</b><small>${esc(s.label.slice(0,1))}</small></span></td>`;}).join('')}</tr>`).join('')||'<tr><td colspan="8"><span class="muted">Aktiivseid töötajaid ei ole.</span></td></tr>';
+  const matrix=`<div class="availability-matrix-wrap"><table class="availability-matrix"><thead><tr><th>Töötaja</th>${days.map(d=>`<th><span>${['E','T','K','N','R','L','P'][days.indexOf(d)]}</span><small>${fmtActDate(d).slice(0,5)}</small></th>`).join('')}</tr></thead><tbody>${matrixRows}</tbody></table></div>`;
+  const legend=`<div class="availability-status-legend"><span><i class="availability-cell availability-cell-available">✓</i>Tööl</span><span><i class="availability-cell availability-cell-vacation">P</i>Puhkus</span><span><i class="availability-cell availability-cell-sick">H</i>Haigus</span><span><i class="availability-cell availability-cell-training">K</i>Koolitus</span><span><i class="availability-cell availability-cell-travel">L</i>Lähetus</span><span><i class="availability-cell availability-cell-partial">O</i>Osaliselt</span><span><i class="availability-cell availability-cell-oncall">V</i>Valve</span><span><i class="availability-cell availability-cell-absent">M</i>Mitte saadaval</span></div>`;
+  const mini=availabilityMonthCalendarHtml(selectedMonth,rangeStart,rangeEnd);
+  const main=header('Saadavus','Puhkused, haigused, koolitused ja muud saadavuse piirangud.',actions,'SAADAVUS')+`<div class="detail-body availability-page">${quickNav}<div class="team-summary-bar availability-summary-bar"><span>Töötajaid: <strong>${activePeople.length}</strong></span><span>Perioodis saadaval: <strong>${availableInRange}</strong></span><span>Piiranguga: <strong>${limitedInRange}</strong></span><span>Valveid: <strong>${oncallInRange}</strong></span><span>⚠ <strong>${conflictsList.length}</strong></span><span>Tulekul: <strong>${upcoming.length}</strong></span><span>DB: <strong>${esc(dbMode)}</strong></span></div><div class="availability-workspace"><section class="card availability-side"><div class="card-top"><h3>Minikalender</h3><span class="status ${conflictsList.length?'warn':'ok'}">${conflictsList.length?'Hoiatus':'OK'}</span></div>${mini}${legend}</section><section class="card availability-main"><div class="card-top"><h3>Ressursimaatriks</h3><span class="muted">alfabeetiline järjestus</span></div>${matrix}</section><section class="card availability-conflicts"><div class="card-top"><h3>Konfliktid</h3><span class="status ${conflictsList.length?'warn':'ok'}">${conflictsList.length?conflictsList.length:'OK'}</span></div><div class="list">${conflictHtml}</div></section></div><div class="section-title">Saadavuse kirjed valitud vahemikus</div>${table(['Töötaja','Tüüp','Algus','Lõpp','Päevi','Konflikt','Staatus','Tegevused'],visibleEntries.map(row))}<div class="muted">Vahemiku vaade näitab kirjeid, mis algavad, lõppevad või kattuvad valitud nädalaga. Valvegraafik jääb eraldi tabelisse ja kuvatakse siin ainult planeerimise infona.</div></div>`;
   shell(main,'',{wide:true});
   bindVacations();
 }
 function bindVacations(){
   $('#newAbsenceBtn')?.addEventListener('click',()=>openAbsenceModal());
+  $$('[data-availability-nav]').forEach(btn=>btn.addEventListener('click',()=>{
+    const current=parseDateKey(availabilityPeriodStart());
+    const delta=btn.dataset.availabilityNav==='prev'?-7:7;
+    setAvailabilityPeriodStart(dateKeyFromDate(addDateDays(current,delta)));
+    renderVacations();
+  }));
+  $$('[data-availability-jump]').forEach(btn=>btn.addEventListener('click',()=>{
+    const today=dateKeyFromDate(new Date());
+    if(btn.dataset.availabilityJump==='next-week') setAvailabilityPeriodStart(dateKeyFromDate(addDateDays(parseDateKey(weekStartKeyFrom(today)),7)));
+    else setAvailabilityPeriodStart(today);
+    if(btn.dataset.availabilityJump==='this-month') localStorage.setItem('veco_availability_month',today);
+    renderVacations();
+  }));
+  $$('[data-availability-day]').forEach(btn=>btn.addEventListener('click',()=>{
+    const day=btn.dataset.availabilityDay;
+    setAvailabilityPeriodStart(day);
+    localStorage.setItem('veco_availability_month',day);
+    renderVacations();
+  }));
+  $$('[data-availability-month]').forEach(btn=>btn.addEventListener('click',()=>{
+    const current=parseDateKey(localStorage.getItem('veco_availability_month')||availabilityPeriodStart());
+    current.setMonth(current.getMonth()+(btn.dataset.availabilityMonth==='prev'?-1:1),1);
+    localStorage.setItem('veco_availability_month',dateKeyFromDate(current));
+    renderVacations();
+  }));
   $$('[data-edit-absence]').forEach(btn=>btn.addEventListener('click',()=>openAbsenceModal(btn.dataset.editAbsence)));
   $$('[data-delete-absence]').forEach(btn=>btn.addEventListener('click',async()=>{
     const id=btn.dataset.deleteAbsence;

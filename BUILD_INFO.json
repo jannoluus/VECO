@@ -1,18 +1,18 @@
 {
-  "buildNumber": "VECO_V3_20260619_0945",
-  "createdAt": "2026-06-19T09:45:00+03:00",
-  "base": "VECO_V3_20260618_1328",
+  "buildNumber": "VECO_V3_20260619_1018",
+  "createdAt": "2026-06-19T10:18:00+03:00",
+  "base": "VECO_V3_20260619_0945",
   "changes": [
-    "CR-AVAIL-001: Saadavuse/puhkuste kirjed viidud Supabase availability_entries tabeli peale",
-    "CR-AVAIL-001: vacations.html vaates lisatud tänase saadavuse kokkuvõte töötajate kaupa",
-    "CR-AVAIL-001: Saadavuse kirjed sünkroniseeritakse Supabase'i samal mustril nagu valvegraafik",
-    "CR-AVAIL-001: Valve kirjeid ei dubleerita saadavuse tabelisse; valve jääb oncall_assignments tabelisse",
-    "CR-AVAIL-001: Lisatud staatuste eristus: Puhkus, Haigus, Koolitus, Lähetus, Osaliselt saadaval, Mitte saadaval, Puudumine, Muu",
-    "Ristkontroll: tööde, valvegraafiku, inimeste ja mobiilivaate olemasolev loogika jäeti muutmata"
+    "CR-AVAIL-002: saadavuse vaatele lisatud valitud nädala kuupäevavahemik koos eelmine/järgmine navigatsiooniga",
+    "CR-AVAIL-002: lisatud kiirvalikud Täna, See nädal, Järgmine nädal ja See kuu",
+    "CR-AVAIL-002: lisatud minikalender värvikoodidega OK / piirang / konflikt / valve",
+    "CR-AVAIL-002: lisatud alfabeetiline ressursimaatriks töötajate ja nädalapäevade kaupa",
+    "CR-AVAIL-002: konfliktide paneel ja saadavuse tabel reageerivad valitud kuupäevavahemikule",
+    "Ristkontroll: Supabase tabeliskeemi ei muudetud; kalendri, tööde, inimeste, valvegraafiku ja mobiilivaate põhilist loogikat ei muudetud"
   ],
   "databasePrerequisites": [
-    "oncall_assignments table exists",
     "availability_entries table exists",
+    "oncall_assignments table exists",
     "row level security disabled for availability_entries during MVP or equivalent policies configured"
   ]
 }
