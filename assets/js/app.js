@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260618_1006';
+const APP_BUILD='20260619_0945';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1124,7 +1124,7 @@ function bindGlobal(){
   $('#sidebarToggleBtn')?.addEventListener('click',sidebarToggleHandler);
   $('#sidebarScrim')?.addEventListener('click',()=>applySidebarMode('hidden'));
 
-  // Build 20260618_1006: sidebar click-outside must cover the whole main area,
+  // Build 20260618_1328: sidebar click-outside must cover the whole main area,
   // including header and filter bar. Do not block the original click target.
   document.addEventListener('click',(event)=>{
     const appEl=$('.app');
@@ -2719,9 +2719,13 @@ function renderTeam(){
   const absentCount=visiblePeople.filter(p=>teamWorkConflictsForPerson(p.id,visibleDays).length||teamOncallConflictsForPerson(p.id,visibleDays).length).length;
   const overloaded=visiblePeople.filter(p=>personJobs(p).reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0)>=(scope==='full'?42:32)).length;
   const content=view==='matrix'?matrixHtml:(view==='day'?dayHtml:`<div class="grid team-grid">${techCards}</div>`);
+  const summaryWorkCount=view==='day'?dayWorkorders.length:visibleWorkorders.length;
+  const summaryHours=view==='day'?dayWorkorders.reduce((sum,w)=>sum+workorderHours(w),0):totalHours;
+  const summaryWarnings=absentCount+overloaded;
+  const teamSummaryBar=`<div class="team-summary-bar" aria-label="Tiimivaate kokkuvõte"><span>Töötajad: <strong>${esc(visiblePeople.length)}</strong></span><span>Tööd: <strong>${esc(summaryWorkCount)}</strong></span><span>H: <strong>${esc(summaryHours)}</strong></span><span>⚠ <strong>${esc(summaryWarnings)}</strong></span></div>`;
   const teamHeaderLabel=formatViewPeriod('Tiimivaade',view==='day'?'day':'week',view==='day'?[selectedDay]:visibleDays,currentWeek,{hideRange:view!=='day'});
   window.__VECO_ONCALL_CONTEXT_DAYS__ = view==='day' ? [selectedDay] : visibleDays;
-  const main=header('Tiimivaade',filters,actions,teamHeaderLabel)+`<div class="detail-body">${scopeNotice()}<div class="summary-grid">${summaryBox('Töötajaid',visiblePeople.length)}${summaryBox(view==='day'?'Päeva töid':'Vahemiku töid',view==='day'?dayWorkorders.length:visibleWorkorders.length)}${summaryBox('Planeeritud h',view==='day'?dayWorkorders.reduce((sum,w)=>sum+workorderHours(w),0):totalHours)}${summaryBox('Hoiatusi',absentCount+overloaded)}</div><div class="team-view-hint">${view==='cards'?'Kaardivaade näitab töötaja koormust valitud nädalas.':view==='matrix'?'Nädalatabel näitab valitud töötajaid päevade kaupa.':'Päevavaade sobib hommikuseks tööde jagamiseks.'}</div>${content}</div>`;
+  const main=header('Tiimivaade',filters,actions,teamHeaderLabel)+`<div class="detail-body">${scopeNotice()}${teamSummaryBar}${content}</div>`;
   const detail=selectedTeamPersonId?teamDetailHtml(visibleDays,view==='day'?dayWorkorders:visibleWorkorders):'';
   shell(main,detail);
   $('#teamWeekStart')?.addEventListener('change',()=>{const next=weekStartKeyFrom($('#teamWeekStart').value); localStorage.setItem('veco_team_week',next); $('#teamWeekStart').value=next; renderTeam();}); $('#teamViewMode')?.addEventListener('change',renderTeam); $('#teamWeekScope')?.addEventListener('change',renderTeam); $('#teamDaySelect')?.addEventListener('change',renderTeam);
@@ -2952,6 +2956,8 @@ function absenceTypeClass(type){
   if(t.includes('haig')) return 'red';
   if(t.includes('puhkus')) return 'ok';
   if(t.includes('koolitus')) return 'warn';
+  if(t.includes('osaliselt')||t==='partial') return 'warn';
+  if(t.includes('mitte')||t==='unavailable') return 'red';
   if(t.includes('valve')) return 'info';
   if(t.includes('lähet')||t.includes('lahet')) return 'info';
   return 'warn';
@@ -2962,6 +2968,8 @@ function availabilityMeta(type){
   if(t.includes('haig')||t==='sick') return {icon:'🤒', label:'Haigus', cls:'sick'};
   if(t.includes('koolitus')||t==='training') return {icon:'🎓', label:'Koolitus', cls:'training'};
   if(t.includes('valve')||t==='oncall') return {icon:'☎', label:'Valve', cls:'oncall'};
+  if(t.includes('osaliselt')||t==='partial') return {icon:'◐', label:'Osaliselt', cls:'partial'};
+  if(t.includes('mitte')||t==='unavailable') return {icon:'⛔', label:'Mitte saadaval', cls:'absent'};
   if(t.includes('lähet')||t.includes('lahet')) return {icon:'🚗', label:'Lähetus', cls:'travel'};
   if(t.includes('puud')) return {icon:'⛔', label:'Puudub', cls:'absent'};
   return {icon:'📌', label:type||'Muu', cls:'other'};
@@ -3012,6 +3020,10 @@ function renderVacations(){
   const upcoming=sorted.filter(a=>absenceIsUpcoming(a,today));
   const past=sorted.filter(a=>a.end<today);
   const conflicts=sorted.reduce((sum,a)=>sum+absenceWorkConflicts(a).length+absenceOncallConflicts(a).length,0);
+  const activePeople=(state.people||[]).filter(p=>p.active!==false);
+  const availableToday=activePeople.filter(p=>availabilityBadgesForPerson(p.id,today).filter(b=>b.kind!=='oncall').length===0).length;
+  const unavailableToday=activePeople.length-availableToday;
+  const dbMode=window.VECO_API?.modeLabel?.()||'lokaalne';
   const actions='<button class="btn primary" id="newAbsenceBtn" type="button">＋ Lisa saadavuse kirje</button>';
   const row=(a)=>{
     const conflict=absenceConflictSummary(a);
@@ -3023,7 +3035,12 @@ function renderVacations(){
     ...absenceWorkConflicts(a).map(w=>`<div class="event-row"><strong>⚠ ${esc(techName(a.personId))} · ${esc(a.type)}</strong><span class="muted">Kattub tööga: ${esc(w.title)} · ${fmtActDate(w.date)}${workorderEndDate(w)!==w.date?'–'+fmtActDate(workorderEndDate(w)):''} · ${esc(objectName(w.objectId))}</span></div>`),
     ...absenceOncallConflicts(a).map(o=>`<div class="event-row"><strong>⚠ ${esc(techName(a.personId))} · ${esc(a.type)}</strong><span class="muted">Kattub valvega: ${fmtActDate(o.start)}–${fmtActDate(o.end)}</span></div>`)
   ]).join('')||'<span class="muted">Konflikte ei ole.</span>';
-  const main=header('Saadavus','',actions,'SAADAVUS')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Kokku',state.absences.length)}${summaryBox('Täna puudub',active.length)}${summaryBox('Tulekul',upcoming.length)}${summaryBox('Konflikte',conflicts)}</div><div class="grid"><section class="card"><div class="card-top"><h3>Täna puuduvad</h3><span class="status ${active.length?'warn':'ok'}">${active.length}</span></div><div class="list">${activeHtml}</div></section><section class="card"><div class="card-top"><h3>Konfliktid</h3><span class="status ${conflicts?'warn':'ok'}">${conflicts?conflicts:'OK'}</span></div><div class="list">${conflictHtml}</div></section></div><div class="section-title">Saadavuse kirjed</div>${table(['Töötaja','Tüüp','Algus','Lõpp','Päevi','Konflikt','Staatus','Tegevused'],sorted.map(row))}<div class="muted">Saadavuse alla märgi puhkus, haigus, koolitus, valve, lähetus või muu olek. Sama info kasutatakse valvegraafiku ja tiimivaate konfliktide näitamiseks.</div></div>`;
+  const todayPeopleHtml=activePeople.map(p=>{
+    const badges=availabilityBadgesHtml(p.id,today,{empty:true});
+    const warning=activeAbsencesForPerson(p.id,today).length?'<span class="status warn">Piirang</span>':'<span class="status ok">Saadaval</span>';
+    return `<div class="event-row"><strong>${esc(p.name)}</strong><span class="muted">${esc(p.role||'Töötaja')} ${p.region?'· '+esc(p.region):''}</span>${badges}${warning}</div>`;
+  }).join('')||'<span class="muted">Aktiivseid töötajaid ei ole.</span>';
+  const main=header('Saadavus','Puhkused, haigused, koolitused ja muud saadavuse piirangud.',actions,'SAADAVUS')+`<div class="detail-body availability-page"><div class="team-summary-bar availability-summary-bar"><span>Töötajaid: <strong>${activePeople.length}</strong></span><span>Täna saadaval: <strong>${availableToday}</strong></span><span>Täna piirang: <strong>${unavailableToday}</strong></span><span>Tulekul: <strong>${upcoming.length}</strong></span><span>⚠ <strong>${conflicts}</strong></span><span>DB: <strong>${esc(dbMode)}</strong></span></div><div class="grid"><section class="card"><div class="card-top"><h3>Täna</h3><span class="status ${unavailableToday?'warn':'ok'}">${availableToday}/${activePeople.length}</span></div><div class="list">${todayPeopleHtml}</div></section><section class="card"><div class="card-top"><h3>Konfliktid</h3><span class="status ${conflicts?'warn':'ok'}">${conflicts?conflicts:'OK'}</span></div><div class="list">${conflictHtml}</div></section></div><div class="section-title">Saadavuse kirjed</div>${table(['Töötaja','Tüüp','Algus','Lõpp','Päevi','Konflikt','Staatus','Tegevused'],sorted.map(row))}<div class="muted">Saadavuse tabel salvestab puhkused, haigused, koolitused, lähetused ja muud piirangud. Valvegraafik jääb eraldi tabelisse ning seda kuvatakse saadavuse kõrval, mitte ei dubleerita siia.</div></div>`;
   shell(main,'',{wide:true});
   bindVacations();
 }
@@ -3054,8 +3071,8 @@ function bindVacations(){
 function openAbsenceModal(id=''){
   const today=dateKeyFromDate(new Date());
   const a=id?byId(state.absences,id):{personId:'',type:'',start:'',end:'',note:''};
-  const types=['Puhkus','Haigus','Koolitus','Valve','Lähetus','Puudumine','Muu'];
-  openModal(`<form id="absenceForm"><div class="dialog-head"><h2>${id?'Muuda saadavust':'Lisa saadavus'}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Töötaja<select class="select" name="personId" required><option value="" ${!a.personId?'selected':''} disabled>Vali töötaja...</option>${state.people.filter(p=>p.active).map(p=>`<option value="${esc(p.id)}" ${a.personId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><label>Tüüp<select class="select" name="type" required><option value="" ${!a.type?'selected':''} disabled>Vali tüüp...</option>${types.map(t=>`<option value="${t}" ${a.type===t?'selected':''}>${t}</option>`).join('')}</select></label><label>Algus<input class="field" name="start" type="date" required value="${esc(a.start)}"></label><label>Lõpp<input class="field" name="end" type="date" required value="${esc(a.end)}"></label><label class="full">Märkus<textarea name="note">${esc(a.note||'')}</textarea></label></div><div class="muted">Puhkus, haigus, koolitus, valve ja muu saadavuse kirje tekitavad vajadusel hoiatused, kui samale ajale on planeeritud töö või valve.</div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  const types=['Puhkus','Haigus','Koolitus','Lähetus','Osaliselt saadaval','Mitte saadaval','Puudumine','Muu'];
+  openModal(`<form id="absenceForm"><div class="dialog-head"><h2>${id?'Muuda saadavust':'Lisa saadavus'}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Töötaja<select class="select" name="personId" required><option value="" ${!a.personId?'selected':''} disabled>Vali töötaja...</option>${state.people.filter(p=>p.active).map(p=>`<option value="${esc(p.id)}" ${a.personId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><label>Tüüp<select class="select" name="type" required><option value="" ${!a.type?'selected':''} disabled>Vali tüüp...</option>${types.map(t=>`<option value="${t}" ${a.type===t?'selected':''}>${t}</option>`).join('')}</select></label><label>Algus<input class="field" name="start" type="date" required value="${esc(a.start)}"></label><label>Lõpp<input class="field" name="end" type="date" required value="${esc(a.end)}"></label><label class="full">Märkus<textarea name="note">${esc(a.note||'')}</textarea></label></div><div class="muted">Puhkus, haigus, koolitus ja muu saadavuse kirje tekitavad vajadusel hoiatused, kui samale ajale on planeeritud töö või valve. Valve ise jääb eraldi valvegraafiku tabelisse.</div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
   $('#absenceForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('EV'),personId:f.personId.value,type:f.type.value,start:f.start.value,end:f.end.value,note:f.note.value};if(next.end<next.start){alert('Lõpp ei saa olla enne algust.');return;}if(id){Object.assign(a,next)}else{state.absences.push(next)}save();closeModal();renderVacations();});
 }

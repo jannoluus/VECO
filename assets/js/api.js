@@ -4,6 +4,7 @@
   const TABLE='workorders';
   const AUTH_TABLE='auth_users';
   const ONCALL_TABLE='oncall_assignments';
+  const AVAILABILITY_TABLE='availability_entries';
   let pollingTimer=null;
   let realtimeChannel=null;
   let realtimeDebounce=null;
@@ -149,6 +150,72 @@
     const peopleSnapshot=JSON.parse(JSON.stringify(people||[]));
     oncallSyncTimer=setTimeout(()=>{
       syncOncallAssignments(snapshot,peopleSnapshot).catch(err=>console.warn('VECO on-call Supabase sync failed',err));
+    },200);
+  }
+
+
+  function availabilityPersonNameFromId(id,people){
+    const found=(people||[]).find(p=>String(p.id||'')===String(id||''));
+    return found?.name||'';
+  }
+  function availabilityPersonIdFromName(name,people){
+    const clean=String(name||'').trim().toLowerCase();
+    if(!clean) return '';
+    const found=(people||[]).find(p=>String(p.name||'').trim().toLowerCase()===clean);
+    return found?.id||'';
+  }
+  function availabilityFromDb(row,people){
+    const personId=row.user_id||availabilityPersonIdFromName(row.user_name,people);
+    return {
+      id:row.id||`AV-DB-${row.start_date}-${row.end_date}`,
+      personId:personId||'',
+      userName:row.user_name||availabilityPersonNameFromId(personId,people)||'',
+      type:row.status||row.type||'Puudumine',
+      start:row.start_date||'',
+      end:row.end_date||'',
+      note:row.note||'',
+      remoteId:row.id||''
+    };
+  }
+  function availabilityToDb(a,people){
+    const userName=a.userName||availabilityPersonNameFromId(a.personId,people)||a.user_name||'';
+    return {
+      user_id:a.personId||a.user_id||null,
+      user_name:userName||'Töötaja',
+      start_date:a.start||a.start_date||null,
+      end_date:a.end||a.end_date||null,
+      status:a.type||a.status||'Puudumine',
+      note:a.note||null,
+      updated_at:new Date().toISOString()
+    };
+  }
+  async function loadAvailabilityEntries(people=[]){
+    const client=getClient();
+    if(!client) return null;
+    const {data,error}=await client.from(AVAILABILITY_TABLE).select('id,user_id,user_name,start_date,end_date,status,note,created_at,updated_at').order('start_date',{ascending:true});
+    if(error) throw error;
+    return (data||[]).map(row=>availabilityFromDb(row,people)).filter(a=>a.start&&a.end);
+  }
+  async function syncAvailabilityEntries(absences=[],people=[]){
+    const client=getClient();
+    if(!client) return false;
+    const rows=(absences||[]).map(a=>availabilityToDb(a,people)).filter(r=>r.user_name&&r.start_date&&r.end_date&&r.status);
+    const del=await client.from(AVAILABILITY_TABLE).delete().not('id','is',null);
+    if(del.error) throw del.error;
+    if(rows.length){
+      const {error}=await client.from(AVAILABILITY_TABLE).insert(rows);
+      if(error) throw error;
+    }
+    return true;
+  }
+  let availabilitySyncTimer=null;
+  function scheduleAvailabilitySync(absences,people){
+    if(!getClient()) return;
+    clearTimeout(availabilitySyncTimer);
+    const snapshot=JSON.parse(JSON.stringify(absences||[]));
+    const peopleSnapshot=JSON.parse(JSON.stringify(people||[]));
+    availabilitySyncTimer=setTimeout(()=>{
+      syncAvailabilityEntries(snapshot,peopleSnapshot).catch(err=>console.warn('VECO availability Supabase sync failed',err));
     },200);
   }
   async function loadWorkorders(){
@@ -388,6 +455,8 @@
     deleteAuthUser,
     loadOncallAssignments,
     syncOncallAssignments,
+    loadAvailabilityEntries,
+    syncAvailabilityEntries,
     mode(){return getClient()?'supabase':'local'},
     modeLabel(){return this.mode()==='supabase'?'Supabase':'lokaalne'},
     configure(){
@@ -413,6 +482,12 @@
         }catch(oncallErr){
           console.warn('VECO on-call Supabase load failed, using local on-call data',oncallErr);
         }
+        try{
+          const remoteAvailability=await loadAvailabilityEntries(merged.people||[]);
+          if(Array.isArray(remoteAvailability)) merged.absences=remoteAvailability;
+        }catch(availabilityErr){
+          console.warn('VECO availability Supabase load failed, using local availability data',availabilityErr);
+        }
         window.VECO_STORAGE.save(merged);
         return merged;
       }catch(err){
@@ -425,6 +500,7 @@
       if(this.mode()==='supabase'){
         syncWorkorders(saved.workorders);
         scheduleOncallSync(saved.oncall,saved.people);
+        scheduleAvailabilitySync(saved.absences,saved.people);
       }
       return saved;
     },

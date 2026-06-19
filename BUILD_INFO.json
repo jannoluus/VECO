@@ -1,14 +1,18 @@
 {
-  "buildNumber": "VECO_V3_20260618_1006",
-  "createdAt": "2026-06-18T10:06:00+00:00",
-  "base": "VECO_V3_20260618_0943",
+  "buildNumber": "VECO_V3_20260619_0945",
+  "createdAt": "2026-06-19T09:45:00+03:00",
+  "base": "VECO_V3_20260618_1328",
   "changes": [
-    "QA build after Supabase RLS disabled for oncall_assignments",
-    "CR-ONCALL-002 verified package: assets included and cache-busting aligned",
-    "No functional UI changes from 0943"
+    "CR-AVAIL-001: Saadavuse/puhkuste kirjed viidud Supabase availability_entries tabeli peale",
+    "CR-AVAIL-001: vacations.html vaates lisatud tänase saadavuse kokkuvõte töötajate kaupa",
+    "CR-AVAIL-001: Saadavuse kirjed sünkroniseeritakse Supabase'i samal mustril nagu valvegraafik",
+    "CR-AVAIL-001: Valve kirjeid ei dubleerita saadavuse tabelisse; valve jääb oncall_assignments tabelisse",
+    "CR-AVAIL-001: Lisatud staatuste eristus: Puhkus, Haigus, Koolitus, Lähetus, Osaliselt saadaval, Mitte saadaval, Puudumine, Muu",
+    "Ristkontroll: tööde, valvegraafiku, inimeste ja mobiilivaate olemasolev loogika jäeti muutmata"
   ],
   "databasePrerequisites": [
     "oncall_assignments table exists",
-    "row level security disabled for oncall_assignments during MVP"
+    "availability_entries table exists",
+    "row level security disabled for availability_entries during MVP or equivalent policies configured"
   ]
 }
