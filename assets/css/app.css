@@ -4472,3 +4472,27 @@ body.confirm-open #vecoConfirm *{
   .app.page-vacations .calendar-compact-right .select,
   .app.page-vacations .calendar-compact-right .btn{width:100%;}
 }
+
+
+/* VECO_V3_20260619_1214: CR-AVAIL-002D - center status badges in availability overview */
+.availability-note-item > .availability-cell{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  align-self:center;
+  justify-self:center;
+  width:34px;
+  min-width:34px;
+  height:30px;
+  padding:0;
+  line-height:1;
+}
+.availability-note-item > .availability-cell b{
+  display:block;
+  line-height:1;
+  margin:0;
+  padding:0;
+  font-size:11px;
+  font-weight:950;
+  transform:none;
+}
