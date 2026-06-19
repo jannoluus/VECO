@@ -1,14 +1,14 @@
 {
-  "buildNumber": "VECO_V3_20260619_1018",
-  "createdAt": "2026-06-19T10:18:00+03:00",
-  "base": "VECO_V3_20260619_0945",
+  "buildNumber": "VECO_V3_20260619_1051",
+  "createdAt": "2026-06-19T10:51:00+03:00",
+  "base": "VECO_V3_20260619_1018",
   "changes": [
-    "CR-AVAIL-002: saadavuse vaatele lisatud valitud nädala kuupäevavahemik koos eelmine/järgmine navigatsiooniga",
-    "CR-AVAIL-002: lisatud kiirvalikud Täna, See nädal, Järgmine nädal ja See kuu",
-    "CR-AVAIL-002: lisatud minikalender värvikoodidega OK / piirang / konflikt / valve",
-    "CR-AVAIL-002: lisatud alfabeetiline ressursimaatriks töötajate ja nädalapäevade kaupa",
-    "CR-AVAIL-002: konfliktide paneel ja saadavuse tabel reageerivad valitud kuupäevavahemikule",
-    "Ristkontroll: Supabase tabeliskeemi ei muudetud; kalendri, tööde, inimeste, valvegraafiku ja mobiilivaate põhilist loogikat ei muudetud"
+    "CR-AVAIL-002A: saadavuse ülemine navigatsioon tihendatud üheks kompaktseks ribaks",
+    "CR-AVAIL-002A: Eelmine/Järgmine nupud asendatud nooleikoonidega",
+    "CR-AVAIL-002A: kiirvalikud koondatud vahemiku dropdowni [See nädal ▼]",
+    "CR-AVAIL-002A: saadavuse vaates eemaldatud vana üldpäise topeltkuupäeva plokk",
+    "CR-AVAIL-002A: konfliktide paneel täiendatud märkuste/piirangute kokkuvõttega",
+    "Ristkontroll: Supabase skeemi ei muudetud; kalendri, tööde, inimeste, valvegraafiku ja mobiilivaate põhilist loogikat ei muudetud"
   ],
   "databasePrerequisites": [
     "availability_entries table exists",
