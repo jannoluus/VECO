@@ -2696,17 +2696,19 @@ function renderTeam(){
       const h=jobs.reduce((sum,w)=>sum+workorderHours(w),0);
       const abs=state.absences.filter(a=>a.personId===p.id&&a.start<=date&&a.end>=date);
       const oc=state.oncall.filter(o=>o.personId===p.id&&o.start<=date&&o.end>=date);
-      const classes=['team-matrix-cell', h>=8?'busy':'', abs.length?'absent':'', oc.length?'oncall':''].filter(Boolean).join(' ');
+      const dayInfo=estonianCalendarDayInfo(date);
+      const classes=['team-matrix-cell', h>=8?'busy':'', abs.length?'absent':'', oc.length?'oncall':'', dayInfo.isHoliday?'holiday':'', dayInfo.isShort?'short-day':''].filter(Boolean).join(' ');
       const items=jobs.slice(0,2).map(w=>`<div class="team-matrix-job"><strong>${esc(w.time||'')}</strong><span>${esc(objectName(w.objectId))}</span><span>${workorderHours(w)} h${workorderDaySpan(w)>1?' · '+esc(daysBetweenKeys(w.date,date)+1)+'/'+esc(workorderDaySpan(w)):''} · ${esc(workorderRoleLabel(w,p.id))}</span></div>`).join('');
       const more=jobs.length>2?`<span class="team-more">+${jobs.length-2} veel</span>`:'';
       const workSummary=jobs.length?`<span class="team-day-count">${jobs.length} tööd</span>`:'<span class="muted">Vaba</span>';
-      return `<td class="${classes}"><div class="team-cell-head"><strong>${h?h+' h':'-'}</strong>${abs.length?'<span class="status warn">Puudub</span>':''}${oc.length?'<span class="status warn">Valve</span>':''}</div>${workSummary}${items}${more}</td>`;
+      const holidayBadge=dayInfo.isHoliday?`<span class="status holiday" title="${esc(dayInfo.name)}">Riigipüha</span>`:(dayInfo.isShort?`<span class="status holiday" title="${esc(dayInfo.name)}">Lühike</span>`:'');
+      return `<td class="${classes}"><div class="team-cell-head"><strong>${h?h+' h':'-'}</strong>${holidayBadge}${abs.length?'<span class="status warn">Puudub</span>':''}${oc.length?'<span class="status warn">Valve</span>':''}</div>${workSummary}${items}${more}</td>`;
     }).join('');
     const jobs=personJobs(p);
     const hours=jobs.reduce((sum,w)=>sum+workorderHoursInRange(w,visibleDays),0);
     return `<tr data-team-person="${p.id}" class="${p.id===selectedTeamPersonId?'selected':''}"><th><strong>${esc(p.name)}</strong><span class="muted">${esc(p.role||'Tehnik')} · ${hours} h</span></th>${cells}</tr>`;
   }).join('');
-  const matrixHtml=`<div class="team-matrix-wrap"><table class="team-matrix"><thead><tr><th>Töötaja</th>${visibleDays.map((d,i)=>`<th>${dayNames[weekDays.indexOf(d)]}<span>${esc(fmtActDate(d))}</span></th>`).join('')}</tr></thead><tbody>${matrixRows}</tbody></table></div>`;
+  const matrixHtml=`<div class="team-matrix-wrap"><table class="team-matrix"><thead><tr><th>Töötaja</th>${visibleDays.map((d,i)=>{const dayInfo=estonianCalendarDayInfo(d);return `<th class="${dayInfo.isHoliday?'holiday':dayInfo.isShort?'short-day':''}">${dayNames[weekDays.indexOf(d)]}<span>${esc(fmtActDate(d))}</span>${holidayShortMarker(d)}</th>`;}).join('')}</tr></thead><tbody>${matrixRows}</tbody></table></div>`;
 
   const dayHtml=`<div class="team-day-view">${visiblePeople.map(p=>{
     const jobs=dayWorkorders.filter(w=>workorderMatchesPerson(w,p.id)).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
@@ -3059,12 +3061,14 @@ function availabilityMonthCalendarHtml(monthDate,rangeStart,rangeEnd){
     const entries=entriesInRange(state.absences,key,key);
     const conflicts=availabilityConflictItems(entries).length;
     const hasOncall=(state.oncall||[]).some(o=>o.start<=key&&o.end>=key);
-    const cls=conflicts?'conflict':entries.length?'limited':hasOncall?'oncall':'ok';
+    const dayInfo=estonianCalendarDayInfo(key);
+    const cls=conflicts?'conflict':entries.length?'limited':hasOncall?'oncall':dayInfo.isHoliday?'holiday':dayInfo.isShort?'short-day':'ok';
     const selected=key>=rangeStart&&key<=rangeEnd?' selected':'';
-    cells.push(`<button class="availability-mini-day ${cls}${selected}" data-availability-day="${key}" type="button" title="${esc(fmtActDate(key))}">${d}</button>`);
+    const title=[fmtActDate(key),dayInfo.name].filter(Boolean).join(' · ');
+    cells.push(`<button class="availability-mini-day ${cls}${selected}" data-availability-day="${key}" type="button" title="${esc(title)}">${d}${dayInfo.isHoliday?'<em>★</em>':''}</button>`);
   }
   const monthName=monthDate.toLocaleString('et-EE',{month:'long',year:'numeric'}).toUpperCase();
-  return `<div class="availability-mini-calendar"><div class="availability-mini-head"><button class="btn small ghost" data-availability-month="prev" type="button">‹</button><strong>${esc(monthName)}</strong><button class="btn small ghost" data-availability-month="next" type="button">›</button></div><div class="availability-weekdays"><span>E</span><span>T</span><span>K</span><span>N</span><span>R</span><span>L</span><span>P</span></div><div class="availability-mini-grid">${cells.join('')}</div><div class="availability-mini-legend"><span><i class="dot ok"></i>OK</span><span><i class="dot limited"></i>Piirang</span><span><i class="dot conflict"></i>Konflikt</span><span><i class="dot oncall"></i>Valve</span></div></div>`;
+  return `<div class="availability-mini-calendar"><div class="availability-mini-head"><button class="btn small ghost" data-availability-month="prev" type="button">‹</button><strong>${esc(monthName)}</strong><button class="btn small ghost" data-availability-month="next" type="button">›</button></div><div class="availability-weekdays"><span>E</span><span>T</span><span>K</span><span>N</span><span>R</span><span>L</span><span>P</span></div><div class="availability-mini-grid">${cells.join('')}</div><div class="availability-mini-legend"><span><i class="dot ok"></i>OK</span><span><i class="dot limited"></i>Piirang</span><span><i class="dot conflict"></i>Konflikt</span><span><i class="dot oncall"></i>Valve</span><span><i class="dot holiday"></i>Riigipüha</span></div></div>`;
 }
 
 function availabilityCompactHeader(rangeStart,rangeEnd,rangeMode,actions=''){
@@ -3125,8 +3129,8 @@ function renderVacations(){
   ].sort((a,b)=>String(techName(a.personId)).localeCompare(String(techName(b.personId)),'et')||String(a.start).localeCompare(String(b.start)));
   const noteHtml=noteItems.map(item=>{const meta=availabilityMeta(item.type);return `<div class="availability-note-item"><span class="availability-cell availability-cell-${esc(meta.cls)}"><b>${esc(meta.label.slice(0,1))}</b></span><div><strong>${esc(techName(item.personId))}</strong><span>${esc(meta.label)} ${esc(fmtActDate(item.start))}–${esc(fmtActDate(item.end))}${item.days?` · ${esc(item.days)} p`:''}${item.note?` · ${esc(item.note)}`:''}</span></div></div>`;}).join('');
   const conflictHtml=conflictsList.length?conflictsList.map(c=>`<div class="event-row"><strong>⚠ ${esc(techName(c.personId))}</strong><span class="muted">${esc(c.text)}</span></div>`).join(''):`<span class="muted">Valitud vahemikus konflikte ei leitud.</span>${noteHtml?`<div class="availability-note-divider"></div><div class="availability-note-title">Piirangud ja valved valitud perioodil</div>${noteHtml}`:''}`;
-  const matrixRows=activePeople.map(p=>`<tr><th><strong>${esc(p.name)}</strong><div class="muted">${esc(p.role||'Töötaja')}</div></th>${days.map(day=>{const s=availabilityStatusForPersonDay(p.id,day);return `<td><span class="availability-cell availability-cell-${esc(s.cls)}" title="${esc(s.title)}"><b>${esc(s.icon)}</b><small>${esc(s.label.slice(0,1))}</small></span></td>`;}).join('')}</tr>`).join('')||'<tr><td colspan="8"><span class="muted">Aktiivseid töötajaid ei ole.</span></td></tr>';
-  const matrix=`<div class="availability-matrix-wrap"><table class="availability-matrix"><thead><tr><th>Töötaja</th>${days.map(d=>`<th><span>${['E','T','K','N','R','L','P'][days.indexOf(d)]}</span><small>${fmtActDate(d).slice(0,5)}</small></th>`).join('')}</tr></thead><tbody>${matrixRows}</tbody></table></div>`;
+  const matrixRows=activePeople.map(p=>`<tr><th><strong>${esc(p.name)}</strong><div class="muted">${esc(p.role||'Töötaja')}</div></th>${days.map(day=>{const s=availabilityStatusForPersonDay(p.id,day);const dayInfo=estonianCalendarDayInfo(day);return `<td class="${dayInfo.isHoliday?'holiday':dayInfo.isShort?'short-day':''}"><span class="availability-cell availability-cell-${esc(s.cls)}" title="${esc(s.title)}"><b>${esc(s.icon)}</b><small>${esc(s.label.slice(0,1))}</small></span></td>`;}).join('')}</tr>`).join('')||'<tr><td colspan="8"><span class="muted">Aktiivseid töötajaid ei ole.</span></td></tr>';
+  const matrix=`<div class="availability-matrix-wrap"><table class="availability-matrix"><thead><tr><th>Töötaja</th>${days.map(d=>{const dayInfo=estonianCalendarDayInfo(d);return `<th class="${dayInfo.isHoliday?'holiday':dayInfo.isShort?'short-day':''}"><span>${['E','T','K','N','R','L','P'][days.indexOf(d)]}</span><small>${fmtActDate(d).slice(0,5)}</small>${holidayShortMarker(d)}</th>`;}).join('')}</tr></thead><tbody>${matrixRows}</tbody></table></div>`;
   const legend=`<div class="availability-status-legend"><span><i class="availability-cell availability-cell-available">✓</i>Tööl</span><span><i class="availability-cell availability-cell-vacation">P</i>Puhkus</span><span><i class="availability-cell availability-cell-sick">H</i>Haigus</span><span><i class="availability-cell availability-cell-training">K</i>Koolitus</span><span><i class="availability-cell availability-cell-travel">L</i>Lähetus</span><span><i class="availability-cell availability-cell-partial">O</i>Osaliselt</span><span><i class="availability-cell availability-cell-oncall">V</i>Valve</span><span><i class="availability-cell availability-cell-absent">M</i>Mitte saadaval</span></div>`;
   const mini=availabilityMonthCalendarHtml(selectedMonth,rangeStart,rangeEnd);
   const main=availabilityCompactHeader(rangeStart,rangeEnd,rangeMode,actions)+`<div class="detail-body availability-page"><div class="team-summary-bar availability-summary-bar"><span>Töötajaid: <strong>${activePeople.length}</strong></span><span>Perioodis saadaval: <strong>${availableInRange}</strong></span><span>Piiranguga: <strong>${limitedInRange}</strong></span><span>Valveid: <strong>${oncallInRange}</strong></span><span>⚠ <strong>${conflictsList.length}</strong></span><span>Tulekul: <strong>${upcoming.length}</strong></span><span>DB: <strong>${esc(dbMode)}</strong></span></div><div class="availability-workspace"><section class="card availability-side"><div class="card-top"><h3>Minikalender</h3><span class="status ${conflictsList.length?'warn':'ok'}">${conflictsList.length?'Hoiatus':'OK'}</span></div>${mini}${legend}</section><section class="card availability-main"><div class="card-top"><h3>Ressursimaatriks</h3><span class="muted">alfabeetiline järjestus</span></div>${matrix}</section><section class="card availability-conflicts"><div class="card-top"><h3>Konfliktid / Märkused</h3><span class="status ${conflictsList.length?'warn':'ok'}">${conflictsList.length?conflictsList.length:'OK'}</span></div><div class="list">${conflictHtml}</div></section></div><div class="section-title">Saadavuse kirjed valitud vahemikus</div>${table(['Töötaja','Tüüp','Algus','Lõpp','Päevi','Konflikt','Staatus','Tegevused'],visibleEntries.map(row))}<div class="muted">Vahemiku vaade näitab kirjeid, mis algavad, lõppevad või kattuvad valitud nädalaga. Valvegraafik jääb eraldi tabelisse ja kuvatakse siin ainult planeerimise infona.</div></div>`;
@@ -3623,6 +3627,16 @@ function calendarDayMarker(dateKey){
   const info=estonianCalendarDayInfo(dateKey);
   if(info.isHoliday) return `<small class="calendar-day-note" title="${esc(info.name)}">${esc(info.name)}</small>`;
   if(info.isShort) return `<small class="calendar-day-note" title="${esc(info.name)}">Lühendatud tööpäev</small>`;
+  return '';
+}
+function holidayName(dateKey){
+  const info=estonianCalendarDayInfo(dateKey);
+  return info.isHoliday ? info.name : '';
+}
+function holidayShortMarker(dateKey){
+  const info=estonianCalendarDayInfo(dateKey);
+  if(info.isHoliday) return `<small class="holiday-mini-note" title="${esc(info.name)}">${esc(info.name)}</small>`;
+  if(info.isShort) return `<small class="holiday-mini-note short" title="${esc(info.name)}">Lühike päev</small>`;
   return '';
 }
 const EST_MONTHS=['JAANUAR','VEEBRUAR','MÄRTS','APRILL','MAI','JUUNI','JUULI','AUGUST','SEPTEMBER','OKTOOBER','NOVEMBER','DETSEMBER'];

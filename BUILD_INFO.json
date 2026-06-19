@@ -1,16 +1,16 @@
 {
-  "buildNumber": "VECO_V3_20260619_1214",
-  "createdAt": "2026-06-19T12:14:00+03:00",
-  "base": "VECO_V3_20260619_1202",
+  "buildNumber": "VECO_V3_20260619_1232",
+  "createdAt": "2026-06-19T12:32:00+03:00",
+  "base": "VECO_V3_20260619_1214",
   "changes": [
-    "CR-AVAIL-002D: parandatud parempoolse perioodi ülevaate staatuse badge'ide joondus",
-    "CR-AVAIL-002D: badge'i sisu tsentreeritud flex-joondusega",
-    "CR-AVAIL-002D: kasutatud sama mõõdu ja joondusloogikat nagu ressursimaatriksi staatuse ikoonidel",
-    "Ristkontroll: ainult CSS/cache/metadata muudatus; Supabase skeemi ja saadavuse andmeloogikat ei muudetud"
+    "CR-HOLIDAY-001: riigipühad ja lühendatud tööpäevad kuvatakse tiimivaate nädalatabelis",
+    "CR-HOLIDAY-001: saadavuse maatriksis ja minikalendris kuvatakse riigipühad",
+    "CR-HOLIDAY-001: kasutab olemasolevat Eesti riigipühade arvutusloogikat, sh liikuvad pühad ülestõusmispühade järgi",
+    "Ristkontroll: Supabase skeemi ei muudetud; kalender kasutas sama riigipühade loogikat juba enne"
   ],
   "databasePrerequisites": [
     "availability_entries table exists",
     "oncall_assignments table exists",
-    "row level security disabled for availability_entries during MVP or equivalent policies configured"
+    "Riigipühade MVP ei vaja eraldi andmebaasi tabelit; Eesti riigipühad arvutatakse rakenduses aastapõhiselt"
   ]
 }

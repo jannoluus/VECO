@@ -1,7 +1,7 @@
-VECO_V3_20260619_1214
+VECO_V3_20260619_1232
 
-CR-AVAIL-002D patch build.
-- Base: VECO_V3_20260619_1202.
-- Parandatud saadavuse parempoolse paneeli staatuse badge'ide joondus.
-- Badge'i sümbol on nüüd tsentreeritud horisontaalselt ja vertikaalselt.
-- Andmeloogikat, Supabase skeemi, kalendrit, töid, inimesi, valvegraafikut ja mobiilivaadet ei muudetud.
+CR-HOLIDAY-001 patch build.
+- Base: VECO_V3_20260619_1214.
+- Riigipühad ja lühendatud tööpäevad kuvatakse tiimivaates.
+- Riigipühad kuvatakse saadavuse minikalendris ja ressursimaatriksis.
+- Andmebaasi skeemi ei muudetud: Eesti riigipühad arvutatakse rakenduses olemasoleva loogikaga.

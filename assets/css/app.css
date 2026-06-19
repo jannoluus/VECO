@@ -4496,3 +4496,48 @@ body.confirm-open #vecoConfirm *{
   font-weight:950;
   transform:none;
 }
+
+/* CR-HOLIDAY-001: riigipühad tiimi- ja saadavuse vaates */
+.app.page-team .team-matrix thead th.holiday,
+.app.page-team .team-matrix td.holiday,
+.app.page-vacations .availability-matrix thead th.holiday,
+.app.page-vacations .availability-matrix td.holiday{
+  background:linear-gradient(0deg,rgba(255,107,107,.075),rgba(255,107,107,.075)),rgba(255,255,255,.015)!important;
+  border-color:rgba(255,107,107,.20)!important;
+}
+.app.page-team .team-matrix thead th.short-day,
+.app.page-team .team-matrix td.short-day,
+.app.page-vacations .availability-matrix thead th.short-day,
+.app.page-vacations .availability-matrix td.short-day{
+  background:linear-gradient(0deg,rgba(245,158,11,.055),rgba(245,158,11,.055)),rgba(255,255,255,.012)!important;
+  border-color:rgba(245,158,11,.18)!important;
+}
+.app.page-team .team-matrix th .holiday-mini-note,
+.app.page-vacations .availability-matrix th .holiday-mini-note{
+  display:block;
+  margin-top:3px;
+  color:rgba(255,190,190,.90);
+  font-size:9px;
+  font-weight:850;
+  line-height:1.1;
+  text-transform:none;
+  letter-spacing:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.app.page-team .team-matrix th .holiday-mini-note.short,
+.app.page-vacations .availability-matrix th .holiday-mini-note.short{color:rgba(251,191,36,.92);}
+.app.page-team .status.holiday{background:rgba(239,68,68,.18);color:#fecaca;border-color:rgba(239,68,68,.35);}
+.availability-mini-day.holiday{position:relative;background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.44);}
+.availability-mini-day.short-day{position:relative;background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.34);}
+.availability-mini-day.holiday em{position:absolute;right:3px;top:1px;font-size:8px;font-style:normal;color:#fecaca;line-height:1;}
+.availability-mini-legend .dot.holiday{background:#ef4444;}
+.theme-light .app.page-team .team-matrix thead th.holiday,
+.theme-light .app.page-team .team-matrix td.holiday,
+.theme-light .app.page-vacations .availability-matrix thead th.holiday,
+.theme-light .app.page-vacations .availability-matrix td.holiday{background:#fff1f2!important;border-color:#fecdd3!important;}
+.theme-light .app.page-team .team-matrix thead th.short-day,
+.theme-light .app.page-team .team-matrix td.short-day,
+.theme-light .app.page-vacations .availability-matrix thead th.short-day,
+.theme-light .app.page-vacations .availability-matrix td.short-day{background:#fffbeb!important;border-color:#fde68a!important;}
