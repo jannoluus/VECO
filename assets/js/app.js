@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260619_1718';
+const APP_BUILD='20260621_1734';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1763,20 +1763,38 @@ function openWorkorderModal(id='',defaults={}){
   const resolveObject=()=>{
     const rawObject=form.elements.objectName.value.trim();
     const objectText=rawObject.toLowerCase();
-    const clientText=form.elements.clientName.value.trim().toLowerCase();
+    const rawClient=form.elements.clientName.value.trim();
+    const clientText=rawClient.toLowerCase();
     if(!objectText) return null;
-    const client=clientText
-      ? (state.clients.find(c=>c.name.toLowerCase()===clientText)||state.clients.find(c=>c.name.toLowerCase().includes(clientText)))
+    let client=clientText
+      ? (state.clients.find(c=>String(c.name||'').toLowerCase()===clientText)||state.clients.find(c=>String(c.name||'').toLowerCase().includes(clientText)))
       : null;
+    if(!client && rawClient){
+      client={
+        id:uid('C'),
+        name:rawClient,
+        regNo:'',
+        contact:'',
+        phone:'',
+        email:'',
+        invoiceEmail:'',
+        active:true,
+        notes:'Lisatud töökäsu loomisel.'
+      };
+      state.clients.push(client);
+    }
     let candidates=state.objects;
     if(client){
       const scoped=state.objects.filter(o=>o.clientId===client.id);
       if(scoped.length) candidates=scoped;
     }
-    let obj=candidates.find(o=>o.name.toLowerCase()===objectText)
-      || candidates.find(o=>o.name.toLowerCase().includes(objectText))
-      || state.objects.find(o=>o.name.toLowerCase()===objectText);
-    if(obj) return obj;
+    let obj=candidates.find(o=>String(o.name||'').toLowerCase()===objectText)
+      || candidates.find(o=>String(o.name||'').toLowerCase().includes(objectText))
+      || state.objects.find(o=>String(o.name||'').toLowerCase()===objectText);
+    if(obj){
+      if(client && !obj.clientId){ obj.clientId=client.id; }
+      return obj;
+    }
     obj={
       id:uid('O'),
       clientId:client?.id||'',
@@ -5074,6 +5092,7 @@ function renderDiagnostics(){
     ['Keskkond',location.hostname.includes('github.io')?'GitHub Pages / production':'local / preview'],
     ['Leht',pageTitles[page]||page],
     ['Andmerežiim',window.VECO_API?.modeLabel?.()||'lokaalne'],
+    ['Kliente',state.clients.length],
     ['Objekte',state.objects.length],
     ['Töökäske',state.workorders.length],
     ['Akte',state.acts.length],
@@ -5083,7 +5102,9 @@ function renderDiagnostics(){
     ['Hooldusnorme',state.maintenanceNorms.length],
     ['Seadmeid',state.devices.length],
     ['Hooldusprofiile',(state.maintenanceProfiles||[]).length],
-    ['Granlundi klassifikaatoreid',(state.granlundClassifiers||[]).length],['Planeerimata hooldusi',(state.unplannedMaintenance||[]).length]
+    ['Granlundi klassifikaatoreid',(state.granlundClassifiers||[]).length],
+    ['Planeerimata hooldusi',(state.unplannedMaintenance||[]).length],
+    ['Masterdata sync viga',localStorage.getItem('veco_v3_last_masterdata_sync_error')||'-']
   ].map(([k,v])=>`<tr><td><strong>${esc(k)}</strong></td><td>${esc(v)}</td></tr>`).join('');
   const buildCard=`<div class="diagnostics-build-card"><span class="muted">Hetkel laaditud build</span><strong>VECO_V3_${esc(APP_BUILD)}</strong><code>${esc(location.href)}</code></div>`;
   const main=header('Diagnostika','','','ARENDUS')+`<div class="detail-body">${buildCard}${table(['Parameeter','Väärtus'],rows)}</div>`;

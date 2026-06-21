@@ -5,6 +5,8 @@
   const AUTH_TABLE='auth_users';
   const ONCALL_TABLE='oncall_assignments';
   const AVAILABILITY_TABLE='availability_entries';
+  const CLIENTS_TABLE='clients';
+  const OBJECTS_TABLE='objects';
   let pollingTimer=null;
   let realtimeChannel=null;
   let realtimeDebounce=null;
@@ -216,6 +218,123 @@
     const peopleSnapshot=JSON.parse(JSON.stringify(people||[]));
     availabilitySyncTimer=setTimeout(()=>{
       syncAvailabilityEntries(snapshot,peopleSnapshot).catch(err=>console.warn('VECO availability Supabase sync failed',err));
+    },200);
+  }
+
+  function normalizeTextId(value,prefix){
+    const raw=String(value||'').trim();
+    if(raw) return raw;
+    return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2,8)}`;
+  }
+  function clientToDb(c){
+    return {
+      client_no:normalizeTextId(c.id||c.client_no,'C'),
+      name:c.name||'Klient',
+      reg_no:c.regNo||c.reg_no||null,
+      contact:c.contact||null,
+      phone:c.phone||null,
+      email:c.email||null,
+      invoice_email:c.invoiceEmail||c.invoice_email||null,
+      active:c.active!==false,
+      notes:c.notes||null,
+      updated_at:new Date().toISOString()
+    };
+  }
+  function clientFromDb(row){
+    return {
+      id:row.client_no||row.id||'',
+      remoteId:row.id||'',
+      name:row.name||'Klient',
+      regNo:row.reg_no||'',
+      contact:row.contact||'',
+      phone:row.phone||'',
+      email:row.email||'',
+      invoiceEmail:row.invoice_email||'',
+      active:row.active!==false,
+      notes:row.notes||''
+    };
+  }
+  function objectToDb(o){
+    return {
+      object_no:normalizeTextId(o.id||o.object_no,'O'),
+      client_no:o.clientId||o.client_no||null,
+      name:o.name||'Objekt',
+      address:o.address||null,
+      main_contact:o.mainContact||o.main_contact||null,
+      responsible_tech_id:o.responsibleTechId||o.responsible_tech_id||null,
+      contract:o.contract||null,
+      status:o.status||'active',
+      notes:o.notes||null,
+      contacts:Array.isArray(o.contacts)?o.contacts:[],
+      updated_at:new Date().toISOString()
+    };
+  }
+  function objectFromDb(row){
+    return {
+      id:row.object_no||row.id||'',
+      remoteId:row.id||'',
+      clientId:row.client_no||row.client_id||'',
+      name:row.name||'Objekt',
+      address:row.address||'',
+      mainContact:row.main_contact||'',
+      responsibleTechId:row.responsible_tech_id||'',
+      contract:row.contract||'',
+      status:row.status||'active',
+      notes:row.notes||'',
+      contacts:Array.isArray(row.contacts)?row.contacts:[]
+    };
+  }
+  function mergeById(localRows,remoteRows){
+    const byId=new Map((localRows||[]).map(x=>[String(x.id||''),x]));
+    (remoteRows||[]).forEach(x=>{ if(x?.id) byId.set(String(x.id),{...(byId.get(String(x.id))||{}),...x}); });
+    return Array.from(byId.values()).filter(x=>x&&x.id);
+  }
+  async function loadClients(){
+    const client=getClient();
+    if(!client) return null;
+    const {data,error}=await client.from(CLIENTS_TABLE).select('id,client_no,name,reg_no,contact,phone,email,invoice_email,active,notes,created_at,updated_at').order('name',{ascending:true});
+    if(error) throw error;
+    return (data||[]).map(clientFromDb).filter(c=>c.id&&c.name);
+  }
+  async function loadObjects(){
+    const client=getClient();
+    if(!client) return null;
+    const {data,error}=await client.from(OBJECTS_TABLE).select('id,object_no,client_no,name,address,main_contact,responsible_tech_id,contract,status,notes,contacts,created_at,updated_at').order('name',{ascending:true});
+    if(error) throw error;
+    return (data||[]).map(objectFromDb).filter(o=>o.id&&o.name);
+  }
+  async function syncClients(clients=[]){
+    const client=getClient();
+    if(!client) return false;
+    const rows=(clients||[]).map(clientToDb).filter(r=>r.client_no&&r.name);
+    if(!rows.length) return true;
+    const {error}=await client.from(CLIENTS_TABLE).upsert(rows,{onConflict:'client_no'});
+    if(error) throw error;
+    return true;
+  }
+  async function syncObjects(objects=[]){
+    const client=getClient();
+    if(!client) return false;
+    const rows=(objects||[]).map(objectToDb).filter(r=>r.object_no&&r.name);
+    if(!rows.length) return true;
+    const {error}=await client.from(OBJECTS_TABLE).upsert(rows,{onConflict:'object_no'});
+    if(error) throw error;
+    return true;
+  }
+  let masterDataSyncTimer=null;
+  function scheduleMasterDataSync(clients,objects){
+    if(!getClient()) return;
+    clearTimeout(masterDataSyncTimer);
+    const clientsSnapshot=JSON.parse(JSON.stringify(clients||[]));
+    const objectsSnapshot=JSON.parse(JSON.stringify(objects||[]));
+    masterDataSyncTimer=setTimeout(async()=>{
+      try{
+        await syncClients(clientsSnapshot);
+        await syncObjects(objectsSnapshot);
+      }catch(err){
+        console.warn('VECO clients/objects Supabase sync failed',err);
+        try{ localStorage.setItem('veco_v3_last_masterdata_sync_error',String(err?.message||err||'')); }catch(_){ }
+      }
     },200);
   }
   async function loadWorkorders(){
@@ -457,6 +576,10 @@
     syncOncallAssignments,
     loadAvailabilityEntries,
     syncAvailabilityEntries,
+    loadClients,
+    loadObjects,
+    syncClients,
+    syncObjects,
     mode(){return getClient()?'supabase':'local'},
     modeLabel(){return this.mode()==='supabase'?'Supabase':'lokaalne'},
     configure(){
@@ -474,8 +597,21 @@
       const local=window.VECO_STORAGE.load();
       if(this.mode()!=='supabase') return local;
       try{
+        const base=window.VECO_STORAGE.normalize(local);
+        try{
+          const remoteClients=await loadClients();
+          if(Array.isArray(remoteClients)) base.clients=mergeById(base.clients||[],remoteClients);
+        }catch(clientErr){
+          console.warn('VECO clients Supabase load failed, using local clients',clientErr);
+        }
+        try{
+          const remoteObjects=await loadObjects();
+          if(Array.isArray(remoteObjects)) base.objects=mergeById(base.objects||[],remoteObjects);
+        }catch(objectErr){
+          console.warn('VECO objects Supabase load failed, using local objects',objectErr);
+        }
         const rows=await loadWorkorders();
-        const merged=mergeWorkorders(local,rows);
+        const merged=mergeWorkorders(base,rows);
         try{
           const remoteOncall=await loadOncallAssignments(merged.people||[]);
           if(Array.isArray(remoteOncall)) merged.oncall=remoteOncall;
@@ -489,6 +625,7 @@
           console.warn('VECO availability Supabase load failed, using local availability data',availabilityErr);
         }
         window.VECO_STORAGE.save(merged);
+        scheduleMasterDataSync(merged.clients,merged.objects);
         return merged;
       }catch(err){
         console.warn('VECO Supabase load failed, using local data',err);
@@ -498,6 +635,7 @@
     save(data){
       const saved=window.VECO_STORAGE.save(data);
       if(this.mode()==='supabase'){
+        scheduleMasterDataSync(saved.clients,saved.objects);
         syncWorkorders(saved.workorders);
         scheduleOncallSync(saved.oncall,saved.people);
         scheduleAvailabilitySync(saved.absences,saved.people);
@@ -519,8 +657,17 @@
     },
     async refreshWorkorders(currentState){
       if(this.mode()!=='supabase') return currentState;
+      const base=window.VECO_STORAGE.normalize(currentState||window.VECO_STORAGE.load());
+      try{
+        const remoteClients=await loadClients();
+        if(Array.isArray(remoteClients)) base.clients=mergeById(base.clients||[],remoteClients);
+      }catch(clientErr){ console.warn('VECO clients Supabase refresh failed',clientErr); }
+      try{
+        const remoteObjects=await loadObjects();
+        if(Array.isArray(remoteObjects)) base.objects=mergeById(base.objects||[],remoteObjects);
+      }catch(objectErr){ console.warn('VECO objects Supabase refresh failed',objectErr); }
       const rows=await loadWorkorders();
-      const merged=mergeWorkorders(currentState,rows);
+      const merged=mergeWorkorders(base,rows);
       window.VECO_STORAGE.save(merged);
       return merged;
     },

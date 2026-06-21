@@ -1,16 +1,19 @@
 {
-  "buildNumber": "VECO_V3_20260619_1718",
-  "createdAt": "2026-06-19T12:32:00+03:00",
-  "base": "VECO_V3_20260619_1214",
+  "buildNumber": "VECO_V3_20260621_1734",
+  "createdAt": "2026-06-21T17:34:00+03:00",
+  "base": "VECO_V3_20260619_1718",
   "changes": [
-    "CR-HOLIDAY-001: riigipühad ja lühendatud tööpäevad kuvatakse tiimivaate nädalatabelis",
-    "CR-HOLIDAY-001: saadavuse maatriksis ja minikalendris kuvatakse riigipühad",
-    "CR-HOLIDAY-001: kasutab olemasolevat Eesti riigipühade arvutusloogikat, sh liikuvad pühad ülestõusmispühade järgi",
-    "Ristkontroll: Supabase skeemi ei muudetud; kalender kasutas sama riigipühade loogikat juba enne"
+    "CR-DATA-001: clients tabeli Supabase laadimine ja sünkroon",
+    "CR-DATA-002: objects tabeli Supabase laadimine ja sünkroon",
+    "Töökäsu loomisel lisatakse uus klient lokaalsesse olekusse ja see sünkroniseeritakse Supabase'i",
+    "Tehniku vaade saab kliendi ja objekti info samast Supabase andmeallikast, mitte ainult brauseri localStorage'ist",
+    "Diagnostika kuvab klientide arvu ja viimase masterdata sync vea"
   ],
   "databasePrerequisites": [
-    "availability_entries table exists",
+    "workorders table exists",
+    "auth_users table exists",
     "oncall_assignments table exists",
-    "Riigipühade MVP ei vaja eraldi andmebaasi tabelit; Eesti riigipühad arvutatakse rakenduses aastapõhiselt"
+    "availability_entries table exists",
+    "Run SUPABASE_CLIENTS_OBJECTS.sql once to create clients and objects tables"
   ]
 }

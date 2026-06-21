@@ -1,7 +1,11 @@
-VECO_V3_20260619_1718
+VECO_V3_20260621_1734
 
-CR-HOLIDAY-001 patch build.
-- Base: VECO_V3_20260619_1214.
-- Riigipühad ja lühendatud tööpäevad kuvatakse tiimivaates.
-- Riigipühad kuvatakse saadavuse minikalendris ja ressursimaatriksis.
-- Andmebaasi skeemi ei muudetud: Eesti riigipühad arvutatakse rakenduses olemasoleva loogikaga.
+CR-DATA-001/002 patch build.
+- Base: VECO_V3_20260619_1718.
+- Lisatud klientide ja objektide Supabase sünkroon.
+- Töökäsu loomisel sisestatud uus klient ei jää enam ainult lokaalseks.
+- Tehniku vaade saab kliendi/objekti info Supabase'ist, kui SUPABASE_CLIENTS_OBJECTS.sql on käivitatud.
+- Diagnostikas on nähtav klientide arv ja masterdata sync vea rida.
+
+Enne kasutamist käivita vajadusel Supabase SQL editoris:
+SUPABASE_CLIENTS_OBJECTS.sql
