@@ -1,12 +1,9 @@
-# VECO_V3_20260622_0522
+# VECO V3
 
-CR-WO-002 – tehniku vaate töökäsu elutsükli tegevusnupud.
+Build: VECO_V3_20260622_0625
 
 Muudatused:
-- tehniku töökäsu modaalis ei valita enam staatust dropdownist;
-- olek muutub tegevusnuppudega: Alusta, Paus, Jätka, Töö valmis, Ava uuesti;
-- lisatud kinnitusküsimused kriitilistele olekumuutustele;
-- töö lõpetamisel nõutakse teostatud tööde kirjeldust ja eraldi kinnitust;
-- kalendris jääb töökäsk alles, tehniku vaates liigub teostatud töö lõpetatud gruppi.
+- CR-WO-003: tehniku täitmise vaates on Teostatud tööd, Töö tulemus / märkused ja Soovitused / puudused täidetavad enne töö lõpetamist.
+- Töö valmis kasutab täitmise vaates sisestatud Teostatud tööd välja ning küsib eraldi kinnituse.
+- Kui Teostatud tööd on tühi, küsitakse lõpetamisel kirjeldus eraldi.
 
-Supabase skeemi ei muudetud.

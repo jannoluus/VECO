@@ -15,5 +15,9 @@
     "oncall_assignments table exists",
     "availability_entries table exists",
     "clients and objects tables exist with RLS disabled or correct policies"
-  ]
+  ],
+  "build": "20260622_0625",
+  "name": "VECO_V3_20260622_0625",
+  "created_at": "2026-06-22 06:25",
+  "notes": "CR-WO-003: teostatud tööde väljad lisatud tehniku täitmise vaatesse; töö lõpetamine kasutab sama välja ja küsib kinnitust."
 }
