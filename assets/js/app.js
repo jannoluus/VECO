@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260622_0916';
+const APP_BUILD='20260622_0929';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -788,7 +788,7 @@ let projectTab='overview';
 let selectedWorkorderId=state.workorders?.[0]?.id||'';
 let selectedActId=state.acts?.[0]?.id||'';
 let selectedTeamPersonId='';
-const detailOpen={objects:false,projects:false,workorders:false,acts:false};
+const detailOpen={objects:false,clients:false,projects:false,workorders:false,acts:false};
 let modalEscHandler=null;
 
 const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Tehniku vaade',workorders:'Töökäsud',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',maintenanceProfiles:'Hooldusprofiil',granlundClassifier:'Granlund klassifikaator',unplannedMaintenance:'Planeerimata hooldused',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
@@ -1519,6 +1519,15 @@ async function archiveObject(id){
   if(!ok) return;
   Object.assign(o,{isDeleted:true,deletedAt:new Date().toISOString(),deletedBy:currentUser?.name||activePerson?.name||'VECO'});
   save();
+  try{
+    if(window.VECO_API?.mode?.()==='supabase' && typeof window.VECO_API.syncObjects==='function'){
+      await window.VECO_API.syncObjects([o]);
+      localStorage.removeItem('veco_v3_last_masterdata_sync_error');
+    }
+  }catch(err){
+    console.warn('VECO object archive sync failed',err);
+    alert('Objekt märgiti lokaalselt arhiivi, kuid Supabase sünkroniseerimine ebaõnnestus. Kontrolli diagnostikat.');
+  }
   detailOpen.objects=false;
   selectedObjectId=activeObjects()[0]?.id||'';
   renderObjects();
@@ -1540,9 +1549,9 @@ function renderClients(){
   const actions=`<button class="btn primary" id="newClientBtn">${icon('＋')}Lisa klient</button>`;
   const rows=clients.map(c=>{const objs=clientObjects(c.id),pros=clientProjects(c.id),wo=clientWorkorders(c.id).filter(w=>!isCompletedStatus(w.status));return `<tr data-client-id="${c.id}" class="${c.id===selectedClientId?'selected':''}"><td><strong>${esc(c.name)}</strong><div class="muted">${esc(c.regNo)}</div></td><td>${esc(c.contact)}</td><td>${esc(c.phone)}</td><td>${objs.length}</td><td>${pros.length}</td><td>${wo.length}</td><td><span class="status ${c.active?'ok':'red'}">${c.active?'Aktiivne':'Peatatud'}</span></td></tr>`});
   const main=header('Klientide register',filters,actions,'Kliendid')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Aktiivseid kliente',baseClients.length)}${summaryBox('Arhiivis',archivedClients.length)}${summaryBox('Objekte',activeObjects().length)}${summaryBox('Avatud töid',openWorkorders().length)}</div>${table(['Klient','Kontakt','Telefon','Objektid','Projektid','Avatud tööd','Staatus'],rows)}</div>`;
-  shell(main,clientDetailHtml()); $('#clientSearch')?.addEventListener('input',renderClients); $('#clientStatusFilter')?.addEventListener('change',renderClients);
-  $$('[data-client-id]').forEach(row=>row.addEventListener('click',()=>{selectedClientId=row.dataset.clientId;renderClients();}));
-  $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();selectedClientId=state.clients[0]?.id||'';renderClients();}); $('#newClientBtn')?.addEventListener('click',()=>openClientModal()); bindClientDetail();
+  shell(main,detailOpen.clients?clientDetailHtml():''); $('#clientSearch')?.addEventListener('input',renderClients); $('#clientStatusFilter')?.addEventListener('change',renderClients);
+  $$('[data-client-id]').forEach(row=>row.addEventListener('click',()=>{const id=row.dataset.clientId; if(detailOpen.clients&&selectedClientId===id){detailOpen.clients=false;}else{selectedClientId=id;detailOpen.clients=true;} renderClients();}));
+  $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();selectedClientId=state.clients[0]?.id||'';detailOpen.clients=false;renderClients();}); $('#newClientBtn')?.addEventListener('click',()=>openClientModal()); bindClientDetail();
 }
 function clientDetailHtml(){
   const c=byId(state.clients,selectedClientId); if(!c) return detailHeader('Kliendi detail')+`<div class="detail-body"><span class="muted">Vali klient.</span></div>`;
@@ -1553,7 +1562,7 @@ function clientDetailHtml(){
   if(clientTab==='projects') body=`<div class="list">${projects.map(p=>`<div class="event-row"><strong>${esc(p.name)}</strong><span class="muted">Objekt: ${esc(objectName(p.objectId))} · tähtaeg ${esc(fmtActDate(p.deadline))}</span><span class="status ${statusClass(p.status)}">${esc(p.status)}</span></div>`).join('')||'<span class="muted">Projekte pole.</span>'}</div>`;
   if(clientTab==='workorders') body=`<div class="list">${workorders.map(w=>`<div class="event-row"><strong>${esc(fmtActDate(w.date))} ${esc(w.time)} · ${esc(w.title)}</strong><span class="muted">${esc(objectName(w.objectId))} · ${esc(workorderAssigneeLabel(w))}</span><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div>`).join('')||'<span class="muted">Töökäske pole.</span>'}</div>`;
   if(clientTab==='acts') body=`<div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="muted">Objekt: ${esc(objectName(a.objectId))} · töökäsk ${esc(a.workorderId)}</span><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
-  return detailHeader('Kliendi detail','<button class="btn small" id="editClientBtn">✎ Muuda</button><button class="btn small primary" id="addClientObjectBtn">＋ Objekt</button><button class="btn small danger" id="archiveClientBtn" type="button">Arhiveeri</button>')+`<div class="detail-body"><div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${clientTab===k?'active':''}" data-client-tab="${k}">${t}</button>`).join('')}</div>${body}</div>`;
+  return detailHeader('Kliendi detail','<button class="btn small" id="editClientBtn">✎ Muuda</button><button class="btn small primary" id="addClientObjectBtn">＋ Objekt</button><button class="btn small danger" id="archiveClientBtn" type="button">Arhiveeri</button><button class="btn small ghost" id="clientDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body"><div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${clientTab===k?'active':''}" data-client-tab="${k}">${t}</button>`).join('')}</div>${body}</div>`;
 }
 async function archiveClient(id){
   const c=byId(state.clients,id);
@@ -1572,14 +1581,24 @@ async function archiveClient(id){
   if(!ok) return;
   Object.assign(c,{isDeleted:true,deletedAt:new Date().toISOString(),deletedBy:currentUser?.name||activePerson?.name||'VECO'});
   save();
+  try{
+    if(window.VECO_API?.mode?.()==='supabase' && typeof window.VECO_API.syncClients==='function'){
+      await window.VECO_API.syncClients([c]);
+      localStorage.removeItem('veco_v3_last_masterdata_sync_error');
+    }
+  }catch(err){
+    console.warn('VECO client archive sync failed',err);
+    alert('Klient märgiti lokaalselt arhiivi, kuid Supabase sünkroniseerimine ebaõnnestus. Kontrolli diagnostikat.');
+  }
+  detailOpen.clients=false;
   selectedClientId=activeClients()[0]?.id||'';
   renderClients();
 }
-function bindClientDetail(){ $$('[data-client-tab]').forEach(b=>b.addEventListener('click',()=>{clientTab=b.dataset.clientTab;renderClients();})); $('#editClientBtn')?.addEventListener('click',()=>openClientModal(selectedClientId)); $('#addClientObjectBtn')?.addEventListener('click',()=>openObjectModal('',{clientId:selectedClientId})); $('#archiveClientBtn')?.addEventListener('click',()=>archiveClient(selectedClientId)); }
+function bindClientDetail(){ $$('[data-client-tab]').forEach(b=>b.addEventListener('click',()=>{clientTab=b.dataset.clientTab;renderClients();})); $('#editClientBtn')?.addEventListener('click',()=>openClientModal(selectedClientId)); $('#addClientObjectBtn')?.addEventListener('click',()=>openObjectModal('',{clientId:selectedClientId})); $('#archiveClientBtn')?.addEventListener('click',()=>archiveClient(selectedClientId)); $('#clientDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.clients=false;renderClients();}); }
 function openClientModal(id=''){
   const c=id?byId(state.clients,id):{name:'',regNo:'',contact:'',phone:'',email:'',invoiceEmail:'',active:true,notes:''};
   openModal(`<form id="clientForm"><div class="dialog-head"><h2>${id?'Muuda klienti':'Lisa klient'}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Kliendi nimi<input class="field" name="name" required value="${esc(c.name)}"></label><label>Registrikood<input class="field" name="regNo" value="${esc(c.regNo)}"></label><label>Kontaktisik<input class="field" name="contact" value="${esc(c.contact)}"></label><label>Telefon<input class="field" name="phone" value="${esc(c.phone)}"></label><label>E-post<input class="field" name="email" type="email" value="${esc(c.email)}"></label><label>Arve e-post<input class="field" name="invoiceEmail" type="email" value="${esc(c.invoiceEmail)}"></label><label>Staatus<select class="select" name="active"><option value="true" ${c.active?'selected':''}>Aktiivne</option><option value="false" ${!c.active?'selected':''}>Peatatud</option></select></label><label class="full">Märkused<textarea name="notes">${esc(c.notes)}</textarea></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
-  bindClose(); $('#clientForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('C'),name:f.name.value,regNo:f.regNo.value,contact:f.contact.value,phone:f.phone.value,email:f.email.value,invoiceEmail:f.invoiceEmail.value,active:f.active.value==='true',notes:f.notes.value,isDeleted:c.isDeleted===true,deletedAt:c.deletedAt||'',deletedBy:c.deletedBy||''}; if(id){Object.assign(c,next)}else{state.clients.push(next);selectedClientId=next.id} save();closeModal();renderClients();});
+  bindClose(); $('#clientForm').addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const next={id:id||uid('C'),name:f.name.value,regNo:f.regNo.value,contact:f.contact.value,phone:f.phone.value,email:f.email.value,invoiceEmail:f.invoiceEmail.value,active:f.active.value==='true',notes:f.notes.value,isDeleted:c.isDeleted===true,deletedAt:c.deletedAt||'',deletedBy:c.deletedBy||''}; if(id){Object.assign(c,next)}else{state.clients.push(next);selectedClientId=next.id;detailOpen.clients=true} save();closeModal();renderClients();});
 }
 
 function renderProjects(){
