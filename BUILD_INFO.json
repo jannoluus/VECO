@@ -1,22 +1,22 @@
 {
-  "buildNumber": "VECO_V3_20260622_0742",
-  "createdAt": "2026-06-22T07:42:00+03:00",
-  "base": "VECO_V3_20260622_0625",
+  "buildNumber": "VECO_V3_20260622_0859",
+  "createdAt": "2026-06-22T08:59:00+03:00",
+  "base": "VECO_V3_20260622_0742",
   "changes": [
-    "CR-WO-004: kalendri staatusfilter avab vaikimisi kõik staatused, et teostatud tööd ei kaoks vaates ära",
-    "Teostatud töökaardid saavad kalendris sama rohelise lõpetatud töö visuaali ja ✓ märgise",
-    "Admin töökäsu detailis kuvatakse eraldi Teostatud tööd, Töö tulemus / märkused ja Soovitused / puudused",
-    "Diagnostika lehele lisatud töökäskude staatuste kokkuvõte"
+    "CR-DATA-004: klientide ja objektide soft delete/arhiveerimine",
+    "Lisatud SQL migratsioon SUPABASE_CLIENTS_OBJECTS_SOFT_DELETE.sql",
+    "Kliendi ja objekti detailvaates arhiveerimisnupp kinnitusega",
+    "Arhiveeritud kliendid/objektid peidetakse aktiivsetest valikutest ja töökäsu loomise vormist",
+    "Vanadel töödel kuvatakse arhiveeritud klient/objekt tähisega (arhiivis)",
+    "Diagnostikasse lisatud aktiivsete ja arhiivis klientide/objektide loendurid"
   ],
   "databasePrerequisites": [
-    "workorders table exists",
-    "auth_users table exists",
-    "oncall_assignments table exists",
-    "availability_entries table exists",
-    "clients and objects tables exist with RLS disabled or correct policies"
+    "Run SUPABASE_CLIENTS_OBJECTS_SOFT_DELETE.sql",
+    "clients and objects tables exist with RLS disabled or correct policies",
+    "workorders table exists"
   ],
-  "build": "20260622_0742",
-  "name": "VECO_V3_20260622_0742",
-  "created_at": "2026-06-22 07:42",
-  "notes": "CR-WO-004: teostatud tööde nähtavus ja diagnostika; Supabase skeemi ei muudetud."
+  "build": "20260622_0859",
+  "name": "VECO_V3_20260622_0859",
+  "created_at": "2026-06-22 08:59",
+  "notes": "CR-DATA-004: kliendi/objekti arhiveerimine soft delete väljadega."
 }

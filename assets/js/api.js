@@ -237,6 +237,9 @@
       invoice_email:c.invoiceEmail||c.invoice_email||null,
       active:c.active!==false,
       notes:c.notes||null,
+      is_deleted:c.isDeleted===true||c.is_deleted===true,
+      deleted_at:c.deletedAt||c.deleted_at||null,
+      deleted_by:c.deletedBy||c.deleted_by||null,
       updated_at:new Date().toISOString()
     };
   }
@@ -251,7 +254,10 @@
       email:row.email||'',
       invoiceEmail:row.invoice_email||'',
       active:row.active!==false,
-      notes:row.notes||''
+      notes:row.notes||'',
+      isDeleted:row.is_deleted===true,
+      deletedAt:row.deleted_at||'',
+      deletedBy:row.deleted_by||''
     };
   }
   function objectToDb(o){
@@ -266,6 +272,9 @@
       status:o.status||'active',
       notes:o.notes||null,
       contacts:Array.isArray(o.contacts)?o.contacts:[],
+      is_deleted:o.isDeleted===true||o.is_deleted===true,
+      deleted_at:o.deletedAt||o.deleted_at||null,
+      deleted_by:o.deletedBy||o.deleted_by||null,
       updated_at:new Date().toISOString()
     };
   }
@@ -281,7 +290,10 @@
       contract:row.contract||'',
       status:row.status||'active',
       notes:row.notes||'',
-      contacts:Array.isArray(row.contacts)?row.contacts:[]
+      contacts:Array.isArray(row.contacts)?row.contacts:[],
+      isDeleted:row.is_deleted===true,
+      deletedAt:row.deleted_at||'',
+      deletedBy:row.deleted_by||''
     };
   }
   function mergeById(localRows,remoteRows){
@@ -292,14 +304,14 @@
   async function loadClients(){
     const client=getClient();
     if(!client) return null;
-    const {data,error}=await client.from(CLIENTS_TABLE).select('id,client_no,name,reg_no,contact,phone,email,invoice_email,active,notes,created_at,updated_at').order('name',{ascending:true});
+    const {data,error}=await client.from(CLIENTS_TABLE).select('id,client_no,name,reg_no,contact,phone,email,invoice_email,active,notes,is_deleted,deleted_at,deleted_by,created_at,updated_at').order('name',{ascending:true});
     if(error) throw error;
     return (data||[]).map(clientFromDb).filter(c=>c.id&&c.name);
   }
   async function loadObjects(){
     const client=getClient();
     if(!client) return null;
-    const {data,error}=await client.from(OBJECTS_TABLE).select('id,object_no,client_no,name,address,main_contact,responsible_tech_id,contract,status,notes,contacts,created_at,updated_at').order('name',{ascending:true});
+    const {data,error}=await client.from(OBJECTS_TABLE).select('id,object_no,client_no,name,address,main_contact,responsible_tech_id,contract,status,notes,contacts,is_deleted,deleted_at,deleted_by,created_at,updated_at').order('name',{ascending:true});
     if(error) throw error;
     return (data||[]).map(objectFromDb).filter(o=>o.id&&o.name);
   }

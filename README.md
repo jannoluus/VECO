@@ -1,14 +1,24 @@
-# VECO V3
+# VECO V3 - build 20260622_0859
 
-Build: VECO_V3_20260622_0742
+Base: VECO_V3_20260622_0742
 
-## Muudatused
+## CR-DATA-004
 
-- CR-WO-004: kalendri staatusfilter avab vaikimisi kõik staatused.
-- Teostatud töökaardid eristuvad kalendris rohelise visuaaliga ja ✓ märgisega.
-- Admin töökäsu detailis kuvatakse teostatud tööde info eraldi plokkidena.
-- Diagnostikas on töökäskude staatuste kokkuvõte.
+Rakendatud kliendi ja objekti soft delete / arhiveerimine.
 
-## Andmebaas
+Enne kasutamist käivita Supabase SQL editoris:
 
-Supabase skeemi ei muudetud.
+`SUPABASE_CLIENTS_OBJECTS_SOFT_DELETE.sql`
+
+Muudatused:
+- kliendi detailis `Arhiveeri`;
+- objekti detailis `Arhiveeri`;
+- arhiveeritud kirjed peidetakse aktiivsetest valikutest;
+- vanadel töödel jääb seos alles ja nimele lisatakse `(arhiivis)`;
+- diagnostikas kuvatakse aktiivsed ja arhiivis kliendid/objektid.
+
+## Kontroll
+
+- `node --check assets/js/app.js` OK
+- `node --check assets/js/api.js` OK
+
