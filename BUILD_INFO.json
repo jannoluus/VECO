@@ -1,13 +1,12 @@
 {
-  "buildNumber": "VECO_V3_20260622_0522",
-  "createdAt": "2026-06-22T05:22:00+03:00",
-  "base": "VECO_V3_20260621_1734",
+  "buildNumber": "VECO_V3_20260622_0742",
+  "createdAt": "2026-06-22T07:42:00+03:00",
+  "base": "VECO_V3_20260622_0625",
   "changes": [
-    "CR-WO-002: tehniku vaates eemaldatud staatuse käsitsi valimise dropdown töökäsu täitmise modaalist",
-    "Tehniku vaates juhitakse töökäsu olekut tegevusnuppudega: Alusta, Paus, Jätka, Töö valmis, Ava uuesti",
-    "Lisatud kinnitusküsimused töö alustamisel, peatamisel, jätkamisel ja lõpetamisel",
-    "Töö lõpetamisel küsitakse teostatud tööde kirjeldust ning seejärel eraldi lõplikku kinnitust",
-    "Kalendrivaate staatuse käsitsi muutmise loogikat ei muudetud"
+    "CR-WO-004: kalendri staatusfilter avab vaikimisi kõik staatused, et teostatud tööd ei kaoks vaates ära",
+    "Teostatud töökaardid saavad kalendris sama rohelise lõpetatud töö visuaali ja ✓ märgise",
+    "Admin töökäsu detailis kuvatakse eraldi Teostatud tööd, Töö tulemus / märkused ja Soovitused / puudused",
+    "Diagnostika lehele lisatud töökäskude staatuste kokkuvõte"
   ],
   "databasePrerequisites": [
     "workorders table exists",
@@ -16,8 +15,8 @@
     "availability_entries table exists",
     "clients and objects tables exist with RLS disabled or correct policies"
   ],
-  "build": "20260622_0625",
-  "name": "VECO_V3_20260622_0625",
-  "created_at": "2026-06-22 06:25",
-  "notes": "CR-WO-003: teostatud tööde väljad lisatud tehniku täitmise vaatesse; töö lõpetamine kasutab sama välja ja küsib kinnitust."
+  "build": "20260622_0742",
+  "name": "VECO_V3_20260622_0742",
+  "created_at": "2026-06-22 07:42",
+  "notes": "CR-WO-004: teostatud tööde nähtavus ja diagnostika; Supabase skeemi ei muudetud."
 }

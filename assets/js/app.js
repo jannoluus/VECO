@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260622_0625';
+const APP_BUILD='20260622_0742';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -869,7 +869,7 @@ function normalizeActContentFromWorkorder(a,w={}){
   return a;
 }
 const statusClass=(s)=>{
-  if(/lõpetatud|täidetud|valmis/i.test(s||'')) return 'done';
+  if(/teostatud|lõpetatud|täidetud|valmis/i.test(s||'')) return 'done';
   if(/töös/i.test(s||'')) return 'progress';
   if(/planeeritud|aktiivne|saadetud/i.test(s||'')) return 'ok';
   if(/ootel|attention|mustand|pausil/i.test(s||'')) return 'warn';
@@ -1586,7 +1586,8 @@ function workorderDetailHtml(){
   const activeAct=activeActForWorkorder(w.id);
   const archivedAct=archivedActForWorkorder(w.id);
   const actState=activeAct?'Aktiivne':(archivedAct?'Akt arhiveeritud':'Akt puudub');
-  const body=`<div class="summary-grid">${summaryBox('Pilte',workorderPhotos(w.id).length)}${summaryBox('Aktid',acts.length)}${summaryBox('Kuupäev',fmtActDate(w.date))}${summaryBox('Staatus',w.status)}</div>${card(w.title,[['Klient',clientName(objectClientId(w.objectId))],['Objekt',objectName(w.objectId)],['Projekt',projectName(w.projectId)],['Vastutaja',techName(workorderResponsibleId(w))],['Osalejad',workorderParticipantIds(w).map(techName).join(', ')||'-'],['Aeg',`${fmtActDate(w.date)} ${w.time}`],['Akt vajalik',workorderActRequired(w)?'Jah':'Ei'],['Akti seis',actState]],w.status,`<div class="section-title">Kirjeldus</div><div class="muted">${esc(problemDescriptionText(w))}</div><div class="section-title">Töö tulemus</div><div class="muted">${esc(completionCommentText(w)||'-')}</div>`)}${workorderPhotoGalleryHtml(w.id,{hint:'Pildid on seotud töökäsuga. Märge “Lisa hiljem aktile” võimaldab need hiljem akti kaasa võtta.'})}<div class="section-title">Aktid</div><div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="status ${statusClass(a.status)}">${esc(a.archived?'Arhiivis':a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
+  const workSections=`<div class="section-title">Kirjeldus</div><div class="muted">${esc(problemDescriptionText(w)||'-')}</div><div class="section-title">Teostatud tööd</div><div class="muted workorder-result-text">${esc(performedWorkText(w)||completionCommentText(w)||'-')}</div><div class="section-title">Töö tulemus / märkused</div><div class="muted workorder-result-text">${esc(workResultText(w)||'-')}</div><div class="section-title">Soovitused / puudused</div><div class="muted workorder-result-text">${esc(workRecommendationsText(w)||'-')}</div>`;
+  const body=`<div class="summary-grid">${summaryBox('Pilte',workorderPhotos(w.id).length)}${summaryBox('Aktid',acts.length)}${summaryBox('Kuupäev',fmtActDate(w.date))}${summaryBox('Staatus',w.status)}</div>${card(w.title,[['Klient',clientName(objectClientId(w.objectId))],['Objekt',objectName(w.objectId)],['Projekt',projectName(w.projectId)],['Vastutaja',techName(workorderResponsibleId(w))],['Osalejad',workorderParticipantIds(w).map(techName).join(', ')||'-'],['Aeg',`${fmtActDate(w.date)} ${w.time}`],['Akt vajalik',workorderActRequired(w)?'Jah':'Ei'],['Akti seis',actState]],w.status,workSections)}${workorderPhotoGalleryHtml(w.id,{hint:'Pildid on seotud töökäsuga. Märge “Lisa hiljem aktile” võimaldab need hiljem akti kaasa võtta.'})}<div class="section-title">Aktid</div><div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="status ${statusClass(a.status)}">${esc(a.archived?'Arhiivis':a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
   const completed=isCompletedStatus(w.status);
   const actButtonLabel=activeAct?'Ava akt':(archivedAct?'Taasta akt':'＋ Loo akt');
   const actButtonClass=archivedAct?'btn small warn':'btn small primary';
@@ -3947,13 +3948,13 @@ function renderCalendar(){
   const currentDate=storedDate;
   const scopedId=scopedPersonId();
   const techFilter=scopedId?[scopedId]:employeeFilterSelected('calendar');
-  const statusFilter=$('#calendarStatusFilter')?.value||'open';
+  const statusFilter=$('#calendarStatusFilter')?.value||'all';
   const mode=$('#calendarViewMode')?.value||localStorage.getItem('veco_calendar_view')||'week';
   const hideWeekend=(localStorage.getItem('veco_calendar_hide_weekend')||'false')==='true';
   localStorage.setItem('veco_calendar_week',currentDate);
   localStorage.setItem('veco_calendar_view',mode);
   localStorage.setItem('veco_calendar_hide_weekend',hideWeekend?'true':'false');
-  const calendarDefaultStatuses=['Uus','Planeeritud','Töös','Ootel','Pausil','Lõpetatud'];
+  const calendarDefaultStatuses=workorderStatusOptions;
   const visibleDays=calendarVisibleDays(currentDate,mode,hideWeekend);
   const startKey=mode==='week'?weekStartKeyFrom(currentDate):currentDate;
   const workorderOccursOnDate=(w,date)=>{
@@ -5106,7 +5107,18 @@ function openUnplannedMaintenanceModal(id=''){
   });
 }
 
+function workorderStatusCounts(){
+  const counts={};
+  workorderStatusOptions.forEach(st=>counts[st]=0);
+  (state.workorders||[]).forEach(w=>{
+    const st=String(w.status||'Määramata').trim()||'Määramata';
+    counts[st]=(counts[st]||0)+1;
+  });
+  return counts;
+}
 function renderDiagnostics(){
+  const woStatusCounts=workorderStatusCounts();
+  const statusRows=Object.entries(woStatusCounts).map(([k,v])=>`<tr><td><strong>${esc(k)}</strong></td><td>${esc(v)}</td></tr>`).join('');
   const rows=[
     ['Versioon',APP_VERSION],
     ['Build',APP_BUILD],
@@ -5129,7 +5141,7 @@ function renderDiagnostics(){
     ['Masterdata sync viga',localStorage.getItem('veco_v3_last_masterdata_sync_error')||'-']
   ].map(([k,v])=>`<tr><td><strong>${esc(k)}</strong></td><td>${esc(v)}</td></tr>`).join('');
   const buildCard=`<div class="diagnostics-build-card"><span class="muted">Hetkel laaditud build</span><strong>VECO_V3_${esc(APP_BUILD)}</strong><code>${esc(location.href)}</code></div>`;
-  const main=header('Diagnostika','','','ARENDUS')+`<div class="detail-body">${buildCard}${table(['Parameeter','Väärtus'],rows)}</div>`;
+  const main=header('Diagnostika','','','ARENDUS')+`<div class="detail-body">${buildCard}<div class="section-title">Töökäskude staatused</div>${table(['Staatus','Arv'],statusRows)}<div class="section-title">Üldinfo</div>${table(['Parameeter','Väärtus'],rows)}</div>`;
   shell(main,'',{wide:true});
 }
 
