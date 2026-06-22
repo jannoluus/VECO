@@ -4541,3 +4541,24 @@ body.confirm-open #vecoConfirm *{
 .theme-light .app.page-team .team-matrix td.short-day,
 .theme-light .app.page-vacations .availability-matrix thead th.short-day,
 .theme-light .app.page-vacations .availability-matrix td.short-day{background:#fffbeb!important;border-color:#fde68a!important;}
+
+/* CR-WO-002: tehniku vaate töökäsu elutsükli tegevusnupud */
+.mobile-status-panel{
+  display:grid;
+  gap:10px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+  background:rgba(15,23,42,.24);
+}
+.mobile-status-panel .kv{
+  margin:0;
+}
+.mobile-modal-actions{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:8px;
+}
+.mobile-modal-actions .btn{
+  min-height:42px;
+}

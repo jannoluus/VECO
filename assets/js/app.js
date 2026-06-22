@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260621_1734';
+const APP_BUILD='20260622_0522';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -3277,19 +3277,28 @@ async function applyMobileWorkorderAction(action,workorderId){
   const now=new Date().toISOString();
   const actorName=actor?.name || completedByLabel(w);
   const actorUuid=actor?.dbId || '';
+  const workDetails=`<strong>${esc(objectName(w.objectId))}</strong><br>${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(w.title||'')}`;
   if(action==='start'){
+    const ok=await openVecoConfirm({title:'Alusta tööd',message:'Kas soovid töö alustada?',details:workDetails,confirmText:'Alusta tööd',cancelText:'Loobu'});
+    if(!ok) return;
     w.status='Töös';
     if(!w.startedAt) w.startedAt=now;
     if(actorUuid) w.startedByUuid=actorUuid;
     if(actorName) w.startedBy=actorName;
   }else if(action==='resume'){
+    const ok=await openVecoConfirm({title:'Jätka tööd',message:'Kas soovid peatatud tööga jätkata?',details:workDetails,confirmText:'Jätka',cancelText:'Loobu'});
+    if(!ok) return;
     w.status='Töös';
   }else if(action==='pause'){
+    const ok=await openVecoConfirm({title:'Peata töö',message:'Kas soovid töö ajutiselt peatada?',details:workDetails,confirmText:'Peata töö',cancelText:'Loobu'});
+    if(!ok) return;
     w.status='Peatatud';
     w.pausedAt=now;
   }else if(action==='finish'){
     const result=normalizeCompletionResult(await openCompletionCommentModal(w,completionCommentText(w)));
     if(!result || !String(result.comment||'').trim()) return;
+    const ok=await openVecoConfirm({title:'Lõpeta töö',message:'Kas oled kindel, et töö on valmis?',details:`${workDetails}<br><br><strong>Töö märgitakse teostatuks.</strong> Kalendris jääb kaart alles, tehniku vaates liigub see lõpetatud tööde alla.`,confirmText:'Lõpeta töö',cancelText:'Tagasi'});
+    if(!ok) return;
     const comment=String(result.comment||'').trim();
     if(!w.startedAt) w.startedAt=now;
     if(actorUuid && !w.startedByUuid) w.startedByUuid=actorUuid;
@@ -3312,7 +3321,7 @@ async function applyMobileWorkorderAction(action,workorderId){
     }
   }else if(action==='reopen'){
     const act=actForWorkorder(w.id);
-    const ok=await openVecoConfirm({title:'Ava töö uuesti',message:'Kas soovid lõpetatud töö uuesti avada?',details:`<strong>${esc(objectName(w.objectId))}</strong><br>${esc(w.title)}${act?'<br><br><strong>Seotud akt säilitatakse.</strong> Vajadusel uuenda akti eraldi akti vaates.':''}`,confirmText:'Ava uuesti',cancelText:'Loobu'});
+    const ok=await openVecoConfirm({title:'Ava töö uuesti',message:'Kas soovid lõpetatud töö uuesti avada?',details:`${workDetails}${act?'<br><br><strong>Seotud akt säilitatakse.</strong> Vajadusel uuenda akti eraldi akti vaates.':''}`,confirmText:'Ava uuesti',cancelText:'Loobu'});
     if(!ok) return;
     w.status='Töös';
   }
@@ -3512,9 +3521,10 @@ function openMobileWorkModal(id){
   const editCompletion=shouldEditCompletionInWorkorder(w);
   const actNotice=workorderActEditNotice(w);
   const completionFields=editCompletion?`<label class="full">Teostatud tööd<textarea name="done">${esc(performedWorkText(w))}</textarea></label><label class="full">Töö tulemus / märkused<textarea name="workResult">${esc(workResultText(w))}</textarea></label><label class="full">Soovitused / puudused<textarea name="recommendations">${esc(workRecommendationsText(w))}</textarea></label>`:`<input type="hidden" name="done" value="${esc(performedWorkText(w))}"><input type="hidden" name="workResult" value="${esc(workResultText(w))}"><input type="hidden" name="recommendations" value="${esc(workRecommendationsText(w))}">${actNotice}`;
-  openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Probleemi kirjeldus<textarea readonly>${esc(problemDescriptionText(w)||'-')}</textarea></label>${completionFields}<label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${w.status===st?'selected':''}>${st}</option>`).join('')}</select></label><label class="check-card"><input type="checkbox" name="actRequired" ${workorderActRequired(w)?'checked':''}> <span>Akt vajalik</span></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Vaba märkus foto kohta"></label><div class="full">${workorderPhotoGalleryHtml(w.id,{hint:'Saad lisada mitu pilti korraga. Pildid jäävad töökäsu külge.'})}</div></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(objectName(w.objectId))}</strong><span class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><label class="full">Probleemi kirjeldus<textarea readonly>${esc(problemDescriptionText(w)||'-')}</textarea></label>${completionFields}<div class="full mobile-status-panel"><div class="kv"><span>Staatus</span><strong><span class="status ${statusClass(w.status)}">${esc(w.status||'Planeeritud')}</span></strong></div><div class="actions mobile-actions mobile-modal-actions">${mobileWorkflowButtons(w)}</div><span class="muted">Tehniku vaates muutub staatus tegevusnuppudega. Kalendris jääb töökäsk alles.</span></div><label class="check-card"><input type="checkbox" name="actRequired" ${workorderActRequired(w)?'checked':''}> <span>Akt vajalik</span></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Vaba märkus foto kohta"></label><div class="full">${workorderPhotoGalleryHtml(w.id,{hint:'Saad lisada mitu pilti korraga. Pildid jäävad töökäsu külge.'})}</div></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
-  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const nextStatus=f.status.value;const note=String(f.done.value||'').trim();if(nextStatus==='Lõpetatud'||nextStatus==='Teostatud'){const result=isCompletedStatus(w.status)?{comment:(note||performedWorkText(w)),performedWork:(note||performedWorkText(w)),workResult:String(f.workResult?.value||workResultText(w)||'').trim(),recommendations:String(f.recommendations?.value||workRecommendationsText(w)||'').trim(),materials:workMaterialsText(w),actType:w.actType||'Väljakutse akt'}:normalizeCompletionResult(await openCompletionCommentModal(w,note));if(!result||!result.comment)return;const actor=currentMobileActionUser();w.completedAt=w.completedAt||new Date().toISOString();w.completedBy=w.completedBy||(actor?.name||completedByLabel(w));w.completedByUuid=w.completedByUuid||(actor?.dbId||'');w.completionComment=result.comment;w.actType=result.actType;w.done=result.comment;w.workDone=result.comment;w.performedWork=result.performedWork||result.comment;w.workResult=result.workResult||'';w.recommendations=result.recommendations||'';w.materials=result.materials||'';}else{w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';w.workResult=String(f.workResult?.value||w.workResult||'').trim();w.recommendations=String(f.recommendations?.value||w.recommendations||'').trim(); if(!isCompletedStatus(w.status)){w.completedAt='';w.completedBy=''; if(!note) w.completionComment='';}}w.status=nextStatus;w.actRequired=!!f.actRequired?.checked;w.photoNote=f.photoNote.value;save();if(isCompletedStatus(w.status) && workorderActRequired(w) && !actForWorkorder(w.id)){ ensureActForWorkorder(w.id); }closeModal();state=window.VECO_STORAGE.load();renderMobile();});
+  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const note=String(f.done.value||'').trim();w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';w.workResult=String(f.workResult?.value||w.workResult||'').trim();w.recommendations=String(f.recommendations?.value||w.recommendations||'').trim();w.actRequired=!!f.actRequired?.checked;w.photoNote=f.photoNote.value;save();closeModal();state=window.VECO_STORAGE.load();renderMobile();});
+  $$('#mobileWorkForm [data-mobile-action]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();const action=btn.dataset.mobileAction;const wid=btn.dataset.workorderId;closeModal();applyMobileWorkorderAction(action,wid);}));
   const rebindPhotoActions=()=>bindWorkorderPhotos(()=>{closeModal();openMobileWorkModal(id);});
   rebindPhotoActions();
 

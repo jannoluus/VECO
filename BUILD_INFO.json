@@ -1,19 +1,19 @@
 {
-  "buildNumber": "VECO_V3_20260621_1734",
-  "createdAt": "2026-06-21T17:34:00+03:00",
-  "base": "VECO_V3_20260619_1718",
+  "buildNumber": "VECO_V3_20260622_0522",
+  "createdAt": "2026-06-22T05:22:00+03:00",
+  "base": "VECO_V3_20260621_1734",
   "changes": [
-    "CR-DATA-001: clients tabeli Supabase laadimine ja sünkroon",
-    "CR-DATA-002: objects tabeli Supabase laadimine ja sünkroon",
-    "Töökäsu loomisel lisatakse uus klient lokaalsesse olekusse ja see sünkroniseeritakse Supabase'i",
-    "Tehniku vaade saab kliendi ja objekti info samast Supabase andmeallikast, mitte ainult brauseri localStorage'ist",
-    "Diagnostika kuvab klientide arvu ja viimase masterdata sync vea"
+    "CR-WO-002: tehniku vaates eemaldatud staatuse käsitsi valimise dropdown töökäsu täitmise modaalist",
+    "Tehniku vaates juhitakse töökäsu olekut tegevusnuppudega: Alusta, Paus, Jätka, Töö valmis, Ava uuesti",
+    "Lisatud kinnitusküsimused töö alustamisel, peatamisel, jätkamisel ja lõpetamisel",
+    "Töö lõpetamisel küsitakse teostatud tööde kirjeldust ning seejärel eraldi lõplikku kinnitust",
+    "Kalendrivaate staatuse käsitsi muutmise loogikat ei muudetud"
   ],
   "databasePrerequisites": [
     "workorders table exists",
     "auth_users table exists",
     "oncall_assignments table exists",
     "availability_entries table exists",
-    "Run SUPABASE_CLIENTS_OBJECTS.sql once to create clients and objects tables"
+    "clients and objects tables exist with RLS disabled or correct policies"
   ]
 }
