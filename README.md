@@ -1,24 +1,8 @@
-# VECO V3 - build 20260622_0859
+# VECO V3 - build 20260622_0916
 
-Base: VECO_V3_20260622_0742
+CR-DATA-004B: parandatud kliendi/objekti arhiveerimise kinnitused.
 
-## CR-DATA-004
-
-Rakendatud kliendi ja objekti soft delete / arhiveerimine.
-
-Enne kasutamist käivita Supabase SQL editoris:
-
-`SUPABASE_CLIENTS_OBJECTS_SOFT_DELETE.sql`
-
-Muudatused:
-- kliendi detailis `Arhiveeri`;
-- objekti detailis `Arhiveeri`;
-- arhiveeritud kirjed peidetakse aktiivsetest valikutest;
-- vanadel töödel jääb seos alles ja nimele lisatakse `(arhiivis)`;
-- diagnostikas kuvatakse aktiivsed ja arhiivis kliendid/objektid.
-
-## Kontroll
-
-- `node --check assets/js/app.js` OK
-- `node --check assets/js/api.js` OK
-
+- Kliendi arhiveerimine kasutab VECO modaalakent.
+- Objekti arhiveerimine kasutab VECO modaalakent.
+- Brauseri `confirm()` eemaldatud nendest toimingutest.
+- Supabase skeemi ei muudetud.

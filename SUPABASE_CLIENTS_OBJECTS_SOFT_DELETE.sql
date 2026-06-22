@@ -1,5 +1,5 @@
 -- VECO V3 CR-DATA-004: client/object soft delete fields
--- Run in Supabase SQL editor before using build VECO_V3_20260622_0859.
+-- Run in Supabase SQL editor before using build VECO_V3_20260622_0916.
 
 alter table clients
   add column if not exists is_deleted boolean default false,

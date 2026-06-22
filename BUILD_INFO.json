@@ -1,22 +1,20 @@
 {
-  "buildNumber": "VECO_V3_20260622_0859",
-  "createdAt": "2026-06-22T08:59:00+03:00",
-  "base": "VECO_V3_20260622_0742",
+  "buildNumber": "VECO_V3_20260622_0916",
+  "createdAt": "2026-06-22T09:16:00+03:00",
+  "base": "VECO_V3_20260622_0859",
   "changes": [
-    "CR-DATA-004: klientide ja objektide soft delete/arhiveerimine",
-    "Lisatud SQL migratsioon SUPABASE_CLIENTS_OBJECTS_SOFT_DELETE.sql",
-    "Kliendi ja objekti detailvaates arhiveerimisnupp kinnitusega",
-    "Arhiveeritud kliendid/objektid peidetakse aktiivsetest valikutest ja töökäsu loomise vormist",
-    "Vanadel töödel kuvatakse arhiveeritud klient/objekt tähisega (arhiivis)",
-    "Diagnostikasse lisatud aktiivsete ja arhiivis klientide/objektide loendurid"
+    "CR-DATA-004B: parandatud kliendi/objekti arhiveerimise kinnitusloogika",
+    "Brauseri confirm() asendatud VECO modaalakna kinnitusega klientide vaates",
+    "Brauseri confirm() asendatud VECO modaalakna kinnitusega objektide vaates",
+    "Arhiveerimise andmeloogikat ja Supabase skeemi ei muudetud"
   ],
   "databasePrerequisites": [
     "Run SUPABASE_CLIENTS_OBJECTS_SOFT_DELETE.sql",
     "clients and objects tables exist with RLS disabled or correct policies",
     "workorders table exists"
   ],
-  "build": "20260622_0859",
-  "name": "VECO_V3_20260622_0859",
-  "created_at": "2026-06-22 08:59",
-  "notes": "CR-DATA-004: kliendi/objekti arhiveerimine soft delete väljadega."
+  "build": "20260622_0916",
+  "name": "VECO_V3_20260622_0916",
+  "created_at": "2026-06-22 09:16",
+  "notes": "CR-DATA-004B: kliendi/objekti arhiveerimise kinnitused VECO modaaliga."
 }

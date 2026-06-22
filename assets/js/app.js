@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260622_0859';
+const APP_BUILD='20260622_0916';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1503,7 +1503,26 @@ function objectDetailHtml(){
   if(objectTab==='acts') body=`<div class="list">${objectActs(o.id).map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="muted">Seotud töökäsk: ${esc(a.workorderId)}</span><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
   return detailHeader('Objekti detail','<button class="btn small" id="editObjectBtn">✎ Muuda</button><button class="btn small primary" id="addWorkorderBtn">＋ Töökäsk</button><button class="btn small ghost" id="objectDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body"><div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${objectTab===k?'active':''}" data-object-tab="${k}">${t}</button>`).join('')}</div>${body}</div>`;
 }
-function archiveObject(id){ const o=byId(state.objects,id); if(!o||isArchivedRecord(o)) return; const related=objectWorkorders(id).length+objectActs(id).length+objectProjects(id).length; const msg=`Arhiveerida objekt "${o.name}"?\n\nKirje eemaldatakse aktiivsetest valikutest. Varasemad tööd ja aktid jäävad alles.${related?`\n\nSeotud kirjeid: ${related}`:''}`; if(!confirm(msg)) return; Object.assign(o,{isDeleted:true,deletedAt:new Date().toISOString(),deletedBy:currentUser?.name||activePerson?.name||'VECO'}); save(); detailOpen.objects=false; selectedObjectId=activeObjects()[0]?.id||''; renderObjects(); }
+async function archiveObject(id){
+  const o=byId(state.objects,id);
+  if(!o||isArchivedRecord(o)) return;
+  const related=objectWorkorders(id).length+objectActs(id).length+objectProjects(id).length;
+  const details=`<div class="muted">Kirje eemaldatakse aktiivsetest valikutest. Varasemad tööd ja aktid jäävad alles.${related?`<br><br>Seotud kirjeid: ${related}`:''}</div>`;
+  const ok=await openVecoConfirm({
+    title:'Arhiveeri objekt?',
+    message:`${esc(o.name)}`,
+    details,
+    confirmText:'Arhiveeri objekt',
+    cancelText:'Loobu',
+    danger:true
+  });
+  if(!ok) return;
+  Object.assign(o,{isDeleted:true,deletedAt:new Date().toISOString(),deletedBy:currentUser?.name||activePerson?.name||'VECO'});
+  save();
+  detailOpen.objects=false;
+  selectedObjectId=activeObjects()[0]?.id||'';
+  renderObjects();
+}
 function bindObjectDetail(){ $$('[data-object-tab]').forEach(b=>b.addEventListener('click',()=>{objectTab=b.dataset.objectTab;renderObjects();})); $('#editObjectBtn')?.addEventListener('click',()=>openObjectModal(selectedObjectId)); $('#addWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal('',{objectId:selectedObjectId})); $('#archiveObjectBtn')?.addEventListener('click',()=>archiveObject(selectedObjectId)); $('#objectDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.objects=false;renderObjects();}); }
 function openObjectModal(id='',defaults={}){
   const o=id?byId(state.objects,id):{clientId:defaults.clientId||activeClients()[0]?.id||'',name:'',address:'',mainContact:'',responsibleTechId:state.people[0]?.id||'',contract:'Jah',status:'active',notes:'',contacts:[]};
@@ -1536,7 +1555,26 @@ function clientDetailHtml(){
   if(clientTab==='acts') body=`<div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="muted">Objekt: ${esc(objectName(a.objectId))} · töökäsk ${esc(a.workorderId)}</span><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
   return detailHeader('Kliendi detail','<button class="btn small" id="editClientBtn">✎ Muuda</button><button class="btn small primary" id="addClientObjectBtn">＋ Objekt</button><button class="btn small danger" id="archiveClientBtn" type="button">Arhiveeri</button>')+`<div class="detail-body"><div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${clientTab===k?'active':''}" data-client-tab="${k}">${t}</button>`).join('')}</div>${body}</div>`;
 }
-function archiveClient(id){ const c=byId(state.clients,id); if(!c||isArchivedRecord(c)) return; const activeObjCount=state.objects.filter(o=>o.clientId===id&&!isArchivedRecord(o)).length; const related=clientWorkorders(id).length+clientActs(id).length+clientProjects(id).length; const msg=`Arhiveerida klient "${c.name}"?\n\nKirje eemaldatakse aktiivsetest valikutest. Varasemad tööd ja aktid jäävad alles.${activeObjCount?`\n\nTähelepanu: kliendil on ${activeObjCount} aktiivset objekti, mis peidetakse aktiivsetest valikutest koos kliendiga.`:''}${related?`\nSeotud kirjeid: ${related}`:''}`; if(!confirm(msg)) return; Object.assign(c,{isDeleted:true,deletedAt:new Date().toISOString(),deletedBy:currentUser?.name||activePerson?.name||'VECO'}); save(); selectedClientId=activeClients()[0]?.id||''; renderClients(); }
+async function archiveClient(id){
+  const c=byId(state.clients,id);
+  if(!c||isArchivedRecord(c)) return;
+  const activeObjCount=state.objects.filter(o=>o.clientId===id&&!isArchivedRecord(o)).length;
+  const related=clientWorkorders(id).length+clientActs(id).length+clientProjects(id).length;
+  const details=`<div class="muted">Kirje eemaldatakse aktiivsetest valikutest. Varasemad tööd ja aktid jäävad alles.${activeObjCount?`<br><br>Tähelepanu: kliendil on ${activeObjCount} aktiivset objekti, mis peidetakse aktiivsetest valikutest koos kliendiga.`:''}${related?`<br>Seotud kirjeid: ${related}`:''}</div>`;
+  const ok=await openVecoConfirm({
+    title:'Arhiveeri klient?',
+    message:`${esc(c.name)}`,
+    details,
+    confirmText:'Arhiveeri klient',
+    cancelText:'Loobu',
+    danger:true
+  });
+  if(!ok) return;
+  Object.assign(c,{isDeleted:true,deletedAt:new Date().toISOString(),deletedBy:currentUser?.name||activePerson?.name||'VECO'});
+  save();
+  selectedClientId=activeClients()[0]?.id||'';
+  renderClients();
+}
 function bindClientDetail(){ $$('[data-client-tab]').forEach(b=>b.addEventListener('click',()=>{clientTab=b.dataset.clientTab;renderClients();})); $('#editClientBtn')?.addEventListener('click',()=>openClientModal(selectedClientId)); $('#addClientObjectBtn')?.addEventListener('click',()=>openObjectModal('',{clientId:selectedClientId})); $('#archiveClientBtn')?.addEventListener('click',()=>archiveClient(selectedClientId)); }
 function openClientModal(id=''){
   const c=id?byId(state.clients,id):{name:'',regNo:'',contact:'',phone:'',email:'',invoiceEmail:'',active:true,notes:''};
