@@ -333,6 +333,29 @@
     if(error) throw error;
     return true;
   }
+
+  async function archiveClient(clientNo,deletedBy='VECO'){
+    const client=getClient();
+    if(!client) return false;
+    const key=String(clientNo||'').trim();
+    if(!key) return false;
+    const patch={is_deleted:true,deleted_at:new Date().toISOString(),deleted_by:deletedBy||'VECO',updated_at:new Date().toISOString()};
+    const {data,error}=await client.from(CLIENTS_TABLE).update(patch).eq('client_no',key).select('client_no,is_deleted,deleted_at,deleted_by');
+    if(error) throw error;
+    if(!Array.isArray(data)||data.length===0) throw new Error(`Klienti ei leitud Supabase'is: ${key}`);
+    return true;
+  }
+  async function archiveObject(objectNo,deletedBy='VECO'){
+    const client=getClient();
+    if(!client) return false;
+    const key=String(objectNo||'').trim();
+    if(!key) return false;
+    const patch={is_deleted:true,deleted_at:new Date().toISOString(),deleted_by:deletedBy||'VECO',updated_at:new Date().toISOString()};
+    const {data,error}=await client.from(OBJECTS_TABLE).update(patch).eq('object_no',key).select('object_no,is_deleted,deleted_at,deleted_by');
+    if(error) throw error;
+    if(!Array.isArray(data)||data.length===0) throw new Error(`Objekti ei leitud Supabase'is: ${key}`);
+    return true;
+  }
   let masterDataSyncTimer=null;
   function scheduleMasterDataSync(clients,objects){
     if(!getClient()) return;
@@ -592,6 +615,8 @@
     loadObjects,
     syncClients,
     syncObjects,
+    archiveClient,
+    archiveObject,
     mode(){return getClient()?'supabase':'local'},
     modeLabel(){return this.mode()==='supabase'?'Supabase':'lokaalne'},
     configure(){

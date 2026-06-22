@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260622_0929';
+const APP_BUILD='20260622_0940';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1517,16 +1517,18 @@ async function archiveObject(id){
     danger:true
   });
   if(!ok) return;
-  Object.assign(o,{isDeleted:true,deletedAt:new Date().toISOString(),deletedBy:currentUser?.name||activePerson?.name||'VECO'});
-  save();
+  const deletedBy=currentUser?.name||activePerson?.name||'VECO';
   try{
-    if(window.VECO_API?.mode?.()==='supabase' && typeof window.VECO_API.syncObjects==='function'){
-      await window.VECO_API.syncObjects([o]);
+    if(window.VECO_API?.mode?.()==='supabase' && typeof window.VECO_API.archiveObject==='function'){
+      await window.VECO_API.archiveObject(o.id,deletedBy);
       localStorage.removeItem('veco_v3_last_masterdata_sync_error');
     }
+    Object.assign(o,{isDeleted:true,deletedAt:new Date().toISOString(),deletedBy});
+    save();
   }catch(err){
-    console.warn('VECO object archive sync failed',err);
-    alert('Objekt märgiti lokaalselt arhiivi, kuid Supabase sünkroniseerimine ebaõnnestus. Kontrolli diagnostikat.');
+    console.warn('VECO object archive failed',err);
+    alert(`Objekti arhiveerimine ebaõnnestus: ${err?.message||err}`);
+    return;
   }
   detailOpen.objects=false;
   selectedObjectId=activeObjects()[0]?.id||'';
@@ -1579,16 +1581,18 @@ async function archiveClient(id){
     danger:true
   });
   if(!ok) return;
-  Object.assign(c,{isDeleted:true,deletedAt:new Date().toISOString(),deletedBy:currentUser?.name||activePerson?.name||'VECO'});
-  save();
+  const deletedBy=currentUser?.name||activePerson?.name||'VECO';
   try{
-    if(window.VECO_API?.mode?.()==='supabase' && typeof window.VECO_API.syncClients==='function'){
-      await window.VECO_API.syncClients([c]);
+    if(window.VECO_API?.mode?.()==='supabase' && typeof window.VECO_API.archiveClient==='function'){
+      await window.VECO_API.archiveClient(c.id,deletedBy);
       localStorage.removeItem('veco_v3_last_masterdata_sync_error');
     }
+    Object.assign(c,{isDeleted:true,deletedAt:new Date().toISOString(),deletedBy});
+    save();
   }catch(err){
-    console.warn('VECO client archive sync failed',err);
-    alert('Klient märgiti lokaalselt arhiivi, kuid Supabase sünkroniseerimine ebaõnnestus. Kontrolli diagnostikat.');
+    console.warn('VECO client archive failed',err);
+    alert(`Kliendi arhiveerimine ebaõnnestus: ${err?.message||err}`);
+    return;
   }
   detailOpen.clients=false;
   selectedClientId=activeClients()[0]?.id||'';

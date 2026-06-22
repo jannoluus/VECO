@@ -1,12 +1,10 @@
 {
-  "buildNumber": "VECO_V3_20260622_0929",
-  "createdAt": "2026-06-22T09:29:00+03:00",
+  "buildNumber": "VECO_V3_20260622_0940",
+  "createdAt": "2026-06-22 09:40",
   "base": "VECO_V3_20260622_0916",
   "changes": [
-    "CR-DATA-004C: kliendi/objekti arhiveerimine sünkroniseeritakse kohe Supabase'i",
-    "Kui Supabase arhiveerimise update ebaõnnestub, kuvatakse kasutajale viga",
-    "Kliendi detailvaade ei ole enam vaikimisi avatud; avaneb kliendi reale klikkides",
-    "Kliendi detailvaatesse lisatud Sulge nupp",
+    "Parandatud kliendi ja objekti arhiveerimine otsese Supabase update abil",
+    "Arhiveerimine kasutab client_no/object_no võtit ja kuvab vea, kui ühtegi kirjet ei uuendata",
     "Cache-bust ja APP_BUILD uuendatud"
   ],
   "databasePrerequisites": [
@@ -14,8 +12,8 @@
     "public.clients and public.objects have is_deleted, deleted_at, deleted_by columns",
     "RLS disabled or correct policies on clients/objects"
   ],
-  "build": "20260622_0929",
-  "name": "VECO_V3_20260622_0929",
+  "build": "20260622_0940",
+  "name": "VECO_V3_20260622_0940",
   "created_at": "2026-06-22 09:29",
   "notes": "Parandatud kliendi/objekti soft delete tegelik Supabase sync ja kliendi detailvaate vaikekäitumine."
 }
