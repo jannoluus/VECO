@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260624_1726';
+const APP_BUILD='20260624_1744';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -3521,6 +3521,22 @@ function mobileOncallForPerson(personId,todayKey){
   if(nextShift) return {type:'next',label:`🟦 Järgmine valve: ${fmtActDate(nextShift.start)}–${fmtActDate(nextShift.end)}`};
   return {type:'none',label:'Valve puudub'};
 }
+function mobileOncallOverview(todayKey){
+  const shifts=(state.oncall||[])
+    .filter(o=>o&&o.personId&&o.start&&o.end)
+    .slice()
+    .sort((a,b)=>`${a.start||''} ${a.end||''}`.localeCompare(`${b.start||''} ${b.end||''}`));
+  const todayShift=shifts.find(o=>o.start<=todayKey&&o.end>=todayKey);
+  const nextShift=shifts.find(o=>o.start>todayKey);
+  const todayName=todayShift?techName(todayShift.personId):'Valve puudub';
+  const nextName=nextShift?techName(nextShift.personId):'Valve puudub';
+  const todayRange=todayShift?`${fmtActDate(todayShift.start)}–${fmtActDate(todayShift.end)}`:'';
+  const nextRange=nextShift?`${fmtActDate(nextShift.start)}–${fmtActDate(nextShift.end)}`:'';
+  return `<div class="mobile-oncall-overview" title="Tänane ja järgmine valve">
+    <div class="mobile-oncall-line"><span>Täna valves</span><strong>${esc(todayName)}</strong>${todayRange?`<em>${esc(todayRange)}</em>`:''}</div>
+    <div class="mobile-oncall-line"><span>Järgmine valve</span><strong>${esc(nextName)}</strong>${nextRange?`<em>${esc(nextRange)}</em>`:''}</div>
+  </div>`;
+}
 function mobileNeedsAct(w){
   if(!w || !isCompletedStatus(w.status) || !workorderActRequired(w)) return false;
   return !actForWorkorder(w.id);
@@ -3594,7 +3610,7 @@ function renderMobile(){
   const activeTab=groups[storedTab]?storedTab:fallback;
   const activeGroup=groups[activeTab];
   const headerStats=`${todayJobs.length} täna • ${tomorrowJobs.length} homme • ${thisWeekJobs.length} see nädal • ${nextWeekJobs.length} järgmine nädal • ${unfinishedJobs.length} tegemata`;
-  const oncallInfo=mobileOncallForPerson(current.id,today);
+  const oncallOverview=mobileOncallOverview(today);
   const availabilityToday=availabilityBadgesHtml(current.id,today);
   const tabCards=order.map(key=>{
     const g=groups[key];
@@ -3603,7 +3619,7 @@ function renderMobile(){
     return `<button class="mobile-tab-card${active}${warn}" data-mobile-tab="${key}" type="button"><span>${esc(g.short)}</span><strong>${g.count}</strong></button>`;
   }).join('');
   const activeBody=activeGroup.body||`<div class="card"><strong>${esc(activeGroup.empty)}</strong><span class="muted">Vali ülevalt teine kaart või lisa uus töö.</span></div>`;
-  shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2><div class="mobile-duty ${esc(oncallInfo.type)}">${esc(oncallInfo.label)}</div>${availabilityToday}<span class="muted">${esc(headerStats)} · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${actions}</div></div><div class="detail-body mobile-detail"><div class="mobile-tab-grid">${tabCards}</div><div class="mobile-active-section"><div class="mobile-active-title"><h3>${esc(activeGroup.label)} (${activeGroup.count})</h3><span class="muted">Kaardivalik</span></div><div class="grid mobile-work-grid">${activeBody}</div></div></div>`,'',{wide:true});
+  shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2>${oncallOverview}${availabilityToday}<span class="muted">${esc(headerStats)} · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${actions}</div></div><div class="detail-body mobile-detail"><div class="mobile-tab-grid">${tabCards}</div><div class="mobile-active-section"><div class="mobile-active-title"><h3>${esc(activeGroup.label)} (${activeGroup.count})</h3><span class="muted">Kaardivalik</span></div><div class="grid mobile-work-grid">${activeBody}</div></div></div>`,'',{wide:true});
   $('#mobileSwitchUserBtn')?.addEventListener('click',()=>{localStorage.removeItem(USER_KEY);renderMobile();});
   $('#mobileAddWorkBtn')?.addEventListener('click',()=>openMobileAddWorkModal(current.id));
   $$('[data-mobile-tab]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_mobile_active_tab',btn.dataset.mobileTab);renderMobile();}));

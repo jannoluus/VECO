@@ -4571,7 +4571,7 @@ body.confirm-open #vecoConfirm *{
 .calendar-event.calendar-status-teostatud .calendar-event-head .status::before{content:'✓ ';font-weight:900;}
 
 
-/* Build 20260624_1726: compact calendar day availability only; valve stays in top header. */
+/* Build 20260624_1744: compact calendar day availability only; valve stays in top header. */
 .app.page-calendar .calendar-day-availability{
   grid-column:1 / -1!important;
   display:flex!important;
@@ -4611,7 +4611,7 @@ body.confirm-open #vecoConfirm *{
   .app.page-calendar .calendar-day-availability-pill{font-size:8px!important;padding:0 4px!important;}
 }
 
-/* Build 20260624_1726: calendar day header v2 - holiday name on top row, absence names visible. */
+/* Build 20260624_1744: calendar day header v2 - holiday name on top row, absence names visible. */
 .app.page-calendar .calendar-planner-day-head,
 .app.page-calendar .calendar-date-sticky-day{
   display:grid!important;
@@ -4701,3 +4701,10 @@ body.confirm-open #vecoConfirm *{
   .app.page-calendar .calendar-day-mainline .calendar-day-note{font-size:9px!important;}
   .app.page-calendar .calendar-day-availability-pill{font-size:7.8px!important;padding:0 4px!important;}
 }
+
+.mobile-oncall-overview{margin:8px 0 6px;display:grid;gap:6px;max-width:520px}
+.mobile-oncall-line{display:grid;grid-template-columns:112px minmax(140px,1fr) auto;align-items:center;gap:8px;border:1px solid var(--line);border-radius:14px;padding:7px 10px;background:rgba(255,255,255,.04)}
+.mobile-oncall-line span{text-transform:uppercase;letter-spacing:.08em;font-size:11px;font-weight:900;color:var(--muted)}
+.mobile-oncall-line strong{font-size:14px;font-weight:950;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mobile-oncall-line em{font-style:normal;font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap}
+@media (max-width:640px){.mobile-oncall-line{grid-template-columns:1fr;gap:2px}.mobile-oncall-line strong{white-space:normal}.mobile-oncall-line em{font-size:11px}}
