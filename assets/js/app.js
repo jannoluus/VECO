@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260622_0950';
+const APP_BUILD='20260622_1002';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1517,7 +1517,7 @@ async function archiveObject(id){
     danger:true
   });
   if(!ok) return;
-  const deletedBy=(typeof currentUser!=='undefined'&&currentUser?.name)||activePerson?.name||'VECO';
+  const deletedBy=(typeof currentUser!=='undefined'&&currentUser?.name)||(typeof activePerson!=='undefined'&&activePerson?.name)||(typeof currentPerson!=='undefined'&&currentPerson?.name)||'VECO';
   try{
     if(window.VECO_API?.mode?.()==='supabase' && typeof window.VECO_API.archiveObject==='function'){
       await window.VECO_API.archiveObject(o.id,deletedBy);
@@ -1581,7 +1581,7 @@ async function archiveClient(id){
     danger:true
   });
   if(!ok) return;
-  const deletedBy=(typeof currentUser!=='undefined'&&currentUser?.name)||activePerson?.name||'VECO';
+  const deletedBy=(typeof currentUser!=='undefined'&&currentUser?.name)||(typeof activePerson!=='undefined'&&activePerson?.name)||(typeof currentPerson!=='undefined'&&currentPerson?.name)||'VECO';
   try{
     if(window.VECO_API?.mode?.()==='supabase' && typeof window.VECO_API.archiveClient==='function'){
       await window.VECO_API.archiveClient(c.id,deletedBy);
