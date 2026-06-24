@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260622_1034';
+const APP_BUILD='20260624_1505';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -3815,6 +3815,49 @@ function holidayShortMarker(dateKey){
   if(info.isShort) return `<small class="holiday-mini-note short" title="${esc(info.name)}">Lühike päev</small>`;
   return '';
 }
+
+function personShortName(personId){
+  const p=byId(state.people||[],personId);
+  const name=String(p?.name||'').trim();
+  if(!name) return '-';
+  const parts=name.split(/\s+/).filter(Boolean);
+  if(parts.length===1) return parts[0];
+  return `${parts[0]} ${parts[parts.length-1].slice(0,1)}.`;
+}
+function calendarDayAvailabilityData(dateKey){
+  const activePeople=(state.people||[]).filter(p=>p&&p.active!==false);
+  const absenceItems=[];
+  activePeople.forEach(p=>{
+    activeAbsencesForPerson(p.id,dateKey).forEach(a=>{
+      const meta=availabilityMeta(a.type||'Puudumine');
+      absenceItems.push({personId:p.id,name:personShortName(p.id),type:a.type||meta.label,label:meta.label,cls:meta.cls,note:a.note||'',start:a.start,end:a.end});
+    });
+  });
+  const oncallItems=(state.oncall||[])
+    .filter(o=>o.start<=dateKey && o.end>=dateKey)
+    .map(o=>({personId:o.personId,name:personShortName(o.personId),note:o.note||'',start:o.start,end:o.end}));
+  const uniqueAbs=[];
+  const seenAbs=new Set();
+  absenceItems.forEach(x=>{const key=`${x.personId}|${x.label}|${x.start}|${x.end}`; if(!seenAbs.has(key)){seenAbs.add(key); uniqueAbs.push(x);}});
+  const uniqueOncall=[];
+  const seenOncall=new Set();
+  oncallItems.forEach(x=>{const key=`${x.personId}|${x.start}|${x.end}`; if(!seenOncall.has(key)){seenOncall.add(key); uniqueOncall.push(x);}});
+  return {absences:uniqueAbs,oncall:uniqueOncall};
+}
+function calendarDayAvailabilityHtml(dateKey){
+  const data=calendarDayAvailabilityData(dateKey);
+  const absenceCount=data.absences.length;
+  const oncallNames=data.oncall.map(x=>x.name).filter(Boolean);
+  const absTitle=data.absences.length?data.absences.map(x=>`${x.name}: ${x.label} ${fmtActDate(x.start)}–${fmtActDate(x.end)}${x.note?' · '+x.note:''}`).join('\n'):'Kõik saadaval';
+  const oncallTitle=data.oncall.length?data.oncall.map(x=>`${x.name}: valve ${fmtActDate(x.start)}–${fmtActDate(x.end)}${x.note?' · '+x.note:''}`).join('\n'):'Valvet ei ole';
+  const status=absenceCount
+    ? `<span class="calendar-day-availability-pill warn" title="${esc(absTitle)}">⚠ Puudub: ${esc(absenceCount)}</span>`
+    : `<span class="calendar-day-availability-pill ok" title="${esc(absTitle)}">✓ Kõik saadaval</span>`;
+  const oncall=data.oncall.length
+    ? `<span class="calendar-day-availability-pill oncall" title="${esc(oncallTitle)}">☎ ${esc(oncallNames.slice(0,1).join(', '))}${oncallNames.length>1?` +${oncallNames.length-1}`:''}</span>`
+    : '';
+  return `<div class="calendar-day-availability" data-calendar-day-availability="${esc(dateKey)}">${status}${oncall}</div>`;
+}
 const EST_MONTHS=['JAANUAR','VEEBRUAR','MÄRTS','APRILL','MAI','JUUNI','JUULI','AUGUST','SEPTEMBER','OKTOOBER','NOVEMBER','DETSEMBER'];
 function monthYearLabel(dateKey){
   const d=parseDateKey(dateKey||dateKeyFromDate(new Date()));
@@ -4227,11 +4270,11 @@ function renderCalendar(){
       const workdayMarkers=`${specialShade}<span class="calendar-workday-shade" style="top:${workdayStartPct}%;height:${workdayHeightPct}%" aria-hidden="true"></span><span class="calendar-workday-line calendar-workday-start" style="top:${workdayStartPct}%" aria-hidden="true"></span><span class="calendar-workday-line calendar-workday-end" style="top:${workdayEndPct}%" aria-hidden="true"></span>`;
       const hasJobs=cards || filtered.some(w=>workorderOccursOnDate(w,date));
       const dayNote=calendarDayMarker(date);
-      return `<div class="calendar-planner-day ${date===today?'today':''} ${calendarDayClass(date)}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(fmtShortDate(date,true))}</span>${dayNote}</div><div class="calendar-planner-lane" data-calendar-lane="${date}">${workdayMarkers}${slots}${cards || (!hasJobs?'<div class="calendar-empty-note">Töid ei ole</div>':'')}</div></div>`;
+      return `<div class="calendar-planner-day ${date===today?'today':''} ${calendarDayClass(date)}"><div class="calendar-planner-day-head"><strong>${dayNames[d.getDay()]}</strong><span>${esc(fmtShortDate(date,true))}</span>${dayNote}${calendarDayAvailabilityHtml(date)}</div><div class="calendar-planner-lane" data-calendar-lane="${date}">${workdayMarkers}${slots}${cards || (!hasJobs?'<div class="calendar-empty-note">Töid ei ole</div>':'')}</div></div>`;
     }).join('');
     const nowLabel=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     const globalNowLine=showNowLine?`<div class="calendar-now-line calendar-now-line-global" style="top:calc(40px + (100% - 40px) * ${nowTopPct/100})"><span>${nowLabel}</span></div>`:'';
-    const stickyDateHeader=`<div class="calendar-date-sticky-header" aria-hidden="true" style="grid-template-columns:54px repeat(${visibleDays.length},minmax(150px,1fr))"><div class="calendar-date-sticky-spacer"></div>${visibleDays.map(date=>{const d=parseDateKey(date);const dayNote=calendarDayMarker(date);return `<div class="calendar-date-sticky-day ${date===today?'today':''} ${calendarDayClass(date)}"><strong>${dayNames[d.getDay()]}</strong><span>${esc(fmtShortDate(date,true))}</span>${dayNote}</div>`;}).join('')}</div>`;
+    const stickyDateHeader=`<div class="calendar-date-sticky-header" aria-hidden="true" style="grid-template-columns:54px repeat(${visibleDays.length},minmax(150px,1fr))"><div class="calendar-date-sticky-spacer"></div>${visibleDays.map(date=>{const d=parseDateKey(date);const dayNote=calendarDayMarker(date);return `<div class="calendar-date-sticky-day ${date===today?'today':''} ${calendarDayClass(date)}"><strong>${dayNames[d.getDay()]}</strong><span>${esc(fmtShortDate(date,true))}</span>${dayNote}${calendarDayAvailabilityHtml(date)}</div>`;}).join('')}</div>`;
     // Build 20260615_1013: responsive hour height - 24h scroll kept.
     const responsiveHourPx=calendarInitialResponsiveHourPx();
     body=`${stickyDateHeader}<div class="calendar-planner" style="--calendar-hours-count:${hours.length};--calendar-hour-px:${responsiveHourPx}px;--calendar-body-height:${hours.length*responsiveHourPx}px" data-initial-scroll-hour="7">${globalNowLine}<div class="calendar-hours"><div class="calendar-hours-spacer"></div>${hours.map(h=>`<div class="calendar-hour-label">${String(h).padStart(2,'0')}:00</div>`).join('')}</div><div class="calendar-planner-grid" style="--calendar-day-count:${visibleDays.length};grid-template-columns:repeat(${visibleDays.length},minmax(150px,1fr))">${columns}${multiDayOverlay}</div></div>`;

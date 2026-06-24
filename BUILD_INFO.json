@@ -1,17 +1,16 @@
 {
-  "build": "VECO_V3_20260622_1034",
-  "build_number": "20260622_1034",
-  "created_at": "2026-06-22 10:34",
-  "base": "VECO_V3_20260622_1012",
+  "build": "VECO_V3_20260624_1505",
+  "build_number": "20260624_1505",
+  "created_at": "2026-06-24 15:05",
+  "base": "VECO_V3_20260622_1034",
   "changes": [
-    "Lisatud kliendi arhiivivaade: Aktiivsed / Arhiivis / Kõik",
-    "Lisatud objekti arhiivivaade: Aktiivsed / Arhiivis / Kõik",
-    "Lisatud kliendi taastamine VECO modaaliga",
-    "Lisatud objekti taastamine VECO modaaliga",
-    "Arhiveeritud kirjed kuvatakse staatusega Arhiivis ja peidetakse aktiivsetest valikutest"
+    "Kalendri nädalavaates päeva päises kuvatakse saadavuse kokkuvõte: Kõik saadaval / Puudub: X",
+    "Päeva päises kuvatakse valveinfo kompaktse ☎ märgina",
+    "Puudujate ja valve tooltip näitab nime, tüüpi ja perioodi",
+    "Muudatus kasutab olemasolevaid availability/oncall andmeid ega muuda Supabase skeemi"
   ],
   "databasePrerequisites": [
-    "clients/objects tabelites peavad olema is_deleted, deleted_at, deleted_by veerud",
-    "RLS peab lubama clients/objects update päringuid või olema disabled"
+    "availability_entries tabel on vajalik ainult siis, kui kasutatakse Supabase-põhist saadavust",
+    "oncall_assignments tabel on vajalik valveinfo jaoks"
   ]
 }
