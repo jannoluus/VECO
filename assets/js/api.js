@@ -354,6 +354,26 @@
     if(error) throw error;
     return true;
   }
+  async function restoreClient(clientNo){
+    const client=getClient();
+    if(!client) return false;
+    const key=String(clientNo||'').trim();
+    if(!key) return false;
+    const patch={is_deleted:false,deleted_at:null,deleted_by:null,updated_at:new Date().toISOString()};
+    const {error}=await client.from(CLIENTS_TABLE).update(patch).eq('client_no',key);
+    if(error) throw error;
+    return true;
+  }
+  async function restoreObject(objectNo){
+    const client=getClient();
+    if(!client) return false;
+    const key=String(objectNo||'').trim();
+    if(!key) return false;
+    const patch={is_deleted:false,deleted_at:null,deleted_by:null,updated_at:new Date().toISOString()};
+    const {error}=await client.from(OBJECTS_TABLE).update(patch).eq('object_no',key);
+    if(error) throw error;
+    return true;
+  }
   let masterDataSyncTimer=null;
   function scheduleMasterDataSync(clients,objects){
     if(!getClient()) return;
@@ -615,6 +635,8 @@
     syncObjects,
     archiveClient,
     archiveObject,
+    restoreClient,
+    restoreObject,
     mode(){return getClient()?'supabase':'local'},
     modeLabel(){return this.mode()==='supabase'?'Supabase':'lokaalne'},
     configure(){

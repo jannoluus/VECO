@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260622_1012';
+const APP_BUILD='20260622_1034';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1474,19 +1474,22 @@ function actEndDateTimeLabel(w={},a={}){
 }
 function renderObjects(){
   normalizeDevices();
+  const archiveFilter=$('#objectArchiveFilter')?.value||'active';
   const clientFilter=$('#objectClientFilter')?.value||'all';
   const techFilter=$('#objectTechFilter')?.value||'all';
   const q=($('#objectSearch')?.value||'').toLowerCase();
-  const baseObjects=activeObjects();
+  const activeList=activeObjects();
   const archivedObjects=state.objects.filter(o=>isArchivedRecord(o)||isArchivedRecord(byId(state.clients,o.clientId)));
-  const objects=baseObjects.filter(o=>(clientFilter==='all'||o.clientId===clientFilter)&&(techFilter==='all'||o.responsibleTechId===techFilter)&&`${o.name} ${o.address} ${clientName(o.clientId)} ${o.notes}`.toLowerCase().includes(q));
-  if(!objects.some(o=>o.id===selectedObjectId)) selectedObjectId=objects[0]?.id||baseObjects[0]?.id||'';
-  const filters=`<input class="field" id="objectSearch" placeholder="Otsi objekti, aadressi või klienti..." value="${esc(q)}"><select class="select" id="objectClientFilter"><option value="all">Kõik kliendid</option>${activeClients().map(c=>`<option value="${c.id}" ${clientFilter===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select><select class="select" id="objectTechFilter"><option value="all">Kõik töötajad</option>${state.people.map(p=>`<option value="${p.id}" ${techFilter===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`;
+  const source=archiveFilter==='archive'?archivedObjects:(archiveFilter==='all'?state.objects:activeList);
+  const objects=source.filter(o=>(clientFilter==='all'||o.clientId===clientFilter)&&(techFilter==='all'||o.responsibleTechId===techFilter)&&`${o.name} ${o.address} ${clientName(o.clientId)} ${o.notes}`.toLowerCase().includes(q));
+  if(!objects.some(o=>o.id===selectedObjectId)) selectedObjectId=objects[0]?.id||'';
+  const filters=`<input class="field" id="objectSearch" placeholder="Otsi objekti, aadressi või klienti..." value="${esc(q)}"><select class="select" id="objectArchiveFilter"><option value="active" ${archiveFilter==='active'?'selected':''}>Aktiivsed objektid</option><option value="archive" ${archiveFilter==='archive'?'selected':''}>Arhiivis</option><option value="all" ${archiveFilter==='all'?'selected':''}>Kõik objektid</option></select><select class="select" id="objectClientFilter"><option value="all">Kõik kliendid</option>${(archiveFilter==='active'?activeClients():state.clients).map(c=>`<option value="${c.id}" ${clientFilter===c.id?'selected':''}>${esc(c.name)}${isArchivedRecord(c)?' (arhiivis)':''}</option>`).join('')}</select><select class="select" id="objectTechFilter"><option value="all">Kõik töötajad</option>${state.people.map(p=>`<option value="${p.id}" ${techFilter===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`;
   const actions=`<button class="btn primary" id="newObjectBtn">${icon('＋')}Lisa objekt</button>`;
-  const rows=objects.map(o=>`<tr data-object-id="${o.id}" class="${detailOpen.objects&&o.id===selectedObjectId?'selected':''}"><td><strong>${esc(o.name)}</strong><div class="muted">${esc(o.address)}</div></td><td>${esc(clientName(o.clientId))}</td><td>${esc(techName(o.responsibleTechId))}</td><td>${objectProjects(o.id).length}</td><td>${objectWorkorders(o.id).filter(w=>!isCompletedStatus(w.status)).length}</td><td><span class="status ${statusClass(o.status)}">${o.status==='active'?'Aktiivne':'Peatatud'}</span></td></tr>`);
-  const main=header('Objektide töövaade',filters,actions,'Objektid')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Aktiivseid objekte',baseObjects.length)}${summaryBox('Arhiivis',archivedObjects.length)}${summaryBox('Seadmeid',state.devices.length)}${summaryBox('Avatud töid',openWorkorders().length)}</div>${table(['Objekt','Klient','Vastutaja','Projektid','Avatud tööd','Staatus'],rows)}</div>`;
+  const empty=archiveFilter==='archive'&&!objects.length?`<div class="empty-state"><strong>Objektide arhiiv on tühi.</strong><div class="muted">Arhiveeritud objektid ilmuvad siia ja neid saab taastada.</div></div>`:'';
+  const rows=objects.map(o=>{const ownArchived=isArchivedRecord(o); const parentArchived=isArchivedRecord(byId(state.clients,o.clientId)); const archived=ownArchived||parentArchived; const statusLabel=archived?(parentArchived&&!ownArchived?'Kliendi arhiivis':'Arhiivis'):(o.status==='active'?'Aktiivne':'Peatatud'); const statusCls=archived?'warn':(o.status==='active'?'ok':'red'); return `<tr data-object-id="${o.id}" class="${detailOpen.objects&&o.id===selectedObjectId?'selected':''}"><td><strong>${esc(o.name)}</strong><div class="muted">${esc(o.address)}</div></td><td>${esc(clientName(o.clientId))}</td><td>${esc(techName(o.responsibleTechId))}</td><td>${objectProjects(o.id).length}</td><td>${objectWorkorders(o.id).filter(w=>!isCompletedStatus(w.status)).length}</td><td><span class="status ${statusCls}">${statusLabel}</span></td></tr>`});
+  const main=header('Objektide töövaade',filters,actions,'Objektid')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Aktiivseid objekte',activeList.length)}${summaryBox('Arhiivis',archivedObjects.length)}${summaryBox('Seadmeid',state.devices.length)}${summaryBox('Avatud töid',openWorkorders().length)}</div>${empty||table(['Objekt','Klient','Vastutaja','Projektid','Avatud tööd','Staatus'],rows)}</div>`;
   shell(main,detailOpen.objects?objectDetailHtml():'');
-  $('#objectSearch')?.addEventListener('input',renderObjects); $('#objectClientFilter')?.addEventListener('change',renderObjects); $('#objectTechFilter')?.addEventListener('change',renderObjects);
+  $('#objectSearch')?.addEventListener('input',renderObjects); $('#objectArchiveFilter')?.addEventListener('change',()=>{detailOpen.objects=false;renderObjects();}); $('#objectClientFilter')?.addEventListener('change',renderObjects); $('#objectTechFilter')?.addEventListener('change',renderObjects);
   $$('[data-object-id]').forEach(row=>row.addEventListener('click',()=>{const id=row.dataset.objectId; if(detailOpen.objects&&selectedObjectId===id){detailOpen.objects=false;}else{selectedObjectId=id;detailOpen.objects=true;} renderObjects();}));
   $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();selectedObjectId=state.objects[0]?.id||'';detailOpen.objects=false;renderObjects();});
   $('#newObjectBtn')?.addEventListener('click',()=>openObjectModal()); bindObjectDetail();
@@ -1501,7 +1504,9 @@ function objectDetailHtml(){
   if(objectTab==='projects') body=`<div class="list">${objectProjects(o.id).map(p=>`<div class="event-row"><strong>${esc(p.name)}</strong><span class="muted">Vastutaja: ${esc(techName(p.responsibleTechId))} · tähtaeg ${esc(fmtActDate(p.deadline))}</span><span class="status ${statusClass(p.status)}">${esc(p.status)}</span></div>`).join('')||'<span class="muted">Projekte pole.</span>'}</div>`;
   if(objectTab==='workorders') body=`<div class="list">${objectWorkorders(o.id).map(w=>`<div class="event-row"><strong>${esc(fmtActDate(w.date))} ${esc(w.time)} · ${esc(w.title)}</strong><span class="muted">${esc(workorderAssigneeLabel(w))} · ${esc(problemDescriptionText(w))}</span><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div>`).join('')||'<span class="muted">Töökäske pole.</span>'}</div>`;
   if(objectTab==='acts') body=`<div class="list">${objectActs(o.id).map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="muted">Seotud töökäsk: ${esc(a.workorderId)}</span><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
-  return detailHeader('Objekti detail','<button class="btn small" id="editObjectBtn">✎ Muuda</button><button class="btn small primary" id="addWorkorderBtn">＋ Töökäsk</button><button class="btn small danger" id="archiveObjectBtn" type="button">Arhiveeri</button><button class="btn small ghost" id="objectDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body"><div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${objectTab===k?'active':''}" data-object-tab="${k}">${t}</button>`).join('')}</div>${body}</div>`;
+  const objectArchived=isArchivedRecord(o);
+  const objectActions=`<button class="btn small" id="editObjectBtn">✎ Muuda</button><button class="btn small primary" id="addWorkorderBtn">＋ Töökäsk</button>${objectArchived?'<button class="btn small primary" id="restoreObjectBtn" type="button">↩ Taasta</button>':'<button class="btn small danger" id="archiveObjectBtn" type="button">Arhiveeri</button>'}<button class="btn small ghost" id="objectDetailCloseBtn" type="button">× Sulge</button>`;
+  return detailHeader('Objekti detail',objectActions)+`<div class="detail-body"><div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${objectTab===k?'active':''}" data-object-tab="${k}">${t}</button>`).join('')}</div>${body}</div>`;
 }
 async function archiveObject(id){
   const o=byId(state.objects,id);
@@ -1534,7 +1539,34 @@ async function archiveObject(id){
   selectedObjectId=activeObjects()[0]?.id||'';
   renderObjects();
 }
-function bindObjectDetail(){ $$('[data-object-tab]').forEach(b=>b.addEventListener('click',()=>{objectTab=b.dataset.objectTab;renderObjects();})); $('#editObjectBtn')?.addEventListener('click',()=>openObjectModal(selectedObjectId)); $('#addWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal('',{objectId:selectedObjectId})); $('#archiveObjectBtn')?.addEventListener('click',()=>archiveObject(selectedObjectId)); $('#objectDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.objects=false;renderObjects();}); }
+async function restoreObject(id){
+  const o=byId(state.objects,id);
+  if(!o||!isArchivedRecord(o)) return;
+  const ok=await openVecoConfirm({
+    title:'Taasta objekt?',
+    message:`${esc(o.name)}`,
+    details:'<div class="muted">Kirje ilmub taas aktiivsetesse objektide valikutesse. Kui kliendi kirje on arhiivis, taasta esmalt klient.</div>',
+    confirmText:'Taasta objekt',
+    cancelText:'Loobu'
+  });
+  if(!ok) return;
+  try{
+    if(window.VECO_API?.mode?.()==='supabase' && typeof window.VECO_API.restoreObject==='function'){
+      await window.VECO_API.restoreObject(o.id);
+      localStorage.removeItem('veco_v3_last_masterdata_sync_error');
+    }
+    Object.assign(o,{isDeleted:false,deletedAt:'',deletedBy:''});
+    save();
+  }catch(err){
+    console.warn('VECO object restore failed',err);
+    alert(`Objekti taastamine ebaõnnestus: ${err?.message||err}`);
+    return;
+  }
+  detailOpen.objects=false;
+  selectedObjectId=o.id;
+  renderObjects();
+}
+function bindObjectDetail(){ $$('[data-object-tab]').forEach(b=>b.addEventListener('click',()=>{objectTab=b.dataset.objectTab;renderObjects();})); $('#editObjectBtn')?.addEventListener('click',()=>openObjectModal(selectedObjectId)); $('#addWorkorderBtn')?.addEventListener('click',()=>openWorkorderModal('',{objectId:selectedObjectId})); $('#archiveObjectBtn')?.addEventListener('click',()=>archiveObject(selectedObjectId)); $('#restoreObjectBtn')?.addEventListener('click',()=>restoreObject(selectedObjectId)); $('#objectDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.objects=false;renderObjects();}); }
 function openObjectModal(id='',defaults={}){
   const o=id?byId(state.objects,id):{clientId:defaults.clientId||activeClients()[0]?.id||'',name:'',address:'',mainContact:'',responsibleTechId:state.people[0]?.id||'',contract:'Jah',status:'active',notes:'',contacts:[]};
   openModal(`<form id="objectForm"><div class="dialog-head"><h2>${id?'Muuda objekti':'Lisa objekt'}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Objekti nimi<input class="field" name="name" required value="${esc(o.name)}"></label><label>Klient<select class="select" name="clientId">${activeClients().map(c=>`<option value="${c.id}" ${o.clientId===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><label class="full">Aadress<input class="field" name="address" required value="${esc(o.address)}"></label><label>Kontakt<input class="field" name="mainContact" value="${esc(o.mainContact)}"></label><label>Vastutaja<select class="select" name="responsibleTechId">${state.people.map(p=>`<option value="${p.id}" ${o.responsibleTechId===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><label>Hooldusleping<input class="field" name="contract" value="${esc(o.contract)}"></label><label>Staatus<select class="select" name="status"><option value="active" ${o.status==='active'?'selected':''}>Aktiivne</option><option value="inactive" ${o.status!=='active'?'selected':''}>Peatatud</option></select></label><label class="full">Märkused<textarea name="notes">${esc(o.notes)}</textarea></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
@@ -1542,16 +1574,20 @@ function openObjectModal(id='',defaults={}){
 }
 
 function renderClients(){
-  const status=$('#clientStatusFilter')?.value||'all'; const q=($('#clientSearch')?.value||'').toLowerCase();
-  const baseClients=activeClients();
+  const archiveFilter=$('#clientArchiveFilter')?.value||'active';
+  const status=$('#clientStatusFilter')?.value||'all';
+  const q=($('#clientSearch')?.value||'').toLowerCase();
+  const activeList=activeClients();
   const archivedClients=state.clients.filter(c=>isArchivedRecord(c));
-  const clients=baseClients.filter(c=>(status==='all'||(status==='active')===!!c.active)&&`${c.name} ${c.contact} ${c.email} ${c.notes}`.toLowerCase().includes(q));
-  if(!clients.some(c=>c.id===selectedClientId)) selectedClientId=clients[0]?.id||baseClients[0]?.id||'';
-  const filters=`<input class="field" id="clientSearch" placeholder="Otsi klienti..." value="${esc(q)}"><select class="select" id="clientStatusFilter"><option value="all">Kõik kliendid</option><option value="active" ${status==='active'?'selected':''}>Aktiivsed</option><option value="inactive" ${status==='inactive'?'selected':''}>Peatatud</option></select>`;
+  const source=archiveFilter==='archive'?archivedClients:(archiveFilter==='all'?state.clients:activeList);
+  const clients=source.filter(c=>(status==='all'||(status==='active')===!!c.active)&&`${c.name} ${c.contact} ${c.email} ${c.notes}`.toLowerCase().includes(q));
+  if(!clients.some(c=>c.id===selectedClientId)) selectedClientId=clients[0]?.id||'';
+  const filters=`<input class="field" id="clientSearch" placeholder="Otsi klienti..." value="${esc(q)}"><select class="select" id="clientArchiveFilter"><option value="active" ${archiveFilter==='active'?'selected':''}>Aktiivsed kliendid</option><option value="archive" ${archiveFilter==='archive'?'selected':''}>Arhiivis</option><option value="all" ${archiveFilter==='all'?'selected':''}>Kõik kliendid</option></select><select class="select" id="clientStatusFilter"><option value="all">Kõik staatused</option><option value="active" ${status==='active'?'selected':''}>Aktiivne</option><option value="inactive" ${status==='inactive'?'selected':''}>Peatatud</option></select>`;
   const actions=`<button class="btn primary" id="newClientBtn">${icon('＋')}Lisa klient</button>`;
-  const rows=clients.map(c=>{const objs=clientObjects(c.id),pros=clientProjects(c.id),wo=clientWorkorders(c.id).filter(w=>!isCompletedStatus(w.status));return `<tr data-client-id="${c.id}" class="${c.id===selectedClientId?'selected':''}"><td><strong>${esc(c.name)}</strong><div class="muted">${esc(c.regNo)}</div></td><td>${esc(c.contact)}</td><td>${esc(c.phone)}</td><td>${objs.length}</td><td>${pros.length}</td><td>${wo.length}</td><td><span class="status ${c.active?'ok':'red'}">${c.active?'Aktiivne':'Peatatud'}</span></td></tr>`});
-  const main=header('Klientide register',filters,actions,'Kliendid')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Aktiivseid kliente',baseClients.length)}${summaryBox('Arhiivis',archivedClients.length)}${summaryBox('Objekte',activeObjects().length)}${summaryBox('Avatud töid',openWorkorders().length)}</div>${table(['Klient','Kontakt','Telefon','Objektid','Projektid','Avatud tööd','Staatus'],rows)}</div>`;
-  shell(main,detailOpen.clients?clientDetailHtml():''); $('#clientSearch')?.addEventListener('input',renderClients); $('#clientStatusFilter')?.addEventListener('change',renderClients);
+  const empty=archiveFilter==='archive'&&!clients.length?`<div class="empty-state"><strong>Klientide arhiiv on tühi.</strong><div class="muted">Arhiveeritud kliendid ilmuvad siia ja neid saab taastada.</div></div>`:'';
+  const rows=clients.map(c=>{const objs=clientObjects(c.id),pros=clientProjects(c.id),wo=clientWorkorders(c.id).filter(w=>!isCompletedStatus(w.status)); const archived=isArchivedRecord(c); const statusLabel=archived?'Arhiivis':(c.active?'Aktiivne':'Peatatud'); const statusCls=archived?'warn':(c.active?'ok':'red');return `<tr data-client-id="${c.id}" class="${detailOpen.clients&&c.id===selectedClientId?'selected':''}"><td><strong>${esc(c.name)}</strong><div class="muted">${esc(c.regNo)}</div></td><td>${esc(c.contact)}</td><td>${esc(c.phone)}</td><td>${objs.length}</td><td>${pros.length}</td><td>${wo.length}</td><td><span class="status ${statusCls}">${statusLabel}</span></td></tr>`});
+  const main=header('Klientide register',filters,actions,'Kliendid')+`<div class="detail-body"><div class="summary-grid">${summaryBox('Aktiivseid kliente',activeList.length)}${summaryBox('Arhiivis',archivedClients.length)}${summaryBox('Objekte',activeObjects().length)}${summaryBox('Avatud töid',openWorkorders().length)}</div>${empty||table(['Klient','Kontakt','Telefon','Objektid','Projektid','Avatud tööd','Staatus'],rows)}</div>`;
+  shell(main,detailOpen.clients?clientDetailHtml():''); $('#clientSearch')?.addEventListener('input',renderClients); $('#clientArchiveFilter')?.addEventListener('change',()=>{detailOpen.clients=false;renderClients();}); $('#clientStatusFilter')?.addEventListener('change',renderClients);
   $$('[data-client-id]').forEach(row=>row.addEventListener('click',()=>{const id=row.dataset.clientId; if(detailOpen.clients&&selectedClientId===id){detailOpen.clients=false;}else{selectedClientId=id;detailOpen.clients=true;} renderClients();}));
   $('#resetDataBtn')?.addEventListener('click',()=>{state=window.VECO_STORAGE.reset();selectedClientId=state.clients[0]?.id||'';detailOpen.clients=false;renderClients();}); $('#newClientBtn')?.addEventListener('click',()=>openClientModal()); bindClientDetail();
 }
@@ -1564,7 +1600,9 @@ function clientDetailHtml(){
   if(clientTab==='projects') body=`<div class="list">${projects.map(p=>`<div class="event-row"><strong>${esc(p.name)}</strong><span class="muted">Objekt: ${esc(objectName(p.objectId))} · tähtaeg ${esc(fmtActDate(p.deadline))}</span><span class="status ${statusClass(p.status)}">${esc(p.status)}</span></div>`).join('')||'<span class="muted">Projekte pole.</span>'}</div>`;
   if(clientTab==='workorders') body=`<div class="list">${workorders.map(w=>`<div class="event-row"><strong>${esc(fmtActDate(w.date))} ${esc(w.time)} · ${esc(w.title)}</strong><span class="muted">${esc(objectName(w.objectId))} · ${esc(workorderAssigneeLabel(w))}</span><span class="status ${statusClass(w.status)}">${esc(w.status)}</span></div>`).join('')||'<span class="muted">Töökäske pole.</span>'}</div>`;
   if(clientTab==='acts') body=`<div class="list">${acts.map(a=>`<div class="event-row"><strong>${esc(fmtActDate(a.date))} · ${esc(a.title)}</strong><span class="muted">Objekt: ${esc(objectName(a.objectId))} · töökäsk ${esc(a.workorderId)}</span><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></div>`).join('')||'<span class="muted">Akte pole.</span>'}</div>`;
-  return detailHeader('Kliendi detail','<button class="btn small" id="editClientBtn">✎ Muuda</button><button class="btn small primary" id="addClientObjectBtn">＋ Objekt</button><button class="btn small danger" id="archiveClientBtn" type="button">Arhiveeri</button><button class="btn small ghost" id="clientDetailCloseBtn" type="button">× Sulge</button>')+`<div class="detail-body"><div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${clientTab===k?'active':''}" data-client-tab="${k}">${t}</button>`).join('')}</div>${body}</div>`;
+  const clientArchived=isArchivedRecord(c);
+  const clientActions=`<button class="btn small" id="editClientBtn">✎ Muuda</button><button class="btn small primary" id="addClientObjectBtn">＋ Objekt</button>${clientArchived?'<button class="btn small primary" id="restoreClientBtn" type="button">↩ Taasta</button>':'<button class="btn small danger" id="archiveClientBtn" type="button">Arhiveeri</button>'}<button class="btn small ghost" id="clientDetailCloseBtn" type="button">× Sulge</button>`;
+  return detailHeader('Kliendi detail',clientActions)+`<div class="detail-body"><div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${clientTab===k?'active':''}" data-client-tab="${k}">${t}</button>`).join('')}</div>${body}</div>`;
 }
 async function archiveClient(id){
   const c=byId(state.clients,id);
@@ -1598,7 +1636,34 @@ async function archiveClient(id){
   selectedClientId=activeClients()[0]?.id||'';
   renderClients();
 }
-function bindClientDetail(){ $$('[data-client-tab]').forEach(b=>b.addEventListener('click',()=>{clientTab=b.dataset.clientTab;renderClients();})); $('#editClientBtn')?.addEventListener('click',()=>openClientModal(selectedClientId)); $('#addClientObjectBtn')?.addEventListener('click',()=>openObjectModal('',{clientId:selectedClientId})); $('#archiveClientBtn')?.addEventListener('click',()=>archiveClient(selectedClientId)); $('#clientDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.clients=false;renderClients();}); }
+async function restoreClient(id){
+  const c=byId(state.clients,id);
+  if(!c||!isArchivedRecord(c)) return;
+  const ok=await openVecoConfirm({
+    title:'Taasta klient?',
+    message:`${esc(c.name)}`,
+    details:'<div class="muted">Kirje ilmub taas aktiivsetesse klientide valikutesse. Varem arhiveeritud objektid tuleb vajadusel eraldi taastada.</div>',
+    confirmText:'Taasta klient',
+    cancelText:'Loobu'
+  });
+  if(!ok) return;
+  try{
+    if(window.VECO_API?.mode?.()==='supabase' && typeof window.VECO_API.restoreClient==='function'){
+      await window.VECO_API.restoreClient(c.id);
+      localStorage.removeItem('veco_v3_last_masterdata_sync_error');
+    }
+    Object.assign(c,{isDeleted:false,deletedAt:'',deletedBy:''});
+    save();
+  }catch(err){
+    console.warn('VECO client restore failed',err);
+    alert(`Kliendi taastamine ebaõnnestus: ${err?.message||err}`);
+    return;
+  }
+  detailOpen.clients=false;
+  selectedClientId=c.id;
+  renderClients();
+}
+function bindClientDetail(){ $$('[data-client-tab]').forEach(b=>b.addEventListener('click',()=>{clientTab=b.dataset.clientTab;renderClients();})); $('#editClientBtn')?.addEventListener('click',()=>openClientModal(selectedClientId)); $('#addClientObjectBtn')?.addEventListener('click',()=>openObjectModal('',{clientId:selectedClientId})); $('#archiveClientBtn')?.addEventListener('click',()=>archiveClient(selectedClientId)); $('#restoreClientBtn')?.addEventListener('click',()=>restoreClient(selectedClientId)); $('#clientDetailCloseBtn')?.addEventListener('click',()=>{detailOpen.clients=false;renderClients();}); }
 function openClientModal(id=''){
   const c=id?byId(state.clients,id):{name:'',regNo:'',contact:'',phone:'',email:'',invoiceEmail:'',active:true,notes:''};
   openModal(`<form id="clientForm"><div class="dialog-head"><h2>${id?'Muuda klienti':'Lisa klient'}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="form-grid"><label>Kliendi nimi<input class="field" name="name" required value="${esc(c.name)}"></label><label>Registrikood<input class="field" name="regNo" value="${esc(c.regNo)}"></label><label>Kontaktisik<input class="field" name="contact" value="${esc(c.contact)}"></label><label>Telefon<input class="field" name="phone" value="${esc(c.phone)}"></label><label>E-post<input class="field" name="email" type="email" value="${esc(c.email)}"></label><label>Arve e-post<input class="field" name="invoiceEmail" type="email" value="${esc(c.invoiceEmail)}"></label><label>Staatus<select class="select" name="active"><option value="true" ${c.active?'selected':''}>Aktiivne</option><option value="false" ${!c.active?'selected':''}>Peatatud</option></select></label><label class="full">Märkused<textarea name="notes">${esc(c.notes)}</textarea></label></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);

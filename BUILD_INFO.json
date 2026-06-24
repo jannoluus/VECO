@@ -1,20 +1,17 @@
 {
-  "buildNumber": "VECO_V3_20260622_0940",
-  "createdAt": "2026-06-22 09:40",
-  "base": "VECO_V3_20260622_0916",
+  "build": "VECO_V3_20260622_1034",
+  "build_number": "20260622_1034",
+  "created_at": "2026-06-22 10:34",
+  "base": "VECO_V3_20260622_1012",
   "changes": [
-    "Parandatud kliendi ja objekti arhiveerimine otsese Supabase update abil",
-    "Arhiveerimine kasutab client_no/object_no võtit ja kuvab vea, kui ühtegi kirjet ei uuendata",
-    "Cache-bust ja APP_BUILD uuendatud"
+    "Lisatud kliendi arhiivivaade: Aktiivsed / Arhiivis / Kõik",
+    "Lisatud objekti arhiivivaade: Aktiivsed / Arhiivis / Kõik",
+    "Lisatud kliendi taastamine VECO modaaliga",
+    "Lisatud objekti taastamine VECO modaaliga",
+    "Arhiveeritud kirjed kuvatakse staatusega Arhiivis ja peidetakse aktiivsetest valikutest"
   ],
   "databasePrerequisites": [
-    "Run SUPABASE_CLIENTS_OBJECTS_SOFT_DELETE.sql",
-    "public.clients and public.objects have is_deleted, deleted_at, deleted_by columns",
-    "RLS disabled or correct policies on clients/objects"
-  ],
-  "build": "VECO_V3_20260622_1012",
-  "name": "VECO_V3_20260622_0940",
-  "created_at": "2026-06-22 09:29",
-  "notes": "Fix: client/object archive no longer references undefined activePerson/currentUser; safe archive actor fallback.",
-  "build_number": "20260622_1012"
+    "clients/objects tabelites peavad olema is_deleted, deleted_at, deleted_by veerud",
+    "RLS peab lubama clients/objects update päringuid või olema disabled"
+  ]
 }
