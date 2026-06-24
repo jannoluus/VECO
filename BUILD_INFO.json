@@ -1,13 +1,14 @@
 {
-  "build": "VECO_V3_20260624_1744",
-  "build_number": "20260624_1744",
-  "created_at": "2026-06-24 17:44",
-  "base": "VECO_V3_20260624_1726",
+  "build": "VECO_V3_20260624_1815",
+  "build_number": "20260624_1815",
+  "created_at": "2026-06-24 18:15",
+  "base": "VECO_V3_20260624_1744",
   "changes": [
-    "Tehniku vaates lisatud üldine valveinfo kõigile: Täna valves + Järgmine valve",
-    "Valveinfo ei piirdu enam ainult valitud tehniku enda valvega",
-    "Valveinfo kuvatakse kahe kompaktse reana tehniku vaate päises",
-    "Supabase skeemi ei muudetud; kasutatakse olemasolevat oncall_assignments/state.oncall infot"
+    "CR-MOBILE-SIMPLE-001: tehniku vaate suur kaardifiltrite plokk asendatud kompaktse filtriribaga",
+    "Kiirfiltrid: Täna, Homme, Nädal",
+    "Harvemad filtrid kolmpunkti menüüs: Järgmine nädal, Aktiivsed/Tegemata, Valmis/Lõpetatud",
+    "Olemasolev töökaartide loogika ja valveinfo jäetud muutmata",
+    "Supabase skeemi ei muudetud"
   ],
   "databasePrerequisites": [
     "availability_entries tabel on vajalik ainult siis, kui kasutatakse Supabase-põhist saadavust"

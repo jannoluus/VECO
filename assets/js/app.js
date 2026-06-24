@@ -3612,14 +3612,19 @@ function renderMobile(){
   const headerStats=`${todayJobs.length} täna • ${tomorrowJobs.length} homme • ${thisWeekJobs.length} see nädal • ${nextWeekJobs.length} järgmine nädal • ${unfinishedJobs.length} tegemata`;
   const oncallOverview=mobileOncallOverview(today);
   const availabilityToday=availabilityBadgesHtml(current.id,today);
-  const tabCards=order.map(key=>{
+  const primaryTabs=['today','tomorrow','thisweek'];
+  const moreTabs=['nextweek','unfinished','completed'];
+  const tabButton=(key,extra='')=>{
     const g=groups[key];
     const warn=key==='unfinished'&&g.count>0?' warn':'';
     const active=key===activeTab?' active':'';
-    return `<button class="mobile-tab-card${active}${warn}" data-mobile-tab="${key}" type="button"><span>${esc(g.short)}</span><strong>${g.count}</strong></button>`;
-  }).join('');
-  const activeBody=activeGroup.body||`<div class="card"><strong>${esc(activeGroup.empty)}</strong><span class="muted">Vali ülevalt teine kaart või lisa uus töö.</span></div>`;
-  shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2>${oncallOverview}${availabilityToday}<span class="muted">${esc(headerStats)} · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${actions}</div></div><div class="detail-body mobile-detail"><div class="mobile-tab-grid">${tabCards}</div><div class="mobile-active-section"><div class="mobile-active-title"><h3>${esc(activeGroup.label)} (${activeGroup.count})</h3><span class="muted">Kaardivalik</span></div><div class="grid mobile-work-grid">${activeBody}</div></div></div>`,'',{wide:true});
+    return `<button class="mobile-filter-chip${active}${warn} ${extra}" data-mobile-tab="${key}" type="button"><span>${esc(g.short)}</span><strong>${g.count}</strong></button>`;
+  };
+  const moreActive=moreTabs.includes(activeTab);
+  const moreLabel=moreActive?groups[activeTab].short:'⋯';
+  const mobileFilterBar=`<div class="mobile-filter-row" aria-label="Tööde filter">${primaryTabs.map(k=>tabButton(k)).join('')}<details class="mobile-more-menu"><summary class="mobile-filter-chip${moreActive?' active':''}"><span>${esc(moreLabel)}</span><strong>${moreActive?activeGroup.count:'⋯'}</strong></summary><div class="mobile-more-popover">${moreTabs.map(k=>tabButton(k,'mobile-more-item')).join('')}</div></details></div>`;
+  const activeBody=activeGroup.body||`<div class="card"><strong>${esc(activeGroup.empty)}</strong><span class="muted">Vali ülevalt teine filter või lisa uus töö.</span></div>`;
+  shell(`<div class="panel-head mobile-head"><div><h2>${esc(current.name)}</h2>${oncallOverview}${availabilityToday}<span class="muted">${esc(headerStats)} · ${esc(current.role||'')}</span></div><div class="filters mobile-head-actions">${actions}</div></div><div class="detail-body mobile-detail">${mobileFilterBar}<div class="mobile-active-section"><div class="mobile-active-title"><h3>${esc(activeGroup.label)} (${activeGroup.count})</h3><span class="muted">Kaardivalik</span></div><div class="grid mobile-work-grid">${activeBody}</div></div></div>`,'',{wide:true});
   $('#mobileSwitchUserBtn')?.addEventListener('click',()=>{localStorage.removeItem(USER_KEY);renderMobile();});
   $('#mobileAddWorkBtn')?.addEventListener('click',()=>openMobileAddWorkModal(current.id));
   $$('[data-mobile-tab]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_mobile_active_tab',btn.dataset.mobileTab);renderMobile();}));
