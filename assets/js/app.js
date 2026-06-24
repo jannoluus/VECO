@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.23';
-const APP_BUILD='20260624_1505';
+const APP_BUILD='20260624_1530';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -3847,16 +3847,11 @@ function calendarDayAvailabilityData(dateKey){
 function calendarDayAvailabilityHtml(dateKey){
   const data=calendarDayAvailabilityData(dateKey);
   const absenceCount=data.absences.length;
-  const oncallNames=data.oncall.map(x=>x.name).filter(Boolean);
   const absTitle=data.absences.length?data.absences.map(x=>`${x.name}: ${x.label} ${fmtActDate(x.start)}–${fmtActDate(x.end)}${x.note?' · '+x.note:''}`).join('\n'):'Kõik saadaval';
-  const oncallTitle=data.oncall.length?data.oncall.map(x=>`${x.name}: valve ${fmtActDate(x.start)}–${fmtActDate(x.end)}${x.note?' · '+x.note:''}`).join('\n'):'Valvet ei ole';
   const status=absenceCount
     ? `<span class="calendar-day-availability-pill warn" title="${esc(absTitle)}">⚠ Puudub: ${esc(absenceCount)}</span>`
     : `<span class="calendar-day-availability-pill ok" title="${esc(absTitle)}">✓ Kõik saadaval</span>`;
-  const oncall=data.oncall.length
-    ? `<span class="calendar-day-availability-pill oncall" title="${esc(oncallTitle)}">☎ ${esc(oncallNames.slice(0,1).join(', '))}${oncallNames.length>1?` +${oncallNames.length-1}`:''}</span>`
-    : '';
-  return `<div class="calendar-day-availability" data-calendar-day-availability="${esc(dateKey)}">${status}${oncall}</div>`;
+  return `<div class="calendar-day-availability" data-calendar-day-availability="${esc(dateKey)}">${status}</div>`;
 }
 const EST_MONTHS=['JAANUAR','VEEBRUAR','MÄRTS','APRILL','MAI','JUUNI','JUULI','AUGUST','SEPTEMBER','OKTOOBER','NOVEMBER','DETSEMBER'];
 function monthYearLabel(dateKey){

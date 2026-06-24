@@ -13,3 +13,11 @@ Parandusbuild:
 - Kliendid: Aktiivsed / Arhiivis / Kõik filter.
 - Objektid: Aktiivsed / Arhiivis / Kõik filter.
 - Taastamine toimub VECO modaaliga ja kirjutab Supabase’i.
+
+
+## Build VECO_V3_20260624_1530
+
+- Kalendri päeva päisest eemaldatud valveinfo dubleerimine.
+- Päeva päises jääb ainult saadavuse indikaator: `✓ Kõik saadaval` või `⚠ Puudub: X`.
+- Indikaator on horisontaalselt keskel ja olemasolevat päise kõrgust ei suurendata.
+- Supabase skeemi ei muudetud.
