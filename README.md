@@ -1,4 +1,4 @@
-# VECO V3 – 20260622_1002
+# VECO V3 – 20260622_1012
 
 Parandusbuild:
 - kliendi/objekti arhiveerimine ei sõltu enam `currentUser` muutujast;

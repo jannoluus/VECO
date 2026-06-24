@@ -340,9 +340,8 @@
     const key=String(clientNo||'').trim();
     if(!key) return false;
     const patch={is_deleted:true,deleted_at:new Date().toISOString(),deleted_by:deletedBy||'VECO',updated_at:new Date().toISOString()};
-    const {data,error}=await client.from(CLIENTS_TABLE).update(patch).eq('client_no',key).select('client_no,is_deleted,deleted_at,deleted_by');
+    const {error}=await client.from(CLIENTS_TABLE).update(patch).eq('client_no',key);
     if(error) throw error;
-    if(!Array.isArray(data)||data.length===0) throw new Error(`Klienti ei leitud Supabase'is: ${key}`);
     return true;
   }
   async function archiveObject(objectNo,deletedBy='VECO'){
@@ -351,9 +350,8 @@
     const key=String(objectNo||'').trim();
     if(!key) return false;
     const patch={is_deleted:true,deleted_at:new Date().toISOString(),deleted_by:deletedBy||'VECO',updated_at:new Date().toISOString()};
-    const {data,error}=await client.from(OBJECTS_TABLE).update(patch).eq('object_no',key).select('object_no,is_deleted,deleted_at,deleted_by');
+    const {error}=await client.from(OBJECTS_TABLE).update(patch).eq('object_no',key);
     if(error) throw error;
-    if(!Array.isArray(data)||data.length===0) throw new Error(`Objekti ei leitud Supabase'is: ${key}`);
     return true;
   }
   let masterDataSyncTimer=null;
