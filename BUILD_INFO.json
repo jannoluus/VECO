@@ -1,13 +1,13 @@
 {
-  "build": "VECO_V3_20260624_1530",
-  "build_number": "20260624_1530",
-  "created_at": "2026-06-24 15:30",
-  "base": "VECO_V3_20260624_1505",
+  "build": "VECO_V3_20260624_1726",
+  "build_number": "20260624_1726",
+  "created_at": "2026-06-24 17:26",
+  "base": "VECO_V3_20260624_1530",
   "changes": [
-    "Kalendri päeva päisest eemaldati valveinfo dubleerimine; valve jääb ülemisse päisesse",
-    "Päeva päises kuvatakse ainult kompaktne saadavuse indikaator: Kõik saadaval / Puudub: X",
-    "Saadavuse indikaator joondati päeva päises horisontaalselt keskele ja olemasolevat päise kõrgust ei suurendata",
-    "Tooltipis jääb puudujate detail alles"
+    "Kalendri päeva päise struktuur uuendatud: päeva initsiaal, kuupäev ja tähtpäeva/riigipüha nimi on samal real",
+    "Saadavuse indikaator näitab puudujate nimesid, mitte ainult puudujate arvu",
+    "Puudujate nimed kuvatakse suure tähega ja tooltipis jääb detailne puudumise info",
+    "Päise kõrgust ei suurendatud; info mahub olemasolevasse 40px päisesse"
   ],
   "databasePrerequisites": [
     "availability_entries tabel on vajalik ainult siis, kui kasutatakse Supabase-põhist saadavust"

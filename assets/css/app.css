@@ -4571,7 +4571,7 @@ body.confirm-open #vecoConfirm *{
 .calendar-event.calendar-status-teostatud .calendar-event-head .status::before{content:'✓ ';font-weight:900;}
 
 
-/* Build 20260624_1530: compact calendar day availability only; valve stays in top header. */
+/* Build 20260624_1726: compact calendar day availability only; valve stays in top header. */
 .app.page-calendar .calendar-day-availability{
   grid-column:1 / -1!important;
   display:flex!important;
@@ -4609,4 +4609,95 @@ body.confirm-open #vecoConfirm *{
 .app.page-calendar .calendar-date-sticky-day .calendar-day-note{font-size:8.5px!important;line-height:1!important;}
 @media(max-width:1120px){
   .app.page-calendar .calendar-day-availability-pill{font-size:8px!important;padding:0 4px!important;}
+}
+
+/* Build 20260624_1726: calendar day header v2 - holiday name on top row, absence names visible. */
+.app.page-calendar .calendar-planner-day-head,
+.app.page-calendar .calendar-date-sticky-day{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  grid-template-rows:18px 14px!important;
+  align-items:center!important;
+  gap:1px!important;
+  height:40px!important;
+  min-height:40px!important;
+  padding:4px 8px!important;
+  overflow:hidden!important;
+}
+.app.page-calendar .calendar-day-mainline{
+  display:grid!important;
+  grid-template-columns:auto minmax(58px,auto) minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:6px!important;
+  min-width:0!important;
+  width:100%!important;
+  line-height:1!important;
+}
+.app.page-calendar .calendar-day-mainline strong{
+  font-size:13px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  justify-self:start!important;
+}
+.app.page-calendar .calendar-day-mainline span{
+  justify-self:start!important;
+  color:var(--ink)!important;
+  font-size:11px!important;
+  font-weight:800!important;
+  line-height:1!important;
+}
+.app.page-calendar .calendar-day-mainline .calendar-day-note{
+  grid-column:auto!important;
+  display:block!important;
+  margin:0!important;
+  min-width:0!important;
+  justify-self:start!important;
+  color:rgba(255,210,150,.95)!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.app.page-calendar .calendar-date-sticky-day.holiday .calendar-day-mainline .calendar-day-note,
+.app.page-calendar .calendar-planner-day-head .calendar-day-mainline .calendar-day-note{color:rgba(255,205,205,.92)!important;}
+.app.page-calendar .calendar-day-availability{
+  grid-column:1!important;
+  width:100%!important;
+  height:14px!important;
+  margin:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  overflow:hidden!important;
+  line-height:1!important;
+}
+.app.page-calendar .calendar-day-availability-pill{
+  max-width:100%!important;
+  height:13px!important;
+  padding:0 6px!important;
+  border-radius:999px!important;
+  font-size:8.5px!important;
+  font-weight:950!important;
+  letter-spacing:.01em!important;
+  text-transform:none!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.app.page-calendar .calendar-day-availability-pill.warn.multi{
+  background:rgba(249,115,22,.16)!important;
+  border-color:rgba(249,115,22,.42)!important;
+  color:#fed7aa!important;
+}
+.app.page-calendar .calendar-planner-day-head .calendar-day-note + .calendar-day-availability,
+.app.page-calendar .calendar-date-sticky-day .calendar-day-note + .calendar-day-availability{margin-top:0!important;}
+.theme-light .app.page-calendar .calendar-day-mainline .calendar-day-note{color:#b45309!important;}
+.theme-light .app.page-calendar .calendar-day-availability-pill.warn.multi{background:#ffedd5!important;border-color:#fdba74!important;color:#9a3412!important;}
+@media(max-width:1120px){
+  .app.page-calendar .calendar-day-mainline{gap:4px!important;grid-template-columns:auto minmax(46px,auto) minmax(0,1fr)!important;}
+  .app.page-calendar .calendar-day-mainline span{font-size:10px!important;}
+  .app.page-calendar .calendar-day-mainline .calendar-day-note{font-size:9px!important;}
+  .app.page-calendar .calendar-day-availability-pill{font-size:7.8px!important;padding:0 4px!important;}
 }

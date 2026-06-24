@@ -15,9 +15,16 @@ Parandusbuild:
 - Taastamine toimub VECO modaaliga ja kirjutab Supabase’i.
 
 
-## Build VECO_V3_20260624_1530
+## Build VECO_V3_20260624_1726
 
 - Kalendri päeva päisest eemaldatud valveinfo dubleerimine.
 - Päeva päises jääb ainult saadavuse indikaator: `✓ Kõik saadaval` või `⚠ Puudub: X`.
 - Indikaator on horisontaalselt keskel ja olemasolevat päise kõrgust ei suurendata.
 - Supabase skeemi ei muudetud.
+
+
+## Build VECO_V3_20260624_1726
+
+- Kalendri päeva päis: initsiaal, kuupäev ja tähtpäev samal real.
+- Puudujate indikaator näitab nimesid: `PUUDUB: NIMI` / `PUUDUVAD: NIMED`.
+- Päise kõrgus jäi samaks.
