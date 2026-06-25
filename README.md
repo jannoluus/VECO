@@ -1,4 +1,4 @@
-# VECO_V3_20260625_1531
+# VECO_V3_20260625_1726
 
 Perioodisündmuste tsoon: mitmepäevased tööd kuvatakse tööala sees 07:00–08:00 ribana.
 
@@ -9,6 +9,6 @@ Perioodisündmuste tsoon: mitmepäevased tööd kuvatakse tööala sees 07:00–
 - Mitmepäevase töö ribal kuvatakse tehnikute nimed, kui need mahuvad.
 
 
-## VECO_V3_20260625_1602
+## VECO_V3_20260625_1726
 - Taastatud horisontaalne dünaamiline ajajoon kalendri nädalavaates.
 - Ajajoone positsioon kasutab nähtava kalendri kõrgust, mitte 24h virtuaalkõrgust.

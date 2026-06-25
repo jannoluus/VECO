@@ -1,4 +1,5 @@
 {
-  "build": "VECO_V3_20260625_1602",
-  "created_at": "2026-06-25T16:02:00+03:00"
+  "build": "VECO_V3_20260625_1726",
+  "created_at": "2026-06-25T17:26:00+03:00",
+  "notes": "CR-PERF-003 flicker regression: suppress startup Supabase re-sync storm and skip calendar repaint when current view signature did not change."
 }

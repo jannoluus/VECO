@@ -13,7 +13,7 @@
   let syncing=false;
   let pendingWorkorders=null;
   let lastLocalWriteAt=0;
-  const REMOTE_ECHO_SUPPRESS_MS=12000;
+  const REMOTE_ECHO_SUPPRESS_MS=60000;
   function markLocalWrite(){
     lastLocalWriteAt=Date.now();
     try{
@@ -660,7 +660,7 @@
   }
 
   function signature(data){
-    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.startedAt||'',w.pausedAt||'',w.completedAt||'',w.startedByUuid||'',w.completedBy||'',w.completionComment||'']));
+    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.endDate||w.end_date||'',w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,(w.participantTechnicianIds||[]).join(','),w.startedAt||'',w.pausedAt||'',w.completedAt||'',w.startedByUuid||'',w.completedBy||'',w.completionComment||'']));
   }
   async function pullAndNotify(onChange){
     try{
@@ -743,7 +743,9 @@
         }
         window.VECO_STORAGE.save(merged);
         scheduleMasterDataSync(merged.clients,merged.objects);
-        syncWorkorders(merged.workorders);
+        // Do not push all loaded remote workorders back to Supabase on startup.
+        // That creates a realtime storm and repaints the calendar repeatedly (flicker).
+        // Workorders are synced only after an actual local save.
         return merged;
       }catch(err){
         console.warn('VECO Supabase load failed, using local data',err);
