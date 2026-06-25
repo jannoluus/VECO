@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260625_0948';
+const APP_BUILD='20260625_1008';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -4564,12 +4564,26 @@ function bindCalendarResize(startHour=6,endHour=22){
 
 
 function bindCalendarSpanResize(){
+  const lanes=()=>Array.from(document.querySelectorAll('[data-calendar-lane]'));
   const laneAtPoint=(x,y,ignoreEl)=>{
+    // Prefer the actual element under the pointer, but fall back to X-position.
+    // The fallback is important while resizing over cards/gaps/headers where elementFromPoint may not be a lane.
     const oldPointer=ignoreEl?.style.pointerEvents;
     if(ignoreEl) ignoreEl.style.pointerEvents='none';
     const el=document.elementFromPoint(x,y);
     if(ignoreEl) ignoreEl.style.pointerEvents=oldPointer||'';
-    return el?.closest?.('[data-calendar-lane]')||null;
+    const direct=el?.closest?.('[data-calendar-lane]')||null;
+    if(direct) return direct;
+    const list=lanes();
+    if(!list.length) return null;
+    const byX=list.find(l=>{const r=l.getBoundingClientRect(); return x>=r.left && x<=r.right;});
+    if(byX) return byX;
+    return list.reduce((best,l)=>{
+      const r=l.getBoundingClientRect();
+      const cx=r.left+r.width/2;
+      const dist=Math.abs(x-cx);
+      return !best||dist<best.dist?{lane:l,dist}:best;
+    },null)?.lane||null;
   };
   const dayShort=(date)=>{ const d=parseDateKey(date); return ['P','E','T','K','N','R','L'][d.getDay()]+' '+fmtShortDate(date); };
   const labelFor=(start,end)=> start===end ? `${dayShort(start)} · 1 päev` : `${dayShort(start)} – ${dayShort(end)} · ${daysBetweenKeys(start,end)+1} päeva`;
@@ -4585,21 +4599,23 @@ function bindCalendarSpanResize(){
       if(!card||!w) return;
       let nextStart=w.date;
       let nextEnd=workorderEndDate(w);
-      let resizing=false;
-      const begin=()=>{
-        resizing=true;
-        window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=true;
-        document.body.classList.add('calendar-span-resize-active');
-        card.classList.add('span-resizing');
-        card.setAttribute('data-span-label',labelFor(nextStart,nextEnd));
-      };
+      let changed=false;
+      window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=true;
+      window.__VECO_CALENDAR_RESIZING__=true;
+      document.body.classList.add('calendar-span-resize-active');
+      card.classList.add('span-resizing');
+      card.setAttribute('data-span-label',labelFor(nextStart,nextEnd));
+      try{ handle.setPointerCapture?.(e.pointerId); }catch(_){ }
+
       const cleanup=()=>{
+        try{ handle.releasePointerCapture?.(e.pointerId); }catch(_){ }
         document.removeEventListener('pointermove',onMove,true);
         document.removeEventListener('pointerup',onUp,true);
         document.removeEventListener('pointercancel',onCancel,true);
         document.body.classList.remove('calendar-span-resize-active');
         card.classList.remove('span-resizing');
         card.removeAttribute('data-span-label');
+        setTimeout(()=>{ window.__VECO_CALENDAR_RESIZING__=false; },80);
       };
       const applyPoint=(clientX,clientY)=>{
         const lane=laneAtPoint(clientX,clientY,card);
@@ -4607,6 +4623,8 @@ function bindCalendarSpanResize(){
         const target=lane.dataset.calendarLane;
         const currentStart=w.date;
         const currentEnd=workorderEndDate(w);
+        const oldStart=nextStart;
+        const oldEnd=nextEnd;
         if(side==='right'){
           nextStart=currentStart;
           nextEnd=target<currentStart?currentStart:target;
@@ -4614,11 +4632,11 @@ function bindCalendarSpanResize(){
           nextEnd=currentEnd;
           nextStart=target>currentEnd?currentEnd:target;
         }
+        changed=changed || oldStart!==nextStart || oldEnd!==nextEnd;
         card.setAttribute('data-span-label',labelFor(nextStart,nextEnd));
       };
       const onMove=(ev)=>{
         if(ev.pointerId!==e.pointerId) return;
-        if(!resizing) begin();
         ev.preventDefault();
         applyPoint(ev.clientX,ev.clientY);
       };
@@ -4626,15 +4644,17 @@ function bindCalendarSpanResize(){
         if(ev.pointerId!==e.pointerId) return;
         ev.preventDefault();
         ev.stopPropagation();
-        if(resizing){
-          applyPoint(ev.clientX,ev.clientY);
+        applyPoint(ev.clientX,ev.clientY);
+        cleanup();
+        if(changed || nextStart!==w.date || nextEnd!==workorderEndDate(w)){
           setWorkorderDateRange(w,nextStart,nextEnd);
           save();
+          setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;renderCalendar();},0);
+        }else{
+          setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;},120);
         }
-        cleanup();
-        setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;renderCalendar();},0);
       };
-      const onCancel=()=>{ cleanup(); setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;},120); };
+      const onCancel=()=>{ cleanup(); setTimeout(()=>{window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false;renderCalendar();},0); };
       document.addEventListener('pointermove',onMove,true);
       document.addEventListener('pointerup',onUp,true);
       document.addEventListener('pointercancel',onCancel,true);
@@ -5441,7 +5461,7 @@ async function bootstrapApp(){
       selectedWorkorderId=state.workorders?.[0]?.id||selectedWorkorderId||'';
       selectedActId=state.acts?.[0]?.id||selectedActId||'';
       renderCurrentPage();
-      const onRemoteWorkorders=(merged,meta={})=>{ state=merged; renderCurrentPageWhenIdle(); showSyncNotice(meta.source==='polling'?'Andmed uuendatud':'Realtime uuendus'); };
+      const onRemoteWorkorders=(merged,meta={})=>{ state=merged; if(window.__VECO_CALENDAR_RESIZING__){ showSyncNotice('Uuendus ootel'); return; } renderCurrentPageWhenIdle(); showSyncNotice(meta.source==='polling'?'Andmed uuendatud':'Realtime uuendus'); };
       const realtimeStarted=window.VECO_API.startWorkorderRealtime?.(onRemoteWorkorders,(status)=>{
         if(status==='SUBSCRIBED') showSyncNotice('Realtime ühendus aktiivne');
       });

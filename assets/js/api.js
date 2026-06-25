@@ -31,6 +31,7 @@
   let supabaseSupportsCompletedFields=true;
   let supabaseSupportsTimestampFields=true;
   let supabaseSupportsParticipantFields=true;
+  let supabaseSupportsEndDate=true;
 
   function cleanUrl(value){
     return String(value||'').trim().replace(/\/rest\/v1\/?$/,'').replace(/\/+$/,'');
@@ -75,6 +76,9 @@
       row.paused_at=w.pausedAt||w.paused_at||null;
       row.started_by=w.startedByUuid||w.started_by||null;
     }
+    if(supabaseSupportsEndDate){
+      row.end_date=w.endDate||w.end_date||null;
+    }
     if(supabaseSupportsParticipantFields){
       row.participant_technician_ids=Array.isArray(w.participantTechnicianIds)
         ? w.participantTechnicianIds.filter(Boolean)
@@ -95,6 +99,7 @@
       status:row.status||'Planeeritud',
       date:row.date||'',
       time:row.time ? String(row.time).slice(0,5) : '',
+      endDate:row.end_date||'',
       plannedHours:Number(row.planned_hours||2)||2,
       durationHours:Number(row.planned_hours||2)||2,
       hours:Number(row.planned_hours||2)||2,
@@ -445,6 +450,10 @@
       delete fallback.paused_at;
       delete fallback.started_by;
     }
+    if(msg.includes('end_date')){
+      supabaseSupportsEndDate=false;
+      delete fallback.end_date;
+    }
     if(msg.includes('participant_technician_ids')){
       supabaseSupportsParticipantFields=false;
       delete fallback.participant_technician_ids;
@@ -468,14 +477,14 @@
         if(found.error && found.error.code!=='PGRST116') throw found.error;
         if(found.data?.id){
           let {error}=await client.from(TABLE).update(row).eq('id',found.data.id);
-          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids/.test(String(error.message||''))){
+          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date/.test(String(error.message||''))){
             const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).update(fallback).eq('id',found.data.id));
           }
           if(error) throw error;
         }else{
           let {error}=await client.from(TABLE).insert(row);
-          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids/.test(String(error.message||''))){
+          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date/.test(String(error.message||''))){
             const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).insert(fallback));
           }
