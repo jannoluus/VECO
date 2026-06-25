@@ -4636,8 +4636,13 @@ function bindCalendarSpanResize(){
         changed=changed || oldStart!==nextStart || oldEnd!==nextEnd;
         card.setAttribute('data-span-label',labelFor(nextStart,nextEnd));
         // Live preview for single-day cards as they become multi-day.
-        const startIdx=visibleDays.findIndex(date=>date===nextStart);
-        const endIdx=visibleDays.findIndex(date=>date===nextEnd);
+        // CR-CALENDAR-SPAN-RESIZE-002: bindCalendarSpanResize() is outside renderCalendar(),
+        // so renderCalendar()'s local visibleDays is not in scope here. Build the visible day
+        // list from the rendered lanes instead; otherwise pointermove throws ReferenceError and
+        // the resize never reaches setWorkorderDateRange()/save().
+        const previewDays=lanes().map(l=>l?.dataset?.calendarLane).filter(Boolean);
+        const startIdx=previewDays.findIndex(date=>date===nextStart);
+        const endIdx=previewDays.findIndex(date=>date===nextEnd);
         if(startIdx>=0 && endIdx>=startIdx){
           card.style.setProperty('--span-start',String(startIdx));
           card.style.setProperty('--span-days',String(endIdx-startIdx+1));
