@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260625_1008';
+const APP_BUILD='20260625_1024';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -4567,7 +4567,8 @@ function bindCalendarSpanResize(){
   const lanes=()=>Array.from(document.querySelectorAll('[data-calendar-lane]'));
   const laneAtPoint=(x,y,ignoreEl)=>{
     // Prefer the actual element under the pointer, but fall back to X-position.
-    // The fallback is important while resizing over cards/gaps/headers where elementFromPoint may not be a lane.
+    // Build 20260625_1024: the fallback also works while the pointer is over
+    // the card side handle itself, the day header, the gutter, or another card.
     const oldPointer=ignoreEl?.style.pointerEvents;
     if(ignoreEl) ignoreEl.style.pointerEvents='none';
     const el=document.elementFromPoint(x,y);
@@ -4634,6 +4635,14 @@ function bindCalendarSpanResize(){
         }
         changed=changed || oldStart!==nextStart || oldEnd!==nextEnd;
         card.setAttribute('data-span-label',labelFor(nextStart,nextEnd));
+        // Live preview for single-day cards as they become multi-day.
+        const startIdx=visibleDays.findIndex(date=>date===nextStart);
+        const endIdx=visibleDays.findIndex(date=>date===nextEnd);
+        if(startIdx>=0 && endIdx>=startIdx){
+          card.style.setProperty('--span-start',String(startIdx));
+          card.style.setProperty('--span-days',String(endIdx-startIdx+1));
+          card.classList.add('calendar-span-event','multi-day');
+        }
       };
       const onMove=(ev)=>{
         if(ev.pointerId!==e.pointerId) return;
@@ -4687,6 +4696,8 @@ function bindCalendarDragDrop(startHour=6,endHour=22){
   $$('[data-calendar-drag]').forEach(card=>{
     card.addEventListener('pointerdown',e=>{
       if(e.button!==0) return;
+      // Build 20260625_1024: side/date-span and vertical time resize handles must not start card drag.
+      if(e.target?.closest?.('[data-calendar-span-resize],[data-calendar-resize],[data-calendar-start-resize]')) return;
       const workorderId=card.dataset.calendarDrag;
       const wStart=byId(state.workorders,workorderId);
       if(!wStart) return;

@@ -4728,3 +4728,39 @@ body.confirm-open #vecoConfirm *{
 .theme-light .mobile-filter-chip.active{background:#eef6ff;}
 .theme-light .mobile-more-popover{background:#fff;}
 @media(max-width:520px){.mobile-filter-row{gap:6px;margin-bottom:10px;overflow-x:auto;overflow-y:visible;padding-bottom:2px;scrollbar-width:none}.mobile-filter-row::-webkit-scrollbar{display:none}.mobile-filter-chip{min-height:38px;padding:7px 10px;border-radius:12px;gap:6px}.mobile-filter-chip span{font-size:13px}.mobile-filter-chip strong{min-width:22px;height:22px;font-size:12px}.mobile-more-popover{right:0;min-width:190px}}
+
+
+/* Build 20260625_1024: robust horizontal date-span resize hitboxes */
+.app.page-calendar .calendar-event .calendar-span-resize{
+  display:block!important;
+  position:absolute!important;
+  top:0!important;
+  bottom:0!important;
+  width:24px!important;
+  z-index:120!important;
+  pointer-events:auto!important;
+  cursor:ew-resize!important;
+  touch-action:none!important;
+}
+.app.page-calendar .calendar-event .calendar-span-resize-left{left:0!important;right:auto!important;}
+.app.page-calendar .calendar-event .calendar-span-resize-right{right:0!important;left:auto!important;}
+.app.page-calendar .calendar-event.span-resizing{
+  overflow:visible!important;
+}
+.app.page-calendar .calendar-event.span-resizing::after{
+  content:attr(data-span-label)!important;
+  position:absolute!important;
+  left:50%!important;
+  top:-24px!important;
+  transform:translateX(-50%)!important;
+  white-space:nowrap!important;
+  padding:4px 8px!important;
+  border-radius:999px!important;
+  background:rgba(15,23,42,.92)!important;
+  border:1px solid rgba(45,156,255,.45)!important;
+  color:#eaf4ff!important;
+  font-size:11px!important;
+  font-weight:900!important;
+  z-index:130!important;
+  pointer-events:none!important;
+}
