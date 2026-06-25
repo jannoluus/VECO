@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260625_1726';
+const APP_BUILD='20260625_1744';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -4219,6 +4219,48 @@ function calendarCompactHeader({rangeLabel='',visibleDays=[],mode='week',current
   </div>`;
 }
 
+
+function stopCalendarNowLineTicker(){
+  if(window.__VECO_NOW_LINE_TIMER__){
+    clearInterval(window.__VECO_NOW_LINE_TIMER__);
+    window.__VECO_NOW_LINE_TIMER__=null;
+  }
+  if(window.__VECO_NOW_LINE_TIMEOUT__){
+    clearTimeout(window.__VECO_NOW_LINE_TIMEOUT__);
+    window.__VECO_NOW_LINE_TIMEOUT__=null;
+  }
+}
+function updateCalendarNowLine(){
+  const cfg=window.__VECO_NOW_LINE_CFG__;
+  const line=document.querySelector('.calendar-now-line.calendar-now-line-global');
+  if(!cfg || !line) return;
+  const now=new Date();
+  const today=dateKeyFromDate(now);
+  const nowHour=now.getHours()+now.getMinutes()/60+now.getSeconds()/3600;
+  const inView=Array.isArray(cfg.visibleDays) && cfg.visibleDays.includes(today);
+  const inHours=nowHour>=cfg.startHour && nowHour<=cfg.endHour;
+  if(!inView || !inHours){
+    line.style.display='none';
+    return;
+  }
+  const total=Math.max(1,cfg.endHour-cfg.startHour);
+  const pct=Math.max(0,Math.min(100,((nowHour-cfg.startHour)/total)*100));
+  line.style.display='';
+  line.style.top=`calc(40px + (100% - 40px) * ${pct/100})`;
+  const label=line.querySelector('span');
+  if(label) label.textContent=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+function startCalendarNowLineTicker({visibleDays,startHour,endHour,mode}){
+  stopCalendarNowLineTicker();
+  window.__VECO_NOW_LINE_CFG__={visibleDays:[...(visibleDays||[])],startHour,endHour,mode};
+  updateCalendarNowLine();
+  const delay=Math.max(250,60000-(Date.now()%60000));
+  window.__VECO_NOW_LINE_TIMEOUT__=setTimeout(()=>{
+    updateCalendarNowLine();
+    window.__VECO_NOW_LINE_TIMER__=setInterval(updateCalendarNowLine,60000);
+  },delay);
+}
+
 function renderCalendar(){
   setCalendarLayoutPreparing();
   const calendarScrollState=captureCalendarScrollState();
@@ -4398,6 +4440,8 @@ function renderCalendar(){
   const compactHeader=calendarCompactHeader({rangeLabel:calendarRangeLabel(mode,visibleDays,currentDate),visibleDays,mode,currentDate,calendarTechFilterHtml,hideWeekend,statusFilter});
   const main=compactHeader+`<div class="calendar-planner-wrap">${scopeNotice()}${body}</div>`;
   shell(main,'',{wide:true});
+  if(mode==='week'||mode==='day') startCalendarNowLineTicker({visibleDays,startHour:calendarStartHour,endHour:calendarEndHour,mode});
+  else stopCalendarNowLineTicker();
   scheduleCalendarLayoutSync({scrollState:calendarScrollState,delay:30});
   document.querySelector('.calendar-planner-grid')?.addEventListener('scroll',()=>syncCalendarStickyHeader(),{passive:true});
   document.querySelector('.calendar-planner-wrap')?.addEventListener('scroll',()=>syncCalendarStickyHeader(),{passive:true});
