@@ -1,4 +1,4 @@
-# VECO V3 build 20260625_0934
+# VECO V3 build 20260625_0948
 
 - CR-PERF-002: vähendatud salvestusjärgset kalendri ümberjoonistust.
 - Supabase enda realtime echo ignoreeritakse pikemalt pärast lokaalset salvestust.

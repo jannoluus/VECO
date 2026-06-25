@@ -1,6 +1,6 @@
 {
-  "build": "20260625_0934",
-  "build_number": "20260625_0934",
+  "build": "20260625_0948",
+  "build_number": "20260625_0948",
   "created_at": "2026-06-25 09:13",
   "base": "VECO_V3_20260625_0929",
   "changes": [
@@ -12,6 +12,6 @@
   "databasePrerequisites": [
     "No new SQL required beyond existing workorders.participant_technician_ids jsonb column"
   ],
-  "label": "VECO_V3_20260625_0934",
+  "label": "VECO_V3_20260625_0948",
   "notes": "CR-PERF-002: longer own-write realtime suppression and Supabase local watcher disabled to reduce save/repaint flicker."
 }

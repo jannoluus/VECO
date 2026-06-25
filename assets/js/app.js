@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260625_0934';
+const APP_BUILD='20260625_0948';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -2103,12 +2103,69 @@ function openWorkorderModal(id='',defaults={}){
       next.recommendations=existing?.recommendations||'';
       next.materials=existing?.materials||'';
     }
+    const previousWorkorder=isEdit?{...existing,participantTechnicianIds:[...(existing.participantTechnicianIds||[])]}:null;
     if(isEdit){Object.assign(existing,next)}else{state.workorders.push(next);selectedWorkorderId=next.id;detailOpen.workorders=true}
     save();
     if(isCompletedStatus(next.status) && workorderActRequired(next) && !actForWorkorder(next.id)){ ensureActForWorkorder(next.id); }
     closeModal();
-    if(page==='calendar') renderCalendar(); else if(page==='projects') renderProjects(); else if(page==='objects') renderObjects(); else renderWorkorders();
+    if(page==='calendar') refreshCalendarAfterWorkorderSave(previousWorkorder||next,next); else if(page==='projects') renderProjects(); else if(page==='objects') renderObjects(); else renderWorkorders();
   });
+}
+
+function calendarLayoutKey(w={}){
+  return [w.date||'', w.time||'', workorderHours(w), workorderEndDate(w), workorderResponsibleId(w), String(w.status||'')].join('|');
+}
+function refreshCalendarCardDom(w){
+  if(page!=='calendar' || !w?.id) return false;
+  const btn=document.querySelector(`[data-calendar-edit="${CSS.escape(String(w.id))}"]`);
+  if(!btn) return false;
+  const objectText=objectName(w.objectId);
+  const titleText=(w.title||objectText||'Töö').trim();
+  const duration=workorderHours(w);
+  const endTime=workorderEndTime(w,22);
+  btn.title=workorderCalendarTitle(w);
+  btn.className=btn.className.replace(/calendar-status-[^\s]+/g,'').trim()+` calendar-status-${statusSlug(w.status)}`;
+  const head=btn.querySelector('.calendar-event-head');
+  if(head){
+    const strong=head.querySelector('strong');
+    if(strong) strong.innerHTML=`<b class="calendar-start-time">${esc(w.time||'')}</b> · ${esc(objectText)}`;
+    const em=head.querySelector('em');
+    if(em){ em.className=`status ${statusClass(w.status)}`; em.textContent=w.status||''; }
+  }
+  const workTitle=btn.querySelector('.calendar-work-title');
+  if(workTitle) workTitle.textContent=titleText;
+  const peopleNode=btn.querySelector('.calendar-people');
+  const peopleHtml=workorderCalendarPeopleHtml(w);
+  if(peopleNode){
+    const tmp=document.createElement('div'); tmp.innerHTML=peopleHtml;
+    peopleNode.replaceWith(tmp.firstElementChild || document.createTextNode(''));
+  }
+  const dur=btn.querySelector('.calendar-duration'); if(dur) dur.textContent=`${duration} h`;
+  const end=btn.querySelector('.calendar-end-time'); if(end) end.textContent=endTime;
+  const oldBadge=btn.querySelector('.calendar-act-badge');
+  const badgeHtml=calendarActBadgeHtml(w);
+  if(oldBadge){
+    if(badgeHtml){ const tmp=document.createElement('div'); tmp.innerHTML=badgeHtml; oldBadge.replaceWith(tmp.firstElementChild); }
+    else oldBadge.remove();
+  }else if(badgeHtml){
+    const tmp=document.createElement('div'); tmp.innerHTML=badgeHtml;
+    const after=btn.querySelector('.calendar-event-head');
+    if(after&&tmp.firstElementChild) after.insertAdjacentElement('afterend',tmp.firstElementChild);
+  }
+  return true;
+}
+function refreshCalendarAfterWorkorderSave(previous,next){
+  if(page!=='calendar') return false;
+  if(calendarLayoutKey(previous)!==calendarLayoutKey(next)){
+    renderCalendar();
+    return true;
+  }
+  if(refreshCalendarCardDom(next)){
+    scheduleCalendarLayoutSync({delay:0});
+    return true;
+  }
+  renderCalendar();
+  return true;
 }
 
 
