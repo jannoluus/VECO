@@ -12,6 +12,16 @@
   let realtimeDebounce=null;
   let syncing=false;
   let pendingWorkorders=null;
+  let lastLocalWriteAt=0;
+  const REMOTE_ECHO_SUPPRESS_MS=2200;
+  function markLocalWrite(){
+    lastLocalWriteAt=Date.now();
+    try{ window.__VECO_LAST_LOCAL_WRITE_AT__=lastLocalWriteAt; }catch(_){ }
+  }
+  function isLikelyOwnRemoteEcho(){
+    const t=Math.max(lastLocalWriteAt||0, Number(window.__VECO_LAST_LOCAL_WRITE_AT__||0)||0);
+    return t && (Date.now()-t)<REMOTE_ECHO_SUPPRESS_MS;
+  }
   let supabaseSupportsPlannedHours=true;
   let supabaseSupportsCompletedFields=true;
   let supabaseSupportsTimestampFields=true;
@@ -631,7 +641,13 @@
       const before=signature(window.VECO_STORAGE.load());
       const merged=await window.VECO_API.refreshWorkorders(window.VECO_STORAGE.load());
       const after=signature(merged);
-      if(before!==after && typeof onChange==='function') onChange(merged,{source:'realtime'});
+      if(before!==after && typeof onChange==='function'){
+        if(isLikelyOwnRemoteEcho()){
+          // Local save already updated the UI. Avoid repainting the whole calendar when Supabase echoes our own write back.
+          return;
+        }
+        onChange(merged,{source:'realtime'});
+      }
     }catch(err){
       console.warn('VECO Supabase realtime refresh failed',err);
     }
@@ -710,6 +726,7 @@
     save(data){
       const saved=window.VECO_STORAGE.save(data);
       if(this.mode()==='supabase'){
+        markLocalWrite();
         scheduleMasterDataSync(saved.clients,saved.objects);
         syncWorkorders(saved.workorders);
         scheduleOncallSync(saved.oncall,saved.people);
@@ -753,7 +770,10 @@
           const before=signature(window.VECO_STORAGE.load());
           const merged=await this.refreshWorkorders(window.VECO_STORAGE.load());
           const after=signature(merged);
-          if(before!==after && typeof onChange==='function') onChange(merged,{source:'polling'});
+          if(before!==after && typeof onChange==='function'){
+            if(isLikelyOwnRemoteEcho()) return;
+            onChange(merged,{source:'polling'});
+          }
         }catch(err){console.warn('VECO Supabase polling failed',err);}
       };
       pollingTimer=setInterval(tick,2000);
@@ -772,7 +792,7 @@
         .subscribe((status)=>{
           if(typeof onStatus==='function') onStatus(status);
           if(status==='SUBSCRIBED'){
-            this.startWorkorderPolling(onChange);
+            // Realtime is active; do not start parallel polling, because it causes unnecessary refresh/repaint cycles.
           }
           if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
             console.warn('VECO Supabase realtime status',status);

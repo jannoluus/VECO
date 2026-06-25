@@ -1,16 +1,17 @@
 {
-  "build": "20260624_1838",
-  "build_number": "20260624_1838",
-  "created_at": "2026-06-24 18:38",
-  "base": "VECO_V3_20260624_1827",
+  "build": "20260625_0913",
+  "build_number": "20260625_0913",
+  "created_at": "2026-06-25 09:13",
+  "base": "VECO_V3_20260624_1838",
   "changes": [
-    "Töökäsu osalejate Supabase salvestus ja tagasilugemine parandatud",
-    "api.js toDb/fromDb mapping lisab participant_technician_ids välja",
-    "Cache-bust uuendatud"
+    "Supabase realtime echo suppression: local save no longer triggers immediate full calendar repaint",
+    "Parallel polling disabled while realtime channel is subscribed",
+    "Reduced flicker after workorder save/sync",
+    "Kept participant technician persistence from 1838"
   ],
   "databasePrerequisites": [
-    "workorders.participant_technician_ids jsonb veerg peab olemas olema"
+    "No new SQL required beyond existing workorders.participant_technician_ids jsonb column"
   ],
-  "label": "VECO_V3_20260624_1838",
+  "label": "VECO_V3_20260625_0913",
   "notes": "Workorder participant technician IDs are persisted via Supabase participant_technician_ids."
 }
