@@ -1,5 +1,3 @@
-# VECO V3 20260625_1512
+# VECO_V3_20260625_1531
 
-Parandus: APP_BUILD ja HTML cache-busting viited uuendatud buildile 20260625_1512.
-
-Sisaldab varasemat CR-CALENDAR-SPAN-RESIZE-002 parandust: resize preview kasutab DOM lane'e, mitte lokaalse renderCalendar visibleDays muutujat.
+Perioodisündmuste tsoon: mitmepäevased tööd kuvatakse tööala sees 07:00–08:00 ribana.

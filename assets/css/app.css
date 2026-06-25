@@ -4854,3 +4854,69 @@ body.confirm-open #vecoConfirm *{
 .app.page-calendar .calendar-event.calendar-span-event.span-resizing .calendar-span-resize{
   opacity:.78!important;
 }
+
+
+/* Build 20260625_1531: perioodisündmuste tsoon 07:00–08:00 tööalas */
+.app.page-calendar .calendar-event.calendar-span-event{
+  min-height:30px!important;
+  height:30px!important;
+  padding:5px 92px 5px 12px!important;
+  border-radius:8px!important;
+  opacity:.92!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  background:linear-gradient(90deg,rgba(23,105,170,.90),rgba(23,105,170,.62))!important;
+  border-color:rgba(147,197,253,.82)!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event .calendar-span-ribbon-main{
+  min-width:0!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  font-size:12px!important;
+  font-weight:950!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event .calendar-span-ribbon-main b{
+  flex:0 1 auto!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  color:#fff!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event .calendar-span-ribbon-main span{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  color:rgba(226,232,240,.92)!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event .calendar-span-ribbon-meta{
+  position:absolute!important;
+  right:34px!important;
+  top:50%!important;
+  transform:translateY(-50%)!important;
+  max-width:42%!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  display:block!important;
+  font-size:10.5px!important;
+  font-weight:900!important;
+  color:rgba(226,232,240,.94)!important;
+  pointer-events:none!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event::after{
+  content:none!important;
+  display:none!important;
+}
+.app.page-calendar .calendar-event.calendar-span-preview{
+  top:calc(40px + (7 * var(--calendar-hour-px)))!important;
+  height:30px!important;
+  min-height:30px!important;
+  border-radius:8px!important;
+  opacity:.58!important;
+}

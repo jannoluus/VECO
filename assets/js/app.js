@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260625_1512';
+const APP_BUILD='20260625_1531';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -4293,12 +4293,17 @@ function renderCalendar(){
         ? `left:calc(8px + (100% - 16px - var(--calendar-click-gutter, 22px)) * ${overlap.left/100});right:auto;width:calc((100% - 16px - var(--calendar-click-gutter, 22px)) * ${overlap.width/100} - 3px);`
         : '';
       const style=spanEvent
-        ? `--span-start:${spanStartIndex};--span-days:${spanDays};--span-row:${spanRow};top:calc(46px + (var(--span-row, 0) * 34px));height:28px;min-height:28px`
+        ? `--span-start:${spanStartIndex};--span-days:${spanDays};--span-row:${spanRow};top:calc(40px + (7 * var(--calendar-hour-px)) + (var(--span-row, 0) * 34px));height:30px;min-height:30px`
         : `top:${topPct}%;height:calc((100% / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px;${overlapStyle}`;
       const daySeparators=spanEvent&&spanDays>1?Array.from({length:spanDays-1},(_,i)=>`<span class="calendar-span-day-separator" style="left:${((i+1)/spanDays)*100}%" aria-hidden="true"></span>`).join(''):'';
       const objectText=objectName(w.objectId);
       const titleText=(w.title||objectText||'Töö').trim();
       const clientText=clientName(objectClientId(w.objectId));
+      if(spanEvent){
+        const peopleCount=workorderPeopleIds(w).length||1;
+        const spanMeta=`${fmtShortDate(w.date)}–${fmtShortDate(workorderEndDate(w))} • ${totalSpan}p • ${duration}h • ${peopleCount} tehnik${peopleCount===1?'':'ut'}`;
+        return `<button class="calendar-event calendar-status-${statusSlug(w.status)}${totalSpan>1?' multi-day':''} calendar-span-event" style="${style}" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" data-calendar-start="${esc(w.date||'')}" data-calendar-end="${esc(workorderEndDate(w))}" type="button" title="${esc(workorderCalendarTitle(w))}"><span class="calendar-span-continuation" aria-hidden="true"></span>${daySeparators}<span class="calendar-span-resize calendar-span-resize-left" data-calendar-span-resize="${w.id}" data-resize-side="left" title="Venita alguskuupäeva" aria-hidden="true"></span><span class="calendar-span-resize calendar-span-resize-right" data-calendar-span-resize="${w.id}" data-resize-side="right" title="Venita lõppkuupäeva" aria-hidden="true"></span><span class="calendar-span-ribbon-main"><b>${esc(objectText||titleText)}</b><span>${esc(titleText)}</span></span><span class="calendar-span-ribbon-meta">${esc(spanMeta)}</span></button>`;
+      }
       return `<button class="calendar-event calendar-status-${statusSlug(w.status)}${compactClass}${overlap?' overlapping':''}${overlap&&overlap.columns>=3?' narrow':''}${totalSpan>1?' multi-day':''}${spanEvent?' calendar-span-event':''}" style="${style}" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" data-calendar-start="${esc(w.date||'')}" data-calendar-end="${esc(workorderEndDate(w))}" type="button" title="${esc(workorderCalendarTitle(w))}"><span class="calendar-span-continuation" aria-hidden="true"></span>${daySeparators}<span class="calendar-span-resize calendar-span-resize-left" data-calendar-span-resize="${w.id}" data-resize-side="left" title="Venita alguskuupäeva" aria-hidden="true"></span><span class="calendar-span-resize calendar-span-resize-right" data-calendar-span-resize="${w.id}" data-resize-side="right" title="Venita lõppkuupäeva" aria-hidden="true"></span><span class="calendar-time-resize calendar-time-resize-top" data-calendar-start-resize="${w.id}" title="Muuda alguskellaaega" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-left" title="Lohista vasakule / eelmisele päevale" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-right" title="Lohista paremale / järgmisele päevale" aria-hidden="true"></span><span class="calendar-event-head"><strong><b class="calendar-start-time">${esc(w.time||'')}</b> · ${esc(objectText)}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span>${calendarActBadgeHtml(w)}<b class="calendar-work-title">${esc(titleText)}</b>${workorderCalendarPeopleHtml(w)}<span class="calendar-event-footer" aria-label="Töö lõpp ja kestus"><b class="calendar-duration">${duration} h</b><b class="calendar-end-time">${esc(endLabel)}</b></span><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kellalist kestust" aria-hidden="true"></span></button>`;
     };
     const calendarEventMinutes=w=>{
@@ -4637,9 +4642,9 @@ function bindCalendarSpanResize(){
           el.removeAttribute('data-calendar-resize');
           el.removeAttribute('data-calendar-start-resize');
         });
-        clone.style.top='46px';
-        clone.style.height='28px';
-        clone.style.minHeight='28px';
+        clone.style.top='calc(40px + (7 * var(--calendar-hour-px)))';
+        clone.style.height='30px';
+        clone.style.minHeight='30px';
         clone.style.pointerEvents='none';
         grid.appendChild(clone);
         spanPreview=clone;
