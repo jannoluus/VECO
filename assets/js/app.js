@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260625_1450';
+const APP_BUILD='20260625_1512';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -4278,7 +4278,7 @@ function renderCalendar(){
 
   let body='';
   if(mode==='week'||mode==='day'){
-    const buildCalendarCard=(w,{date='',compactClass='',spanEvent=false,spanStartIndex=0,spanDays=1,overlap=null}={})=>{
+    const buildCalendarCard=(w,{date='',compactClass='',spanEvent=false,spanStartIndex=0,spanDays=1,spanRow=0,overlap=null}={})=>{
       const [hh,mm]=(w.time||'09:00').split(':').map(Number);
       const start=((Number.isFinite(hh)?hh:9)+(Number.isFinite(mm)?mm:0)/60);
       const topPct=Math.max(0,Math.min(96,((start-calendarStartHour)/calendarHoursTotal)*100));
@@ -4293,7 +4293,7 @@ function renderCalendar(){
         ? `left:calc(8px + (100% - 16px - var(--calendar-click-gutter, 22px)) * ${overlap.left/100});right:auto;width:calc((100% - 16px - var(--calendar-click-gutter, 22px)) * ${overlap.width/100} - 3px);`
         : '';
       const style=spanEvent
-        ? `--span-start:${spanStartIndex};--span-days:${spanDays};top:calc(40px + (100% - 40px) * ${topPct/100});height:calc(((100% - 40px) / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px`
+        ? `--span-start:${spanStartIndex};--span-days:${spanDays};--span-row:${spanRow};top:calc(46px + (var(--span-row, 0) * 34px));height:28px;min-height:28px`
         : `top:${topPct}%;height:calc((100% / var(--calendar-hours-count)) * ${duration} - 4px);min-height:${minHeight}px;${overlapStyle}`;
       const daySeparators=spanEvent&&spanDays>1?Array.from({length:spanDays-1},(_,i)=>`<span class="calendar-span-day-separator" style="left:${((i+1)/spanDays)*100}%" aria-hidden="true"></span>`).join(''):'';
       const objectText=objectName(w.objectId);
@@ -4344,11 +4344,15 @@ function renderCalendar(){
       flush();
       return map;
     };
+    const spanRows=[];
     const multiDayOverlay=filtered.filter(w=>workorderDaySpan(w)>1 && workorderIntersectsVisibleDays(w)).sort((a,b)=>(a.time||'').localeCompare(b.time||'')).map(w=>{
       const startIdx=visibleDays.findIndex(date=>workorderOccursOnDate(w,date));
       const endIdx=visibleDays.reduce((last,date,idx)=>workorderOccursOnDate(w,date)?idx:last,-1);
       if(startIdx<0||endIdx<startIdx) return '';
-      return buildCalendarCard(w,{spanEvent:true,spanStartIndex:startIdx,spanDays:endIdx-startIdx+1});
+      let row=spanRows.findIndex(lastEnd=>lastEnd<startIdx);
+      if(row<0){ row=spanRows.length; spanRows.push(endIdx); }
+      else spanRows[row]=endIdx;
+      return buildCalendarCard(w,{spanEvent:true,spanStartIndex:startIdx,spanDays:endIdx-startIdx+1,spanRow:row});
     }).join('');
     const columns=visibleDays.map(date=>{
       const d=parseDateKey(date);
@@ -4633,11 +4637,9 @@ function bindCalendarSpanResize(){
           el.removeAttribute('data-calendar-resize');
           el.removeAttribute('data-calendar-start-resize');
         });
-        const cardRect=card.getBoundingClientRect();
-        const gridRect=grid.getBoundingClientRect();
-        clone.style.top=`${Math.max(40,cardRect.top-gridRect.top)}px`;
-        clone.style.height=`${Math.max(34,cardRect.height)}px`;
-        clone.style.minHeight=`${Math.max(34,cardRect.height)}px`;
+        clone.style.top='46px';
+        clone.style.height='28px';
+        clone.style.minHeight='28px';
         clone.style.pointerEvents='none';
         grid.appendChild(clone);
         spanPreview=clone;

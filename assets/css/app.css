@@ -4766,7 +4766,7 @@ body.confirm-open #vecoConfirm *{
 }
 
 
-/* Build 20260625_1450: single-day -> multi-day resize ghost preview and stronger multi-day visibility */
+/* Build 20260625_1512: single-day -> multi-day resize ghost preview and stronger multi-day visibility */
 .app.page-calendar .calendar-event.calendar-span-preview{
   z-index:160!important;
   opacity:.86!important;
@@ -4790,4 +4790,67 @@ body.confirm-open #vecoConfirm *{
 }
 .app.page-calendar .calendar-event.calendar-span-event .calendar-span-continuation{
   background:linear-gradient(90deg,rgba(59,130,246,.20),rgba(14,165,233,.08) 45%,rgba(59,130,246,.18))!important;
+}
+
+
+/* Build 20260625_1512: multi-day workorders as slim top ribbons, not large blocks */
+.app.page-calendar .calendar-event.calendar-span-event{
+  min-height:28px!important;
+  height:28px!important;
+  padding:4px 28px 4px 10px!important;
+  border-radius:999px!important;
+  opacity:.88!important;
+  overflow:hidden!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event .calendar-event-head{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  margin:0!important;
+  white-space:nowrap!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event .calendar-event-head strong{
+  max-width:100%!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event .calendar-work-title,
+.app.page-calendar .calendar-event.calendar-span-event .calendar-event-footer,
+.app.page-calendar .calendar-event.calendar-span-event .workorder-people,
+.app.page-calendar .calendar-event.calendar-span-event .calendar-act-badge{
+  display:none!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event::after{
+  content:attr(data-span-label);
+  position:absolute;
+  right:32px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:10px;
+  font-weight:900;
+  color:rgba(226,232,240,.92);
+  pointer-events:none;
+}
+.app.page-calendar .calendar-event.calendar-span-preview{
+  height:28px!important;
+  min-height:28px!important;
+  padding:4px 28px 4px 10px!important;
+  border-radius:999px!important;
+  opacity:.62!important;
+  background:rgba(45,156,255,.42)!important;
+  outline:1px dashed rgba(191,219,254,.72)!important;
+  box-shadow:0 0 0 2px rgba(45,156,255,.18)!important;
+}
+.app.page-calendar .calendar-event.calendar-span-preview::before,
+.app.page-calendar .calendar-event.calendar-span-event.span-resizing::before{
+  display:none!important;
+  content:none!important;
+}
+.app.page-calendar .calendar-span-resize{
+  width:24px!important;
+  opacity:.28!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event:hover .calendar-span-resize,
+.app.page-calendar .calendar-event.calendar-span-event.span-resizing .calendar-span-resize{
+  opacity:.78!important;
 }
