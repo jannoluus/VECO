@@ -61,7 +61,7 @@
       status:w.status||'Planeeritud',
       date:w.date||null,
       time:w.time||null,
-      updated_at:new Date().toISOString()
+      updated_at:w.updatedAt||w.updated_at||new Date().toISOString()
     };
     if(supabaseSupportsPlannedHours){
       row.planned_hours=Number(w.plannedHours||w.durationHours||w.hours||2)||2;
@@ -109,6 +109,8 @@
       startedAt:row.started_at||'',
       pausedAt:row.paused_at||'',
       startedByUuid:row.started_by||'',
+      updatedAt:row.updated_at||'',
+      updated_at:row.updated_at||'',
       participantTechnicianIds:Array.isArray(row.participant_technician_ids)
         ? row.participant_technician_ids.filter(Boolean)
         : (typeof row.participant_technician_ids==='string'
@@ -118,11 +120,21 @@
   }
   function mergeWorkorders(localData, remoteRows){
     const data=window.VECO_STORAGE.normalize(localData||window.VECO_STORAGE.load());
+    const localById=new Map((data.workorders||[]).map(w=>[String(w.id||w.workorder_no||''),w]));
     const remote=(remoteRows||[]).map(fromDb);
-    // Supabase mode: remote workorders are the source of truth.
-    // This prevents stale/deleted localStorage workorders from being re-inserted
-    // during the next save/sync cycle.
-    data.workorders=remote;
+    const now=Date.now();
+    const freshMs=5*60*1000;
+    // Supabase remains the normal source of truth, but keep a very recent local
+    // date-range edit if the user refreshes before the Supabase write has returned.
+    data.workorders=remote.map(r=>{
+      const local=localById.get(String(r.id||''));
+      const lt=Date.parse(local?.updatedAt||local?.updated_at||'')||0;
+      const rt=Date.parse(r.updatedAt||r.updated_at||'')||0;
+      if(local && lt>rt+250 && now-lt<freshMs){
+        return {...r,...local,updatedAt:local.updatedAt||local.updated_at,updated_at:local.updatedAt||local.updated_at};
+      }
+      return r;
+    });
     return data;
   }
 
@@ -222,7 +234,7 @@
       end_date:a.end||a.end_date||null,
       status:a.type||a.status||'Puudumine',
       note:a.note||null,
-      updated_at:new Date().toISOString()
+      updated_at:w.updatedAt||w.updated_at||new Date().toISOString()
     };
   }
   async function loadAvailabilityEntries(people=[]){
@@ -274,7 +286,7 @@
       is_deleted:c.isDeleted===true||c.is_deleted===true,
       deleted_at:c.deletedAt||c.deleted_at||null,
       deleted_by:c.deletedBy||c.deleted_by||null,
-      updated_at:new Date().toISOString()
+      updated_at:w.updatedAt||w.updated_at||new Date().toISOString()
     };
   }
   function clientFromDb(row){
@@ -309,7 +321,7 @@
       is_deleted:o.isDeleted===true||o.is_deleted===true,
       deleted_at:o.deletedAt||o.deleted_at||null,
       deleted_by:o.deletedBy||o.deleted_by||null,
-      updated_at:new Date().toISOString()
+      updated_at:w.updatedAt||w.updated_at||new Date().toISOString()
     };
   }
   function objectFromDb(row){
@@ -373,7 +385,7 @@
     if(!client) return false;
     const key=String(clientNo||'').trim();
     if(!key) return false;
-    const patch={is_deleted:true,deleted_at:new Date().toISOString(),deleted_by:deletedBy||'VECO',updated_at:new Date().toISOString()};
+    const patch={is_deleted:true,deleted_at:new Date().toISOString(),deleted_by:deletedBy||'VECO',updated_at:w.updatedAt||w.updated_at||new Date().toISOString()};
     const {error}=await client.from(CLIENTS_TABLE).update(patch).eq('client_no',key);
     if(error) throw error;
     return true;
@@ -383,7 +395,7 @@
     if(!client) return false;
     const key=String(objectNo||'').trim();
     if(!key) return false;
-    const patch={is_deleted:true,deleted_at:new Date().toISOString(),deleted_by:deletedBy||'VECO',updated_at:new Date().toISOString()};
+    const patch={is_deleted:true,deleted_at:new Date().toISOString(),deleted_by:deletedBy||'VECO',updated_at:w.updatedAt||w.updated_at||new Date().toISOString()};
     const {error}=await client.from(OBJECTS_TABLE).update(patch).eq('object_no',key);
     if(error) throw error;
     return true;
@@ -393,7 +405,7 @@
     if(!client) return false;
     const key=String(clientNo||'').trim();
     if(!key) return false;
-    const patch={is_deleted:false,deleted_at:null,deleted_by:null,updated_at:new Date().toISOString()};
+    const patch={is_deleted:false,deleted_at:null,deleted_by:null,updated_at:w.updatedAt||w.updated_at||new Date().toISOString()};
     const {error}=await client.from(CLIENTS_TABLE).update(patch).eq('client_no',key);
     if(error) throw error;
     return true;
@@ -403,7 +415,7 @@
     if(!client) return false;
     const key=String(objectNo||'').trim();
     if(!key) return false;
-    const patch={is_deleted:false,deleted_at:null,deleted_by:null,updated_at:new Date().toISOString()};
+    const patch={is_deleted:false,deleted_at:null,deleted_by:null,updated_at:w.updatedAt||w.updated_at||new Date().toISOString()};
     const {error}=await client.from(OBJECTS_TABLE).update(patch).eq('object_no',key);
     if(error) throw error;
     return true;
@@ -553,7 +565,7 @@
       phone:u.phone||'',
       email:u.email||'',
       region:u.region||'',
-      updated_at:new Date().toISOString()
+      updated_at:w.updatedAt||w.updated_at||new Date().toISOString()
     };
   }
   function authUserFromRow(row){
@@ -637,7 +649,7 @@
     if(!client) return false;
     const username=authUsernameFromId(userId);
     if(!username) return false;
-    const {error}=await client.from(AUTH_TABLE).update({active:false,updated_at:new Date().toISOString()}).eq('username',username);
+    const {error}=await client.from(AUTH_TABLE).update({active:false,updated_at:w.updatedAt||w.updated_at||new Date().toISOString()}).eq('username',username);
     if(error) throw error;
     return true;
   }
@@ -731,6 +743,7 @@
         }
         window.VECO_STORAGE.save(merged);
         scheduleMasterDataSync(merged.clients,merged.objects);
+        syncWorkorders(merged.workorders);
         return merged;
       }catch(err){
         console.warn('VECO Supabase load failed, using local data',err);

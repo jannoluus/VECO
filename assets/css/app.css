@@ -4920,3 +4920,19 @@ body.confirm-open #vecoConfirm *{
   border-radius:8px!important;
   opacity:.58!important;
 }
+
+
+/* Build 20260625_1548: restore current-time line above grid and keep span meta readable */
+.app.page-calendar .calendar-now-line.calendar-now-line-global{
+  display:block!important;
+  z-index:260!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
+.app.page-calendar .calendar-now-line.calendar-now-line-global span{
+  display:inline-block!important;
+  z-index:261!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event .calendar-span-ribbon-meta{
+  max-width:52%!important;
+}

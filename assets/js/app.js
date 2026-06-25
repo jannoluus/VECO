@@ -906,7 +906,7 @@ let localStateWatchTimer=null;
 let localStateSnapshot='';
 let localRefreshInProgress=false;
 function localStateSignature(data){
-  return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.time,w.title,w.technicianId,w.responsibleTechnicianId,(w.participantTechnicianIds||[]).join(','),w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.completedAt||'',w.completedBy||'',w.completionComment||'']));
+  return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.endDate||w.end_date||'',w.time,w.title,w.technicianId,w.responsibleTechnicianId,(w.participantTechnicianIds||[]).join(','),w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.completedAt||'',w.completedBy||'',w.completionComment||'',w.updatedAt||w.updated_at||'']));
 }
 function notifyLocalPeers(){
   try{
@@ -2802,6 +2802,10 @@ function setWorkorderDateRange(w,startKey,endKey){
   w.date=start;
   if(end && end!==start) w.endDate=end; else delete w.endDate;
   delete w.end_date;
+  // CR-CALENDAR-SPAN-004: mark local date-range edits so a fast F5 does not
+  // immediately overwrite the fresh local range with a still-stale Supabase row.
+  w.updatedAt=new Date().toISOString();
+  w.updated_at=w.updatedAt;
 }
 function teamWeekAbsences(personId,weekDays){ const start=weekDays[0], end=weekDays[6]; return state.absences.filter(a=>a.personId===personId && a.start<=end && a.end>=start); }
 function teamWeekOncall(personId,weekDays){ const start=weekDays[0], end=weekDays[6]; return state.oncall.filter(o=>o.personId===personId && o.start<=end && o.end>=start); }
@@ -4301,7 +4305,9 @@ function renderCalendar(){
       const clientText=clientName(objectClientId(w.objectId));
       if(spanEvent){
         const peopleCount=workorderPeopleIds(w).length||1;
-        const spanMeta=`${fmtShortDate(w.date)}–${fmtShortDate(workorderEndDate(w))} • ${totalSpan}p • ${duration}h • ${peopleCount} tehnik${peopleCount===1?'':'ut'}`;
+        const peopleNames=workorderPeopleLabel(w);
+        const peopleText=peopleNames || `${peopleCount} tehnik${peopleCount===1?'':'ut'}`;
+        const spanMeta=`${fmtShortDate(w.date)}–${fmtShortDate(workorderEndDate(w))} • ${totalSpan}p • ${duration}h • ${peopleText}`;
         return `<button class="calendar-event calendar-status-${statusSlug(w.status)}${totalSpan>1?' multi-day':''} calendar-span-event" style="${style}" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" data-calendar-start="${esc(w.date||'')}" data-calendar-end="${esc(workorderEndDate(w))}" type="button" title="${esc(workorderCalendarTitle(w))}"><span class="calendar-span-continuation" aria-hidden="true"></span>${daySeparators}<span class="calendar-span-resize calendar-span-resize-left" data-calendar-span-resize="${w.id}" data-resize-side="left" title="Venita alguskuupäeva" aria-hidden="true"></span><span class="calendar-span-resize calendar-span-resize-right" data-calendar-span-resize="${w.id}" data-resize-side="right" title="Venita lõppkuupäeva" aria-hidden="true"></span><span class="calendar-span-ribbon-main"><b>${esc(objectText||titleText)}</b><span>${esc(titleText)}</span></span><span class="calendar-span-ribbon-meta">${esc(spanMeta)}</span></button>`;
       }
       return `<button class="calendar-event calendar-status-${statusSlug(w.status)}${compactClass}${overlap?' overlapping':''}${overlap&&overlap.columns>=3?' narrow':''}${totalSpan>1?' multi-day':''}${spanEvent?' calendar-span-event':''}" style="${style}" data-calendar-edit="${w.id}" data-calendar-drag="${w.id}" data-calendar-start="${esc(w.date||'')}" data-calendar-end="${esc(workorderEndDate(w))}" type="button" title="${esc(workorderCalendarTitle(w))}"><span class="calendar-span-continuation" aria-hidden="true"></span>${daySeparators}<span class="calendar-span-resize calendar-span-resize-left" data-calendar-span-resize="${w.id}" data-resize-side="left" title="Venita alguskuupäeva" aria-hidden="true"></span><span class="calendar-span-resize calendar-span-resize-right" data-calendar-span-resize="${w.id}" data-resize-side="right" title="Venita lõppkuupäeva" aria-hidden="true"></span><span class="calendar-time-resize calendar-time-resize-top" data-calendar-start-resize="${w.id}" title="Muuda alguskellaaega" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-left" title="Lohista vasakule / eelmisele päevale" aria-hidden="true"></span><span class="calendar-move-edge calendar-move-edge-right" title="Lohista paremale / järgmisele päevale" aria-hidden="true"></span><span class="calendar-event-head"><strong><b class="calendar-start-time">${esc(w.time||'')}</b> · ${esc(objectText)}</strong><em class="status ${statusClass(w.status)}">${esc(w.status)}</em></span>${calendarActBadgeHtml(w)}<b class="calendar-work-title">${esc(titleText)}</b>${workorderCalendarPeopleHtml(w)}<span class="calendar-event-footer" aria-label="Töö lõpp ja kestus"><b class="calendar-duration">${duration} h</b><b class="calendar-end-time">${esc(endLabel)}</b></span><span class="calendar-resize-handle" data-calendar-resize="${w.id}" title="Muuda kellalist kestust" aria-hidden="true"></span></button>`;
@@ -4378,7 +4384,7 @@ function renderCalendar(){
       return `<div class="calendar-planner-day ${date===today?'today':''} ${calendarDayClass(date)}"><div class="calendar-planner-day-head"><div class="calendar-day-mainline"><strong>${dayNames[d.getDay()]}</strong><span>${esc(fmtShortDate(date,true))}</span>${dayNote}</div>${calendarDayAvailabilityHtml(date)}</div><div class="calendar-planner-lane" data-calendar-lane="${date}">${workdayMarkers}${slots}${cards || (!hasJobs?'<div class="calendar-empty-note">Töid ei ole</div>':'')}</div></div>`;
     }).join('');
     const nowLabel=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    const globalNowLine=showNowLine?`<div class="calendar-now-line calendar-now-line-global" style="top:calc(40px + (100% - 40px) * ${nowTopPct/100})"><span>${nowLabel}</span></div>`:'';
+    const globalNowLine=showNowLine?`<div class="calendar-now-line calendar-now-line-global" style="top:calc(40px + var(--calendar-body-height) * ${nowTopPct/100})"><span>${nowLabel}</span></div>`:'';
     const stickyDateHeader=`<div class="calendar-date-sticky-header" aria-hidden="true" style="grid-template-columns:54px repeat(${visibleDays.length},minmax(150px,1fr))"><div class="calendar-date-sticky-spacer"></div>${visibleDays.map(date=>{const d=parseDateKey(date);const dayNote=calendarDayMarker(date);return `<div class="calendar-date-sticky-day ${date===today?'today':''} ${calendarDayClass(date)}"><div class="calendar-day-mainline"><strong>${dayNames[d.getDay()]}</strong><span>${esc(fmtShortDate(date,true))}</span>${dayNote}</div>${calendarDayAvailabilityHtml(date)}</div>`;}).join('')}</div>`;
     // Build 20260615_1013: responsive hour height - 24h scroll kept.
     const responsiveHourPx=calendarInitialResponsiveHourPx();
