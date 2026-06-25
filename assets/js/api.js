@@ -86,9 +86,10 @@
   function mergeWorkorders(localData, remoteRows){
     const data=window.VECO_STORAGE.normalize(localData||window.VECO_STORAGE.load());
     const remote=(remoteRows||[]).map(fromDb);
-    const byId=new Map((data.workorders||[]).map(w=>[w.id,w]));
-    remote.forEach(w=>byId.set(w.id,{...(byId.get(w.id)||{}),...w}));
-    data.workorders=Array.from(byId.values());
+    // Supabase mode: remote workorders are the source of truth.
+    // This prevents stale/deleted localStorage workorders from being re-inserted
+    // during the next save/sync cycle.
+    data.workorders=remote;
     return data;
   }
 

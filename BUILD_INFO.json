@@ -1,5 +1,5 @@
 {
-  "build": "VECO_V3_20260624_1815",
+  "build": "20260624_1827",
   "build_number": "20260624_1815",
   "created_at": "2026-06-24 18:15",
   "base": "VECO_V3_20260624_1744",
@@ -12,5 +12,7 @@
   ],
   "databasePrerequisites": [
     "availability_entries tabel on vajalik ainult siis, kui kasutatakse Supabase-põhist saadavust"
-  ]
+  ],
+  "label": "VECO_V3_20260624_1827",
+  "notes": "Remote workorders source-of-truth fix, orphan workorder diagnostics, missing object warnings, mobile dropdown auto-close."
 }
