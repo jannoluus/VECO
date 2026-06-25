@@ -15,6 +15,7 @@
   let supabaseSupportsPlannedHours=true;
   let supabaseSupportsCompletedFields=true;
   let supabaseSupportsTimestampFields=true;
+  let supabaseSupportsParticipantFields=true;
 
   function cleanUrl(value){
     return String(value||'').trim().replace(/\/rest\/v1\/?$/,'').replace(/\/+$/,'');
@@ -59,6 +60,13 @@
       row.paused_at=w.pausedAt||w.paused_at||null;
       row.started_by=w.startedByUuid||w.started_by||null;
     }
+    if(supabaseSupportsParticipantFields){
+      row.participant_technician_ids=Array.isArray(w.participantTechnicianIds)
+        ? w.participantTechnicianIds.filter(Boolean)
+        : (typeof w.participantTechnicianIds==='string'
+            ? w.participantTechnicianIds.split(',').map(x=>x.trim()).filter(Boolean)
+            : []);
+    }
     return row;
   }
   function fromDb(row){
@@ -80,7 +88,12 @@
       completionComment:row.completion_comment||'',
       startedAt:row.started_at||'',
       pausedAt:row.paused_at||'',
-      startedByUuid:row.started_by||''
+      startedByUuid:row.started_by||'',
+      participantTechnicianIds:Array.isArray(row.participant_technician_ids)
+        ? row.participant_technician_ids.filter(Boolean)
+        : (typeof row.participant_technician_ids==='string'
+            ? row.participant_technician_ids.split(',').map(x=>x.trim()).filter(Boolean)
+            : [])
     };
   }
   function mergeWorkorders(localData, remoteRows){
@@ -417,6 +430,10 @@
       delete fallback.paused_at;
       delete fallback.started_by;
     }
+    if(msg.includes('participant_technician_ids')){
+      supabaseSupportsParticipantFields=false;
+      delete fallback.participant_technician_ids;
+    }
     return fallback;
   }
   async function syncWorkorders(workorders){
@@ -436,14 +453,14 @@
         if(found.error && found.error.code!=='PGRST116') throw found.error;
         if(found.data?.id){
           let {error}=await client.from(TABLE).update(row).eq('id',found.data.id);
-          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by/.test(String(error.message||''))){
+          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids/.test(String(error.message||''))){
             const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).update(fallback).eq('id',found.data.id));
           }
           if(error) throw error;
         }else{
           let {error}=await client.from(TABLE).insert(row);
-          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by/.test(String(error.message||''))){
+          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids/.test(String(error.message||''))){
             const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).insert(fallback));
           }
