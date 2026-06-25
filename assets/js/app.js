@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260625_0929';
+const APP_BUILD='20260625_0934';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -953,6 +953,9 @@ function scheduleLocalRefresh(meta={}){
   },160);
 }
 function startLocalStateWatch(){
+  // Supabase pages already use realtime/polling. A same-tab localStorage watcher can repaint the calendar after every save.
+  // Keep the watcher only for local/offline mode; cross-tab sync remains available through BroadcastChannel/storage.
+  if(window.VECO_API?.mode?.()==='supabase') return;
   if(localStateWatchTimer) return;
   try{ localStateSnapshot=localStateSignature(window.VECO_STORAGE.load()); }catch(e){ localStateSnapshot=''; }
   localStateWatchTimer=setInterval(()=>{

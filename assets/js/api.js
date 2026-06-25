@@ -13,12 +13,17 @@
   let syncing=false;
   let pendingWorkorders=null;
   let lastLocalWriteAt=0;
-  const REMOTE_ECHO_SUPPRESS_MS=2200;
+  const REMOTE_ECHO_SUPPRESS_MS=12000;
   function markLocalWrite(){
     lastLocalWriteAt=Date.now();
-    try{ window.__VECO_LAST_LOCAL_WRITE_AT__=lastLocalWriteAt; }catch(_){ }
+    try{
+      window.__VECO_LAST_LOCAL_WRITE_AT__=lastLocalWriteAt;
+      window.__VECO_REMOTE_SUPPRESS_UNTIL__=Date.now()+REMOTE_ECHO_SUPPRESS_MS;
+    }catch(_){ }
   }
   function isLikelyOwnRemoteEcho(){
+    const until=Number(window.__VECO_REMOTE_SUPPRESS_UNTIL__||0)||0;
+    if(until && Date.now()<until) return true;
     const t=Math.max(lastLocalWriteAt||0, Number(window.__VECO_LAST_LOCAL_WRITE_AT__||0)||0);
     return t && (Date.now()-t)<REMOTE_ECHO_SUPPRESS_MS;
   }
