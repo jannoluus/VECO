@@ -4936,3 +4936,26 @@ body.confirm-open #vecoConfirm *{
 .app.page-calendar .calendar-event.calendar-span-event .calendar-span-ribbon-meta{
   max-width:52%!important;
 }
+
+
+/* Build 20260625_1602: dynamic horizontal current-time line restored.
+   The line is positioned against the visible planner height, not against the
+   full 24h virtual body height, so it stays visible in the scrolled week view. */
+.app.page-calendar .calendar-planner{position:relative!important;}
+.app.page-calendar .calendar-now-line.calendar-now-line-global{
+  position:absolute!important;
+  left:54px!important;
+  right:0!important;
+  display:block!important;
+  height:2px!important;
+  pointer-events:none!important;
+  z-index:320!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
+.app.page-calendar .calendar-now-line.calendar-now-line-global:before{left:-5px!important;}
+.app.page-calendar .calendar-now-line.calendar-now-line-global span{left:-54px!important;}
+@media(max-width:1120px){
+  .app.page-calendar .calendar-now-line.calendar-now-line-global{left:44px!important;}
+  .app.page-calendar .calendar-now-line.calendar-now-line-global span{left:-44px!important;}
+}

@@ -7,3 +7,8 @@ Perioodisündmuste tsoon: mitmepäevased tööd kuvatakse tööala sees 07:00–
 - Parandatud mitmepäevase töö end_date säilimine kiire F5 korral.
 - Parandatud ajajoone kuvamine periooditsooni järel.
 - Mitmepäevase töö ribal kuvatakse tehnikute nimed, kui need mahuvad.
+
+
+## VECO_V3_20260625_1602
+- Taastatud horisontaalne dünaamiline ajajoon kalendri nädalavaates.
+- Ajajoone positsioon kasutab nähtava kalendri kõrgust, mitte 24h virtuaalkõrgust.
