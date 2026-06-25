@@ -1,8 +1,8 @@
 {
-  "build": "20260625_0913",
+  "build": "20260625_0929",
   "build_number": "20260625_0913",
   "created_at": "2026-06-25 09:13",
-  "base": "VECO_V3_20260624_1838",
+  "base": "VECO_V3_20260625_0913",
   "changes": [
     "Supabase realtime echo suppression: local save no longer triggers immediate full calendar repaint",
     "Parallel polling disabled while realtime channel is subscribed",

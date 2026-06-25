@@ -1,4 +1,4 @@
-# VECO V3 build 20260625_0913
+# VECO V3 build 20260625_0929
 
-- Töökäsu osalejate salvestus Supabase’i parandatud.
-- Eeldab veergu `workorders.participant_technician_ids jsonb`.
+- APP_BUILD corrected.
+- Calendar layout preparing no longer hides planner during normal rerender to reduce flicker.

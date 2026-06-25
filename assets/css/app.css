@@ -3491,8 +3491,8 @@ body:has(.app.page-calendar){
    scroll position are being calculated, so users do not see intermediate
    layout passes as flicker. */
 body.calendar-layout-preparing .app.page-calendar .calendar-planner-wrap{
-  opacity:0!important;
-  pointer-events:none!important;
+  opacity:1!important;
+  pointer-events:auto!important;
 }
 body.calendar-layout-ready .app.page-calendar .calendar-planner-wrap{
   opacity:1!important;
