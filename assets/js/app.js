@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260625_1402';
+const APP_BUILD='20260625_1428';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -4598,6 +4598,7 @@ function bindCalendarSpanResize(){
       const card=handle.closest('[data-calendar-drag]');
       const w=byId(state.workorders,workorderId);
       if(!card||!w) return;
+      const wasSpanEvent=card.classList.contains('calendar-span-event');
       let nextStart=w.date;
       let nextEnd=workorderEndDate(w);
       let changed=false;
@@ -4640,13 +4641,18 @@ function bindCalendarSpanResize(){
         // so renderCalendar()'s local visibleDays is not in scope here. Build the visible day
         // list from the rendered lanes instead; otherwise pointermove throws ReferenceError and
         // the resize never reaches setWorkorderDateRange()/save().
-        const previewDays=lanes().map(l=>l?.dataset?.calendarLane).filter(Boolean);
-        const startIdx=previewDays.findIndex(date=>date===nextStart);
-        const endIdx=previewDays.findIndex(date=>date===nextEnd);
-        if(startIdx>=0 && endIdx>=startIdx){
-          card.style.setProperty('--span-start',String(startIdx));
-          card.style.setProperty('--span-days',String(endIdx-startIdx+1));
-          card.classList.add('calendar-span-event','multi-day');
+        // Only live-resize cards that were already rendered in the multi-day overlay.
+        // Single-day cards are children of one day lane; forcing `calendar-span-event` on them
+        // moves them into the overlay positioning model while they are still inside the lane,
+        // which makes the card shrink/disappear until the next full render.
+        if(wasSpanEvent){
+          const previewDays=lanes().map(l=>l?.dataset?.calendarLane).filter(Boolean);
+          const startIdx=previewDays.findIndex(date=>date===nextStart);
+          const endIdx=previewDays.findIndex(date=>date===nextEnd);
+          if(startIdx>=0 && endIdx>=startIdx){
+            card.style.setProperty('--span-start',String(startIdx));
+            card.style.setProperty('--span-days',String(endIdx-startIdx+1));
+          }
         }
       };
       const onMove=(ev)=>{
