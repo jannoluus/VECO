@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260625_1428';
+const APP_BUILD='20260625_1450';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -4609,6 +4609,40 @@ function bindCalendarSpanResize(){
       card.setAttribute('data-span-label',labelFor(nextStart,nextEnd));
       try{ handle.setPointerCapture?.(e.pointerId); }catch(_){ }
 
+      let spanPreview=null;
+      const previewDays=()=>lanes().map(l=>l?.dataset?.calendarLane).filter(Boolean);
+      const removeSpanPreview=()=>{
+        if(spanPreview){
+          spanPreview.remove();
+          spanPreview=null;
+        }
+      };
+      const ensureSpanPreview=()=>{
+        const grid=document.querySelector('.calendar-planner-grid');
+        if(!grid) return null;
+        if(spanPreview && spanPreview.isConnected) return spanPreview;
+        const clone=card.cloneNode(true);
+        clone.classList.add('calendar-span-event','calendar-span-preview','span-resizing');
+        clone.classList.remove('overlapping','narrow','compact');
+        clone.removeAttribute('data-calendar-edit');
+        clone.removeAttribute('data-calendar-drag');
+        clone.querySelectorAll('[data-calendar-edit],[data-calendar-drag],[data-calendar-span-resize],[data-calendar-resize],[data-calendar-start-resize]').forEach(el=>{
+          el.removeAttribute('data-calendar-edit');
+          el.removeAttribute('data-calendar-drag');
+          el.removeAttribute('data-calendar-span-resize');
+          el.removeAttribute('data-calendar-resize');
+          el.removeAttribute('data-calendar-start-resize');
+        });
+        const cardRect=card.getBoundingClientRect();
+        const gridRect=grid.getBoundingClientRect();
+        clone.style.top=`${Math.max(40,cardRect.top-gridRect.top)}px`;
+        clone.style.height=`${Math.max(34,cardRect.height)}px`;
+        clone.style.minHeight=`${Math.max(34,cardRect.height)}px`;
+        clone.style.pointerEvents='none';
+        grid.appendChild(clone);
+        spanPreview=clone;
+        return spanPreview;
+      };
       const cleanup=()=>{
         try{ handle.releasePointerCapture?.(e.pointerId); }catch(_){ }
         document.removeEventListener('pointermove',onMove,true);
@@ -4617,6 +4651,7 @@ function bindCalendarSpanResize(){
         document.body.classList.remove('calendar-span-resize-active');
         card.classList.remove('span-resizing');
         card.removeAttribute('data-span-label');
+        removeSpanPreview();
         setTimeout(()=>{ window.__VECO_CALENDAR_RESIZING__=false; },80);
       };
       const applyPoint=(clientX,clientY)=>{
@@ -4645,14 +4680,14 @@ function bindCalendarSpanResize(){
         // Single-day cards are children of one day lane; forcing `calendar-span-event` on them
         // moves them into the overlay positioning model while they are still inside the lane,
         // which makes the card shrink/disappear until the next full render.
-        if(wasSpanEvent){
-          const previewDays=lanes().map(l=>l?.dataset?.calendarLane).filter(Boolean);
-          const startIdx=previewDays.findIndex(date=>date===nextStart);
-          const endIdx=previewDays.findIndex(date=>date===nextEnd);
-          if(startIdx>=0 && endIdx>=startIdx){
-            card.style.setProperty('--span-start',String(startIdx));
-            card.style.setProperty('--span-days',String(endIdx-startIdx+1));
-          }
+        const days=previewDays();
+        const startIdx=days.findIndex(date=>date===nextStart);
+        const endIdx=days.findIndex(date=>date===nextEnd);
+        if(startIdx>=0 && endIdx>=startIdx){
+          const previewTarget=wasSpanEvent ? card : ensureSpanPreview();
+          previewTarget?.style?.setProperty('--span-start',String(startIdx));
+          previewTarget?.style?.setProperty('--span-days',String(endIdx-startIdx+1));
+          previewTarget?.setAttribute?.('data-span-label',labelFor(nextStart,nextEnd));
         }
       };
       const onMove=(ev)=>{

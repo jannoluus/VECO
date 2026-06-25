@@ -4764,3 +4764,30 @@ body.confirm-open #vecoConfirm *{
   z-index:130!important;
   pointer-events:none!important;
 }
+
+
+/* Build 20260625_1450: single-day -> multi-day resize ghost preview and stronger multi-day visibility */
+.app.page-calendar .calendar-event.calendar-span-preview{
+  z-index:160!important;
+  opacity:.86!important;
+  box-shadow:0 0 0 3px rgba(45,156,255,.38),0 18px 40px rgba(0,0,0,.42)!important;
+  outline:2px dashed rgba(191,219,254,.85)!important;
+  background:linear-gradient(135deg,rgba(37,99,235,.94),rgba(14,116,144,.92))!important;
+  filter:saturate(1.12)!important;
+}
+.app.page-calendar .calendar-event.calendar-span-preview::before{
+  content:attr(data-span-label)!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event{
+  z-index:70!important;
+  border:1px solid rgba(147,197,253,.72)!important;
+  box-shadow:0 10px 26px rgba(0,0,0,.26),0 0 0 1px rgba(59,130,246,.24)!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event:hover,
+.app.page-calendar .calendar-event.calendar-span-event.span-resizing,
+.app.page-calendar .calendar-event.calendar-span-event.dragging{
+  z-index:170!important;
+}
+.app.page-calendar .calendar-event.calendar-span-event .calendar-span-continuation{
+  background:linear-gradient(90deg,rgba(59,130,246,.20),rgba(14,165,233,.08) 45%,rgba(59,130,246,.18))!important;
+}
