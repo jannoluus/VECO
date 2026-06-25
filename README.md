@@ -1,5 +1,5 @@
-# VECO V3 build 20260625_0948
+# VECO V3 20260625_1402
 
-- CR-PERF-002: vähendatud salvestusjärgset kalendri ümberjoonistust.
-- Supabase enda realtime echo ignoreeritakse pikemalt pärast lokaalset salvestust.
-- Supabase režiimis ei käivitu enam sama tabi localStorage watcher, mis võis kalendrit uuesti renderdada.
+Parandus: APP_BUILD ja HTML cache-busting viited uuendatud buildile 20260625_1402.
+
+Sisaldab varasemat CR-CALENDAR-SPAN-RESIZE-002 parandust: resize preview kasutab DOM lane'e, mitte lokaalse renderCalendar visibleDays muutujat.
