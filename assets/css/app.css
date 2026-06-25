@@ -4959,3 +4959,8 @@ body.confirm-open #vecoConfirm *{
   .app.page-calendar .calendar-now-line.calendar-now-line-global{left:44px!important;}
   .app.page-calendar .calendar-now-line.calendar-now-line-global span{left:-44px!important;}
 }
+
+
+/* Build 20260625_1807: Task properties in work modal */
+.task-properties-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
+.task-properties-grid .check-card{margin:0;}

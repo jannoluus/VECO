@@ -32,6 +32,7 @@
   let supabaseSupportsTimestampFields=true;
   let supabaseSupportsParticipantFields=true;
   let supabaseSupportsEndDate=true;
+  let supabaseSupportsTaskFields=true;
 
   function cleanUrl(value){
     return String(value||'').trim().replace(/\/rest\/v1\/?$/,'').replace(/\/+$/,'');
@@ -54,7 +55,7 @@
       workorder_no:String(w.id||w.workorder_no||'').trim()||null,
       project_id:w.projectId||w.project_id||null,
       object_id:w.objectId||w.object_id||null,
-      title:w.title||'Töökäsk',
+      title:w.title||'Töö',
       description:w.description||null,
       technician_id:w.technicianId||w.technician_id||null,
       technician:w.technician||w.technicianName||null,
@@ -79,6 +80,14 @@
     if(supabaseSupportsEndDate){
       row.end_date=w.endDate||w.end_date||null;
     }
+    if(supabaseSupportsTaskFields){
+      row.workflow=w.workflow||w.workflowType||w.taskWorkflow||'kontroll';
+      row.requires_act=!!(w.requiresAct||w.actRequired);
+      row.is_billable=!!w.isBillable;
+      row.track_time=!!w.trackTime;
+      row.uses_materials=!!w.usesMaterials;
+      row.requires_signature=!!w.requiresSignature;
+    }
     if(supabaseSupportsParticipantFields){
       row.participant_technician_ids=Array.isArray(w.participantTechnicianIds)
         ? w.participantTechnicianIds.filter(Boolean)
@@ -93,7 +102,7 @@
       id:row.workorder_no||`WO-DB-${row.id}`,
       projectId:row.project_id||'',
       objectId:row.object_id||'',
-      title:row.title||'Töökäsk',
+      title:row.title||'Töö',
       description:row.description||'',
       technicianId:row.technician_id||'',
       status:row.status||'Planeeritud',
@@ -111,6 +120,14 @@
       startedByUuid:row.started_by||'',
       updatedAt:row.updated_at||'',
       updated_at:row.updated_at||'',
+      workflow:row.workflow||'kontroll',
+      workflowType:row.workflow||'kontroll',
+      requiresAct:row.requires_act===true,
+      actRequired:row.requires_act===true,
+      isBillable:row.is_billable===true,
+      trackTime:row.track_time===true,
+      usesMaterials:row.uses_materials===true,
+      requiresSignature:row.requires_signature===true,
       participantTechnicianIds:Array.isArray(row.participant_technician_ids)
         ? row.participant_technician_ids.filter(Boolean)
         : (typeof row.participant_technician_ids==='string'
@@ -466,6 +483,15 @@
       supabaseSupportsEndDate=false;
       delete fallback.end_date;
     }
+    if(msg.includes('workflow')||msg.includes('requires_act')||msg.includes('is_billable')||msg.includes('track_time')||msg.includes('uses_materials')||msg.includes('requires_signature')){
+      supabaseSupportsTaskFields=false;
+      delete fallback.workflow;
+      delete fallback.requires_act;
+      delete fallback.is_billable;
+      delete fallback.track_time;
+      delete fallback.uses_materials;
+      delete fallback.requires_signature;
+    }
     if(msg.includes('participant_technician_ids')){
       supabaseSupportsParticipantFields=false;
       delete fallback.participant_technician_ids;
@@ -489,14 +515,14 @@
         if(found.error && found.error.code!=='PGRST116') throw found.error;
         if(found.data?.id){
           let {error}=await client.from(TABLE).update(row).eq('id',found.data.id);
-          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date/.test(String(error.message||''))){
+          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date|workflow|requires_act|is_billable|track_time|uses_materials|requires_signature/.test(String(error.message||''))){
             const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).update(fallback).eq('id',found.data.id));
           }
           if(error) throw error;
         }else{
           let {error}=await client.from(TABLE).insert(row);
-          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date/.test(String(error.message||''))){
+          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date|workflow|requires_act|is_billable|track_time|uses_materials|requires_signature/.test(String(error.message||''))){
             const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).insert(fallback));
           }

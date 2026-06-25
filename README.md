@@ -1,14 +1,10 @@
-# VECO_V3_20260625_1744
+# VECO_V3_20260625_1807
 
-Perioodisündmuste tsoon: mitmepäevased tööd kuvatakse tööala sees 07:00–08:00 ribana.
+Muudatused:
+- "Töökäsud" terminoloogia muudetud "Tööd" peale.
+- Tehniku vaade nimetatud "Minu tööd".
+- Tööle lisatud workflow väli: Kontroll, Diagnostika, Hooldus, Remont, Paigaldus, Muu.
+- Tööle lisatud omadused: vajab akti, arveldatav, tööaja arvestus, materjalid, kliendi allkiri.
+- Supabase sync toetab uusi välju, kuid kukub tagasi vanale skeemile, kui veerud puuduvad.
 
-
-## VECO_V3_20260625_1548
-- Parandatud mitmepäevase töö end_date säilimine kiire F5 korral.
-- Parandatud ajajoone kuvamine periooditsooni järel.
-- Mitmepäevase töö ribal kuvatakse tehnikute nimed, kui need mahuvad.
-
-
-## VECO_V3_20260625_1744
-- Taastatud horisontaalne dünaamiline ajajoon kalendri nädalavaates.
-- Ajajoone positsioon kasutab nähtava kalendri kõrgust, mitte 24h virtuaalkõrgust.
+Supabase SQL uute väljade jaoks: vaata SUPABASE_TASK_FIELDS.sql.
