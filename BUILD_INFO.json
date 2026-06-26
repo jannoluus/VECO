@@ -1,7 +1,7 @@
 {
-  "build": "VECO_V3_20260626_0955",
+  "build": "VECO_V3_20260626_1008",
   "date": "2026-06-26",
-  "change": "CR-STATE-002 startup hydration / no blank refresh",
-  "timestamp": "2026-06-26 09:14",
-  "version": "20260626_0955"
+  "change": "Technician V1 admin switch + oncall + theme fix",
+  "timestamp": "2026-06-26 10:08",
+  "version": "20260626_1008"
 }

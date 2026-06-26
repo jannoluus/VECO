@@ -5062,3 +5062,20 @@ body.confirm-open #vecoConfirm *{
 .tv1-user-card{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.07);color:#fff;border-radius:20px;padding:16px;text-align:left;display:flex;flex-direction:column;gap:4px;}
 .tv1-user-card span{color:#91a2bd;}
 @media (max-width:380px){.tv1-tabs{gap:5px}.tv1-tab{font-size:10px}.tv1-dispatch-btn{padding:10px}.tv1-work-object{font-size:18px}}
+
+/* VECO_V3_20260626_1008 / Technician V1 fixes */
+.tv1-admin-switch-wrap{margin-top:8px;}
+.tv1-admin-user-select{width:100%;max-width:260px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:#eaf2ff;border-radius:12px;padding:9px 10px;font-weight:850;outline:none;}
+.tv1-admin-user-select option{background:#111827;color:#eaf2ff;}
+.tv1-oncall-grid em{font-style:normal;color:#79f2c0;font-size:12px;text-align:right;}
+body.theme-light .tv1-shell{background:linear-gradient(180deg,#f5f9ff 0%,#eef4fb 45%,#e8eff7 100%);color:#14212f;}
+body.theme-light .tv1-header h1,body.theme-light .tv1-login-head h1{color:#102033;}
+body.theme-light .tv1-kicker{color:#0f766e;}
+body.theme-light .tv1-header-actions .mobile-theme-toggle,body.theme-light .tv1-tab,body.theme-light .tv1-work-card,body.theme-light .tv1-oncall-card,body.theme-light .tv1-empty,body.theme-light .tv1-user-card{background:rgba(255,255,255,.78);border-color:rgba(15,35,55,.12);color:#132235;box-shadow:0 14px 30px rgba(15,35,55,.08);}
+body.theme-light .tv1-tabs{background:linear-gradient(180deg,#eef4fb 0%,rgba(238,244,251,.92) 100%);}
+body.theme-light .tv1-tab{color:#45566d;}
+body.theme-light .tv1-tab strong,body.theme-light .tv1-section-title,body.theme-light .tv1-oncall-status,body.theme-light .tv1-work-object,body.theme-light .tv1-user-card strong{color:#132235;}
+body.theme-light .tv1-work-title,body.theme-light .tv1-work-location,body.theme-light .tv1-work-desc,body.theme-light .tv1-section-title span,body.theme-light .tv1-oncall-grid,body.theme-light .tv1-user-card span{color:#53657b;}
+body.theme-light .tv1-oncall-card.is-own{background:rgba(16,185,129,.13);border-color:rgba(16,185,129,.35);}
+body.theme-light .tv1-admin-user-select{background:#fff;color:#132235;border-color:rgba(15,35,55,.16);}
+body.theme-light .tv1-admin-user-select option{background:#fff;color:#132235;}

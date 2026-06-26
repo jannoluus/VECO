@@ -11,8 +11,8 @@ function check(name,pass,detail=''){
   console.log(line);
   if(!pass) ok=false;
 }
-check('APP_BUILD 20260626_0955',/APP_BUILD='20260626_0955'/.test(app));
-check('HTML cache-bust 0955',!/v=20260626_(?!0955)\d+/.test(index));
+check('APP_BUILD 20260626_1008',/APP_BUILD='20260626_1008'/.test(app));
+check('HTML cache-bust 1008',!/v=20260626_(?!1008)\d+/.test(index));
 check('CR-STATE-002 boot restore script olemas',index.includes('veco_boot_html_'+ 'calendar') || index.includes("veco_boot_html_"));
 check('boot snapshot save funktsioon olemas',app.includes('function saveBootHtmlSnapshot'));
 check('shell hydration guard olemas',app.includes('__VECO_BOOT_RESTORED__')&&app.includes('__VECO_BOOT_HYDRATED__'));
@@ -29,5 +29,8 @@ check('calendar technician badges olemas',app.includes('function techInitials')&
 check('Technician V1 route olemas',fs.existsSync(path.join(root,'technician-v1.html')) && app.includes('function renderTechnicianV1') && app.includes('technicianV1'));
 check('Legacy mobile alles',fs.existsSync(path.join(root,'mobile.html')) && fs.readFileSync(path.join(root,'mobile.html'),'utf8').includes('window.VECO_PAGE = "mobile"'));
 check('Technician V1 CSS olemas',fs.readFileSync(path.join(root,'assets/css/app.css'),'utf8').includes('VECO Technician V1'));
+check('Technician V1 admin switch olemas',app.includes('function technicianV1AdminSwitchHtml')&&app.includes('tv1AdminUserSelect'));
+check('Technician V1 valveinfo globaalne',app.includes('shiftName=o=>o?')&&app.includes('state.oncall||[]'));
+check('Technician pages allowed for technician',app.includes("user.role==='technician' && !TECH_PAGES.has(page)"));
 
 process.exit(ok?0:1);

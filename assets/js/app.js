@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_0955';
+const APP_BUILD='20260626_1008';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -302,7 +302,7 @@ function requireAuthOrRender(){
   if(!user){authRenderScreen(); return false;}
   // CR-091: URL based route guard. A technician must not reach admin/manager pages by editing the address bar.
   // Redirect instead of rendering protected content.
-  if(user.role==='technician' && page!=='mobile'){
+  if(user.role==='technician' && !TECH_PAGES.has(page)){
     location.replace('mobile.html');
     return false;
   }
@@ -3826,8 +3826,8 @@ function mobileWorkCard(w,opts={}){
 function renderMobile(){
   autoClosePerformedWorkorders();
   const USER_KEY='veco_mobile_user_id';
-  const activePeople=activeMobilePeople();
-  const current=mobileCurrentUser();
+  const activePeople=authRole()==='admin'?activeTechnicians():activeMobilePeople();
+  const current=technicianV1CurrentUser();
   if(!current){
     const today=dateKeyFromDate(new Date());
     const cards=activePeople.map(p=>`<button class="card clickable mobile-user-choice" data-mobile-user="${p.id}" type="button"><div class="card-top"><h3>${esc(p.name)}</h3><span class="status ${p.role==='Admin'?'ok':p.role==='Demo'?'warn':''}">${esc(p.role||'Tehnik')}</span></div>${availabilityBadgesHtml(p.id,today,{empty:true})}<span class="muted">${esc(p.region||'')} ${p.skills?`· ${esc(p.skills)}`:''}</span></button>`).join('')||'<span class="muted">Aktiivseid kasutajaid ei ole. Lisa kasutaja admin vaates.</span>';
@@ -3995,15 +3995,34 @@ function technicianV1DateLabel(){
   const days=['Pühapäev','Esmaspäev','Teisipäev','Kolmapäev','Neljapäev','Reede','Laupäev'];
   return `${days[d.getDay()]} · ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
 }
+
+function technicianV1CurrentUser(){
+  const USER_KEY='veco_mobile_user_id';
+  const auth=currentAuthUser();
+  if(auth?.role==='technician') return activeTechnicians().find(p=>p.id===auth.id)||mobileCurrentUser();
+  const stored=localStorage.getItem(USER_KEY)||'';
+  const found=activeTechnicians().find(p=>p.id===stored);
+  if(stored && !found) localStorage.removeItem(USER_KEY);
+  return found||null;
+}
+function technicianV1AdminSwitchHtml(current){
+  if(authRole()!=='admin') return '';
+  const opts=activeTechnicians().map(p=>`<option value="${esc(p.id)}" ${p.id===current?.id?'selected':''}>${esc(p.name)}</option>`).join('');
+  return `<select class="tv1-admin-user-select" id="tv1AdminUserSelect" title="Admin: vaata tehniku vaadet"><option value="" ${!current?'selected':''}>Vali tehnik...</option>${opts}</select>`;
+}
 function technicianV1OncallCard(current,todayKey){
-  const ov=mobileOncallOverview(todayKey);
-  const info=mobileOncallForPerson(current?.id,todayKey);
-  const today=info?.today;
-  const next=info?.next;
-  const todayName=today?.user_name||techName(today?.user_id)||'Puudub';
-  const nextName=next?.user_name||techName(next?.user_id)||'Puudub';
-  const own=today && (today.user_id===current?.id || String(today.user_name||'').trim()===String(current?.name||'').trim());
-  return `<div class="tv1-oncall-card ${own?'is-own':''}"><div class="tv1-oncall-status"><span>${own?'🟢':'⚪'}</span><strong>${own?'Oled täna valves':'Valveinfo'}</strong></div><div class="tv1-oncall-grid"><span>Täna</span><strong>${esc(own?'Sina':todayName)}</strong><span>Järgmine</span><strong>${esc(nextName)}</strong></div></div>`;
+  const shifts=(state.oncall||[])
+    .filter(o=>o&&o.start&&o.end)
+    .slice()
+    .sort((a,b)=>`${a.start||''} ${a.end||''}`.localeCompare(`${b.start||''} ${b.end||''}`));
+  const todayShift=shifts.find(o=>o.start<=todayKey&&o.end>=todayKey);
+  const nextShift=shifts.find(o=>o.start>todayKey);
+  const shiftName=o=>o?(o.userName||o.user_name||techName(o.personId||o.user_id)||'Valveisik'):'Valve puudub';
+  const shiftRange=o=>o?`${fmtActDate(o.start)}–${fmtActDate(o.end)}`:'';
+  const todayName=shiftName(todayShift);
+  const nextName=shiftName(nextShift);
+  const own=!!(todayShift && current && (String(todayShift.personId||todayShift.user_id||'')===String(current.id||'') || String(todayName).trim()===String(current.name||'').trim()));
+  return `<div class="tv1-oncall-card ${own?'is-own':''}"><div class="tv1-oncall-status"><span>${own?'🟢':'⚪'}</span><strong>${own?'Oled täna valves':'Valveinfo'}</strong></div><div class="tv1-oncall-grid"><span>Täna</span><strong>${esc(own?'Sina':todayName)}</strong>${todayShift?`<span></span><em>${esc(shiftRange(todayShift))}</em>`:''}<span>Järgmine</span><strong>${esc(nextName)}</strong>${nextShift?`<span></span><em>${esc(shiftRange(nextShift))}</em>`:''}</div></div>`;
 }
 function technicianV1WorkTime(w){
   const start=String(w.time||'').trim();
@@ -4062,9 +4081,11 @@ function renderTechnicianV1(){
   const g=groups[active];
   const tabs=order.map(k=>`<button class="tv1-tab ${k===active?'active':''}" data-tv1-tab="${k}" type="button"><span>${esc(groups[k].label)}</span><strong>${groups[k].count}</strong></button>`).join('');
   const list=g.jobs.map(w=>technicianV1WorkCard(w,current)).join('')||`<div class="tv1-empty"><strong>${esc(g.label)} töid ei ole</strong><span>Vali teine filter või lisa uus väljakutse.</span></div>`;
-  const header=`<div class="tv1-header"><div><div class="tv1-kicker">${esc(technicianV1DateLabel())}</div><h1>${esc(current.name)}</h1></div><div class="tv1-header-actions">${mobileThemeButton()}<button class="tv1-dispatch-btn" id="tv1AddWorkBtn" type="button">📞 Uus väljakutse</button></div></div>`;
+  const adminSwitch=technicianV1AdminSwitchHtml(current);
+  const header=`<div class="tv1-header"><div><div class="tv1-kicker">${esc(technicianV1DateLabel())}</div><h1>${esc(current.name)}</h1>${adminSwitch?`<div class="tv1-admin-switch-wrap">${adminSwitch}</div>`:''}</div><div class="tv1-header-actions">${mobileThemeButton()}<button class="tv1-dispatch-btn" id="tv1AddWorkBtn" type="button">📞 Uus väljakutse</button></div></div>`;
   shell(`<div class="tv1-shell">${header}${technicianV1OncallCard(current,today)}<div class="tv1-tabs">${tabs}</div><div class="tv1-section-title"><strong>${esc(g.label)}</strong><span>${g.count} tööd</span></div><div class="tv1-work-list">${list}</div></div>`,'',{wide:true});
   $('#tv1AddWorkBtn')?.addEventListener('click',()=>openMobileAddWorkModal(current.id));
+  $('#tv1AdminUserSelect')?.addEventListener('change',e=>{const v=e.currentTarget.value||''; if(v) localStorage.setItem('veco_mobile_user_id',v); else localStorage.removeItem('veco_mobile_user_id'); renderTechnicianV1();});
   $$('[data-tv1-tab]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_technician_v1_tab',btn.dataset.tv1Tab);renderTechnicianV1();}));
   $$('[data-tv1-work]').forEach(btn=>btn.addEventListener('click',()=>openMobileWorkModal(btn.dataset.tv1Work)));
 }
