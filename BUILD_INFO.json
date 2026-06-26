@@ -1,7 +1,7 @@
 {
-  "build": "VECO_V3_20260626_1102",
+  "build": "VECO_V3_20260626_1115",
   "date": "2026-06-26",
   "change": "Field V1 security/admin preview + stale boot snapshot guard + start action fix",
   "timestamp": "2026-06-26 11:02",
-  "version": "20260626_1102"
+  "version": "20260626_1115"
 }

@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_1102';
+const APP_BUILD='20260626_1115';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1588,17 +1588,15 @@ function openCompletionCommentModal(w,initial=''){
     const el=document.createElement('div');
     el.id='vecoConfirm';
     el.className='confirm-modal open';
+    const problem=problemDescriptionText(w)||'-';
     el.innerHTML=`<form class="confirm-dialog" id="completionCommentForm" role="dialog" aria-modal="true" aria-labelledby="completionCommentTitle" novalidate>
       <div class="dialog-head"><h2 id="completionCommentTitle">Töö teostatuks märkimine</h2></div>
       <div class="detail-body">
-        <div class="confirm-message">Lisa teostatud tööd enne töö teostatuks märkimist. Probleemi kirjeldus tuleb tööst eraldi.</div>
+        <div class="confirm-message">Lisa lühike teostatud töö kirjeldus. Probleem ja teostus hoitakse eraldi.</div>
         <div class="confirm-details"><strong>${esc(w?.id||'')}</strong><br>${esc(objectName(w?.objectId))}<br>${esc(w?.title||'')}</div>
-        <label class="full" style="display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650;">Akti tüüp<select class="select" id="completionActType"><option value="Väljakutse akt">Väljakutse akt</option></select></label>
-        <label class="full" style="display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650;">Probleemi kirjeldus<textarea readonly class="field" style="min-height:58px">${esc(problemDescriptionText(w)||'-')}</textarea></label>
-        <label class="full" style="display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650;">Teostatud tööd *<textarea id="completionCommentInput" required minlength="5" placeholder="Kirjelda, mida objektil tehti.">${esc(initial||'')}</textarea></label>
-        <label class="full" style="display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650;">Töö tulemus / märkused<textarea id="completionResultInput" placeholder="Mis seis jäi lahkumisel?"></textarea></label>
-        <label class="full" style="display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650;">Soovitused / puudused<textarea id="completionRecommendationsInput" placeholder="Lisa remondivajadused või soovitused."></textarea></label>
-        <div class="form-error hidden" id="completionCommentError">Teostatud tööde kirjeldus on kohustuslik.</div>
+        <div class="tv1-detail-card"><strong>Probleem</strong><p>${esc(problem)}</p></div>
+        <label class="full" style="display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650;">Teostatud töö *<textarea id="completionCommentInput" required minlength="5" placeholder="Kirjelda, mida objektil tehti.">${esc(initial||'')}</textarea></label>
+        <div class="form-error hidden" id="completionCommentError">Teostatud töö kirjeldus on kohustuslik.</div>
       </div>
       <div class="dialog-actions">
         <button type="button" class="btn ghost" id="completionCommentCancel">Loobu</button>
@@ -1619,7 +1617,7 @@ function openCompletionCommentModal(w,initial=''){
     const submitCompletion=()=>{
       const value=String(input()?.value||'').trim();
       if(value.length<3){ error()?.classList.remove('hidden'); input()?.focus(); return; }
-      cleanup({comment:value,performedWork:value,workResult:String(el.querySelector('#completionResultInput')?.value||'').trim(),recommendations:String(el.querySelector('#completionRecommendationsInput')?.value||'').trim(),materials:'',actType:el.querySelector('#completionActType')?.value||'Väljakutse akt'});
+      cleanup({comment:value,performedWork:value,workResult:'',recommendations:'',materials:'',actType:w?.actType||'Väljakutse akt'});
     };
     document.body.appendChild(el);
     document.addEventListener('keydown',onKey);
@@ -3747,6 +3745,9 @@ function mobileWorkflowButtons(w){
   }
   return `<button class="btn primary" data-mobile-action="start" data-workorder-id="${w.id}" type="button">▶ Alusta tööd</button><button class="btn" data-mobile-edit="${w.id}" type="button">Täida</button>`;
 }
+function technicianV1WorkflowButtons(w){
+  return mobileWorkflowButtons(w).replace(/<button class="btn" data-mobile-edit="[^>]*>Täida<\/button>/g,'');
+}
 async function applyMobileWorkorderAction(action,workorderId){
   const w=byId(state.workorders,workorderId);
   if(!w) return;
@@ -3785,7 +3786,7 @@ async function applyMobileWorkorderAction(action,workorderId){
       if(!result || !String(result.comment||'').trim()) return;
     }
     const comment=String(result.performedWork||result.comment||'').trim();
-    const ok=await openVecoConfirm({title:'Lõpeta töö',message:'Kas oled kindel, et töö on valmis?',details:`${workDetails}<br><br><strong>Teostatud tööd:</strong><br>${esc(comment).replace(/\n/g,'<br>')}<br><br><strong>Töö märgitakse teostatuks.</strong> Kalendris jääb kaart alles, tehniku vaates liigub see lõpetatud tööde alla.`,confirmText:'Lõpeta töö',cancelText:'Tagasi'});
+    const ok=await openVecoConfirm({title:'Lõpeta töö',message:'Kas oled kindel, et töö on valmis?',details:`${workDetails}<br><br><strong>Teostatud töö:</strong><br>${esc(comment).replace(/\n/g,'<br>')}<br><br><strong>Töö märgitakse teostatuks.</strong> Kalendris jääb kaart alles, Field vaates liigub see lõpetatud tööde alla.`,confirmText:'Lõpeta töö',cancelText:'Tagasi'});
     if(!ok) return;
     if(!w.startedAt) w.startedAt=now;
     if(actorUuid && !w.startedByUuid) w.startedByUuid=actorUuid;
@@ -4146,7 +4147,7 @@ function openTechnicianV1WorkModal(id){
   const desc=problemDescriptionText(w)||'';
   const mapQuery=encodeURIComponent(address||obj?.name||workorderObjectLabel(w)||'');
   const navigation=mapQuery?`<a class="btn primary" href="https://www.google.com/maps/search/?api=1&query=${mapQuery}" target="_blank" rel="noopener">📍 Navigeeri</a>`:'';
-  openModal(`<form id="tv1WorkForm"><div class="dialog-head tv1-detail-head"><div><div class="tv1-kicker">${esc(technicianV1WorkTime(w))} · ${esc(workorderDateRangeLabel(w))}</div><h2>${esc(workorderObjectLabel(w))}</h2><p>${esc(w.title||'Töö')}</p></div><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body tv1-detail-body"><div class="tv1-detail-card"><strong>Objekt</strong><span>${esc(workorderObjectLabel(w))}</span>${address?`<em>${esc(address)}</em>`:''}</div>${desc?`<div class="tv1-detail-card"><strong>Kirjeldus</strong><p>${esc(desc)}</p></div>`:''}<div class="tv1-detail-card"><strong>Staatus</strong><span><span class="status ${statusClass(w.status)}">${esc(w.status||'Planeeritud')}</span></span></div><label class="full tv1-detail-note"><span>Märkus / teostus</span><textarea name="done" placeholder="Lisa lühike märkus tehtud töö kohta...">${esc(performedWorkText(w))}</textarea></label><div class="tv1-detail-actions">${navigation}${mobileWorkflowButtons(w)}</div><div class="tv1-detail-card"><strong>Fotod</strong><div>${workorderPhotoGalleryHtml(w.id,{hint:'Lisa fotod otse töö külge.'})}</div></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Sulge</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  openModal(`<form id="tv1WorkForm"><div class="dialog-head tv1-detail-head"><div><div class="tv1-kicker">${esc(technicianV1WorkTime(w))} · ${esc(workorderDateRangeLabel(w))}</div><h2>${esc(workorderObjectLabel(w))}</h2><p>${esc(w.title||'Töö')}</p></div><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body tv1-detail-body"><div class="tv1-detail-card"><strong>Objekt</strong><span>${esc(workorderObjectLabel(w))}</span>${address?`<em>${esc(address)}</em>`:''}</div>${desc?`<div class="tv1-detail-card"><strong>Kirjeldus</strong><p>${esc(desc)}</p></div>`:''}<div class="tv1-detail-card"><strong>Staatus</strong><span><span class="status ${statusClass(w.status)}">${esc(w.status||'Planeeritud')}</span></span></div><label class="full tv1-detail-note"><span>Teostatud töö</span><textarea name="done" placeholder="Kirjelda lühidalt, mida objektil tehti...">${esc(performedWorkText(w))}</textarea></label><div class="tv1-detail-actions">${navigation}${technicianV1WorkflowButtons(w)}</div><div class="tv1-detail-card"><strong>Fotod</strong><div>${workorderPhotoGalleryHtml(w.id,{hint:'Lisa fotod otse töö külge.'})}</div></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Sulge</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
   $('#tv1WorkForm')?.addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const note=String(f.done?.value||'').trim();w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';save();closeModal();renderTechnicianV1();});
   $$('#tv1WorkForm [data-mobile-action]').forEach(btn=>btn.addEventListener('click',async e=>{e.preventDefault();const action=btn.dataset.mobileAction;const wid=btn.dataset.workorderId;const form=$('#tv1WorkForm');const draft=byId(state.workorders,wid);if(form&&draft){const note=String(form.elements.done?.value||'').trim();draft.done=note||draft.done||'';draft.workDone=note||draft.workDone||'';draft.performedWork=note||draft.performedWork||'';save();}closeModal();await applyMobileWorkorderAction(action,wid);setTimeout(()=>{if(page==='technicianV1'&&byId(state.workorders,wid)) openTechnicianV1WorkModal(wid);},80);}));

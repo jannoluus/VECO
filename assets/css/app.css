@@ -5099,7 +5099,7 @@ body.theme-light .tv1-oncall-compact-head,body.theme-light .tv1-oncall-compact-r
 body.theme-light .tv1-detail-card,body.theme-light .tv1-detail-note textarea{background:rgba(255,255,255,.86);border-color:rgba(15,35,55,.14);color:#132235;}
 body.theme-light .tv1-detail-card p{color:#24384f;}
 
-/* VECO_V3_20260626_1102 / Field login security */
+/* VECO_V3_20260626_1115 / Field login security */
 .auth-remembered-user{display:grid;gap:5px;padding:12px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);margin:8px 0 4px}
 .auth-remembered-user span{font-size:12px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.06em}
 .auth-remembered-user strong{font-size:18px;color:var(--text)}
