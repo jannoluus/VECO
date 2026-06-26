@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_1008';
+const APP_BUILD='20260626_1018';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1080,8 +1080,9 @@ function nav(sidebarMode='full'){
     if(key==='system-database') return `<button type="button" id="databaseBtn" title="Andmebaas" aria-label="Andmebaas">${icon(ic)}<span class="nav-label">Andmebaas</span><small>${window.VECO_API?.modeLabel?.()||'lokaalne'}</small></button>`;
     if(key==='system-export') return `<button type="button" id="exportDataBtn" title="Varukoopia" aria-label="Varukoopia">${icon(ic)}<span class="nav-label">Varukoopia</span></button>`;
     if(key==='system-import') return `<label class="nav-file-action" for="importDataFile" title="Taasta" aria-label="Taasta">${icon(ic)}<span class="nav-label">Taasta</span></label>`;
-    const externalAttrs=key==='mobile'?' target="_blank" rel="noopener"':'';
-    return `<a class="${page===key?'active':''}" href="${pageFiles[key]}"${externalAttrs} title="${esc(pageTitles[key]||key)}" aria-label="${esc(pageTitles[key]||key)}">${icon(ic)}<span class="nav-label">${pageTitles[key]}${key==='mobile'?' ↗':''}</span></a>`;
+    const opensNewTab=(key==='mobile'||key==='technicianV1');
+    const externalAttrs=opensNewTab?' target="_blank" rel="noopener"':'';
+    return `<a class="${page===key?'active':''}" href="${pageFiles[key]}"${externalAttrs} title="${esc(pageTitles[key]||key)}" aria-label="${esc(pageTitles[key]||key)}">${icon(ic)}<span class="nav-label">${pageTitles[key]}${opensNewTab?' ↗':''}</span></a>`;
   };
   const navGroups=groups.map(([title,items])=>{
     const visibleItems=items.filter(([key])=>key.startsWith('system-') ? authRole()==='admin' : canAccessPage(key));
@@ -4008,7 +4009,7 @@ function technicianV1CurrentUser(){
 function technicianV1AdminSwitchHtml(current){
   if(authRole()!=='admin') return '';
   const opts=activeTechnicians().map(p=>`<option value="${esc(p.id)}" ${p.id===current?.id?'selected':''}>${esc(p.name)}</option>`).join('');
-  return `<select class="tv1-admin-user-select" id="tv1AdminUserSelect" title="Admin: vaata tehniku vaadet"><option value="" ${!current?'selected':''}>Vali tehnik...</option>${opts}</select>`;
+  return `<label class="tv1-admin-user-label"><span>Admin testib</span><select class="tv1-admin-user-select" id="tv1AdminUserSelect" title="Admin: vaata tehniku vaadet"><option value="" ${!current?'selected':''}>Vali tehnik...</option>${opts}</select></label>`;
 }
 function technicianV1OncallCard(current,todayKey){
   const shifts=(state.oncall||[])
@@ -4022,7 +4023,14 @@ function technicianV1OncallCard(current,todayKey){
   const todayName=shiftName(todayShift);
   const nextName=shiftName(nextShift);
   const own=!!(todayShift && current && (String(todayShift.personId||todayShift.user_id||'')===String(current.id||'') || String(todayName).trim()===String(current.name||'').trim()));
-  return `<div class="tv1-oncall-card ${own?'is-own':''}"><div class="tv1-oncall-status"><span>${own?'🟢':'⚪'}</span><strong>${own?'Oled täna valves':'Valveinfo'}</strong></div><div class="tv1-oncall-grid"><span>Täna</span><strong>${esc(own?'Sina':todayName)}</strong>${todayShift?`<span></span><em>${esc(shiftRange(todayShift))}</em>`:''}<span>Järgmine</span><strong>${esc(nextName)}</strong>${nextShift?`<span></span><em>${esc(shiftRange(nextShift))}</em>`:''}</div></div>`;
+  const title=own?'Oled täna valves':'Valveinfo';
+  const todayLine=todayShift ? (own?`Sina · ${shiftRange(todayShift)}`:`${todayName} · ${shiftRange(todayShift)}`) : 'Täna valve puudub';
+  const nextLine=nextShift ? `${nextName} · ${shiftRange(nextShift)}` : 'Järgmist valvet pole';
+  return `<div class="tv1-oncall-card ${own?'is-own':''}">
+    <div class="tv1-oncall-compact-head"><span>${own?'🟢':'⚪'}</span><strong>${esc(title)}</strong></div>
+    <div class="tv1-oncall-compact-row"><span>Täna</span><b>${esc(todayLine)}</b></div>
+    <div class="tv1-oncall-compact-row"><span>Järgmine</span><b>${esc(nextLine)}</b></div>
+  </div>`;
 }
 function technicianV1WorkTime(w){
   const start=String(w.time||'').trim();
@@ -4040,15 +4048,35 @@ function technicianV1WorkCard(w,current){
   const act=mobileActLabel(w);
   const desc=problemDescriptionText(w)||'';
   const photos=(state.workorderPhotos?.[w.id]||[]).length;
+  const location=technicianV1Location(w);
+  const participants=workorderParticipantIds(w).filter(Boolean);
+  const extraPeople=participants.filter(id=>String(id)!==String(current?.id||''));
+  const peopleLabel=extraPeople.length?` · +${extraPeople.length} osaleja${extraPeople.length>1?'t':''}`:'';
   return `<button class="tv1-work-card" data-tv1-work="${esc(w.id)}" type="button">
     <div class="tv1-work-main"><div class="tv1-work-time">${esc(technicianV1WorkTime(w))}</div><div class="tv1-work-status ${statusClass(status)}">${esc(status)}</div></div>
     <div class="tv1-work-object">${esc(workorderObjectLabel(w))}</div>
     <div class="tv1-work-title">${esc(w.title||'Töö')}</div>
-    ${technicianV1Location(w)?`<div class="tv1-work-location">📍 ${esc(technicianV1Location(w))}</div>`:''}
-    <div class="tv1-work-meta"><span>${esc(workorderDateRangeLabel(w))}</span>${act?`<span>📄 ${esc(act)}</span>`:''}${photos?`<span>📷 ${photos}</span>`:''}</div>
+    ${location?`<div class="tv1-work-location">📍 ${esc(location)}</div>`:''}
+    <div class="tv1-work-meta"><span>${esc(workorderDateRangeLabel(w))}${esc(peopleLabel)}</span>${act?`<span>📄 ${esc(act)}</span>`:''}${photos?`<span>📷 ${photos}</span>`:''}</div>
     ${desc?`<div class="tv1-work-desc">${esc(desc)}</div>`:''}
   </button>`;
 }
+function openTechnicianV1WorkModal(id){
+  const w=byId(state.workorders,id); if(!w) return;
+  const obj=byId(state.objects||[],w.objectId);
+  const address=obj?.address||'';
+  const desc=problemDescriptionText(w)||'';
+  const mapQuery=encodeURIComponent(address||obj?.name||workorderObjectLabel(w)||'');
+  const navigation=mapQuery?`<a class="btn primary" href="https://www.google.com/maps/search/?api=1&query=${mapQuery}" target="_blank" rel="noopener">📍 Navigeeri</a>`:'';
+  openModal(`<form id="tv1WorkForm"><div class="dialog-head tv1-detail-head"><div><div class="tv1-kicker">${esc(technicianV1WorkTime(w))} · ${esc(workorderDateRangeLabel(w))}</div><h2>${esc(workorderObjectLabel(w))}</h2><p>${esc(w.title||'Töö')}</p></div><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body tv1-detail-body"><div class="tv1-detail-card"><strong>Objekt</strong><span>${esc(workorderObjectLabel(w))}</span>${address?`<em>${esc(address)}</em>`:''}</div>${desc?`<div class="tv1-detail-card"><strong>Kirjeldus</strong><p>${esc(desc)}</p></div>`:''}<div class="tv1-detail-card"><strong>Staatus</strong><span><span class="status ${statusClass(w.status)}">${esc(w.status||'Planeeritud')}</span></span></div><label class="full tv1-detail-note"><span>Märkus / teostus</span><textarea name="done" placeholder="Lisa lühike märkus tehtud töö kohta...">${esc(performedWorkText(w))}</textarea></label><div class="tv1-detail-actions">${navigation}${mobileWorkflowButtons(w)}</div><div class="tv1-detail-card"><strong>Fotod</strong><div>${workorderPhotoGalleryHtml(w.id,{hint:'Lisa fotod otse töö külge.'})}</div></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Sulge</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
+  bindClose();
+  $('#tv1WorkForm')?.addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const note=String(f.done?.value||'').trim();w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';save();closeModal();renderTechnicianV1();});
+  $$('#tv1WorkForm [data-mobile-action]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();const action=btn.dataset.mobileAction;const wid=btn.dataset.workorderId;const form=$('#tv1WorkForm');const draft=byId(state.workorders,wid);if(form&&draft){const note=String(form.elements.done?.value||'').trim();draft.done=note||draft.done||'';draft.workDone=note||draft.workDone||'';draft.performedWork=note||draft.performedWork||'';save();}closeModal();applyMobileWorkorderAction(action,wid);setTimeout(()=>renderTechnicianV1(),50);}));
+  const rebindPhotoActions=()=>bindWorkorderPhotos(()=>{closeModal();openTechnicianV1WorkModal(id);});
+  rebindPhotoActions();
+  loadWorkorderPhotos(id,true).then(()=>{const modal=$('#modal');const form=$('#tv1WorkForm');if(!modal?.classList.contains('open')||!form) return;const gallery=modal.querySelector(`[data-photo-gallery="${CSS.escape(id)}"]`);const wrap=gallery?.parentElement;if(wrap){wrap.innerHTML=workorderPhotoGalleryHtml(id,{hint:'Lisa fotod otse töö külge.'});rebindPhotoActions();}}).catch(err=>console.warn('VECO tv1 photo refresh failed',err));
+}
+
 function renderTechnicianV1(){
   autoClosePerformedWorkorders();
   const USER_KEY='veco_mobile_user_id';
@@ -4087,13 +4115,13 @@ function renderTechnicianV1(){
   $('#tv1AddWorkBtn')?.addEventListener('click',()=>openMobileAddWorkModal(current.id));
   $('#tv1AdminUserSelect')?.addEventListener('change',e=>{const v=e.currentTarget.value||''; if(v) localStorage.setItem('veco_mobile_user_id',v); else localStorage.removeItem('veco_mobile_user_id'); renderTechnicianV1();});
   $$('[data-tv1-tab]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_technician_v1_tab',btn.dataset.tv1Tab);renderTechnicianV1();}));
-  $$('[data-tv1-work]').forEach(btn=>btn.addEventListener('click',()=>openMobileWorkModal(btn.dataset.tv1Work)));
+  $$('[data-tv1-work]').forEach(btn=>btn.addEventListener('click',()=>openTechnicianV1WorkModal(btn.dataset.tv1Work)));
 }
 
 function renderMobilePreview(){
   const devices=[['iPhone SE','320px','568px'],['Android 360','360px','740px'],['iPhone 14','390px','844px'],['Large phone','414px','896px'],['Tahvel','768px','1024px']];
   const cards=devices.map(([name,w,h])=>`<div class="card preview-device"><div class="card-top"><h3>${name}</h3><span class="status">${w} × ${h}</span></div><div class="preview-frame-wrap" style="--preview-w:${w};--preview-h:${h};"><iframe src="mobile.html" title="${esc(name)}"></iframe></div></div>`).join('');
-  shell(header('Mobiili eelvaade','','<a class="btn primary" href="mobile.html" target="_blank" rel="noopener">Ava tehniku vaade ↗</a>','MOBIILI EELVAADE')+`<div class="detail-body"><div class="card"><strong>Testi eri ekraanisuuruseid</strong><span class="muted">Eesmärk: tehniku vaates ei tohi tekkida horisontaalset kerimist ning põhitoimingud peavad mahtuma ühe veeruna.</span></div><div class="preview-grid">${cards}</div></div>`,'',{wide:true});
+  shell(header('Mobiili eelvaade','','<a class="btn" href="mobile.html" target="_blank" rel="noopener">Legacy mobile ↗</a><a class="btn primary" href="technician-v1.html" target="_blank" rel="noopener">Technician V1 ↗</a>','MOBIILI EELVAADE')+`<div class="detail-body"><div class="card"><strong>Testi eri ekraanisuuruseid</strong><span class="muted">Eesmärk: tehniku vaates ei tohi tekkida horisontaalset kerimist ning põhitoimingud peavad mahtuma ühe veeruna.</span></div><div class="preview-grid">${cards}</div></div>`,'',{wide:true});
 }
 
 function calendarVisibleDays(startKey,mode,hideWeekend){

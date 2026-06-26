@@ -1,7 +1,7 @@
 {
-  "build": "VECO_V3_20260626_1008",
+  "build": "VECO_V3_20260626_1018",
   "date": "2026-06-26",
-  "change": "Technician V1 admin switch + oncall + theme fix",
-  "timestamp": "2026-06-26 10:08",
-  "version": "20260626_1008"
+  "change": "Technician V1.1 admin link + compact cards + detail modal",
+  "timestamp": "2026-06-26 10:18",
+  "version": "20260626_1018"
 }

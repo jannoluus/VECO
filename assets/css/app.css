@@ -5079,3 +5079,22 @@ body.theme-light .tv1-work-title,body.theme-light .tv1-work-location,body.theme-
 body.theme-light .tv1-oncall-card.is-own{background:rgba(16,185,129,.13);border-color:rgba(16,185,129,.35);}
 body.theme-light .tv1-admin-user-select{background:#fff;color:#132235;border-color:rgba(15,35,55,.16);}
 body.theme-light .tv1-admin-user-select option{background:#fff;color:#132235;}
+
+/* Technician V1.1 */
+.tv1-admin-user-label{display:flex;flex-direction:column;gap:5px;max-width:280px;margin-top:8px;color:#8ea0be;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;}
+.tv1-oncall-compact-head{display:flex;align-items:center;gap:8px;font-weight:950;color:#fff;font-size:16px;}
+.tv1-oncall-compact-row{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#91a2bd;font-size:13px;}
+.tv1-oncall-compact-row b{color:#eaf2ff;text-align:right;font-weight:850;}
+.tv1-detail-head p{margin:6px 0 0;color:#91a2bd;font-weight:800;}
+.tv1-detail-body{display:flex;flex-direction:column;gap:12px;}
+.tv1-detail-card{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.055);border-radius:18px;padding:13px;display:flex;flex-direction:column;gap:6px;color:#dbeafe;}
+.tv1-detail-card strong{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#79f2c0;}
+.tv1-detail-card span{font-weight:900;color:#fff;}
+.tv1-detail-card em{font-style:normal;color:#91a2bd;}
+.tv1-detail-card p{margin:0;color:#d8e7ff;line-height:1.45;white-space:pre-wrap;}
+.tv1-detail-note{display:flex;flex-direction:column;gap:6px;color:#91a2bd;font-weight:850;}
+.tv1-detail-note textarea{min-height:96px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.055);color:#fff;border-radius:16px;padding:12px;font:inherit;}
+.tv1-detail-actions{display:flex;gap:10px;flex-wrap:wrap;}
+body.theme-light .tv1-oncall-compact-head,body.theme-light .tv1-oncall-compact-row b,body.theme-light .tv1-detail-card span{color:#132235;}
+body.theme-light .tv1-detail-card,body.theme-light .tv1-detail-note textarea{background:rgba(255,255,255,.86);border-color:rgba(15,35,55,.14);color:#132235;}
+body.theme-light .tv1-detail-card p{color:#24384f;}
