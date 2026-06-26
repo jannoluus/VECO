@@ -4,29 +4,33 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>VECO Tööde Kalender</title>
-  <link rel="stylesheet" href="assets/css/app.css?v=20260626_1047">
-  <link rel="stylesheet" href="assets/css/sidebar.css?v=20260626_1047">
+  <link rel="stylesheet" href="assets/css/app.css?v=20260626_1102">
+  <link rel="stylesheet" href="assets/css/sidebar.css?v=20260626_1102">
 </head>
 <body>
   <script>
     (function(){
       try{
         var page='calendar';
-        var html=localStorage.getItem('veco_boot_html_'+page);
+        var build='20260626_1102';
+        var savedBuild=localStorage.getItem('veco_boot_build_'+page);
+        var html=savedBuild===build ? localStorage.getItem('veco_boot_html_'+page) : '';
         if(html){
           window.__VECO_BOOT_RESTORED__=true;
           document.body.classList.add('veco-boot-restored');
           document.body.innerHTML=html;
+        }else if(savedBuild && savedBuild!==build){
+          localStorage.removeItem('veco_boot_html_'+page);
         }
       }catch(e){}
     })();
   </script>
   <script>window.VECO_PAGE = "calendar";</script>
-  <script src="assets/js/data.js?v=20260626_1047"></script>
-  <script src="assets/js/storage-local.js?v=20260626_1047"></script>
+  <script src="assets/js/data.js?v=20260626_1102"></script>
+  <script src="assets/js/storage-local.js?v=20260626_1102"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="assets/js/supabase-config.js?v=20260626_1047"></script>
-  <script src="assets/js/api.js?v=20260626_1047"></script>
-  <script src="assets/js/app.js?v=20260626_1047"></script>
+  <script src="assets/js/supabase-config.js?v=20260626_1102"></script>
+  <script src="assets/js/api.js?v=20260626_1102"></script>
+  <script src="assets/js/app.js?v=20260626_1102"></script>
 </body>
 </html>

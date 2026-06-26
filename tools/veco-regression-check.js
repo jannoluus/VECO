@@ -11,8 +11,8 @@ function check(name,pass,detail=''){
   console.log(line);
   if(!pass) ok=false;
 }
-check('APP_BUILD 20260626_1047',/APP_BUILD='20260626_1047'/.test(app));
-check('HTML cache-bust 1047',!/v=20260626_(?!1047)\d+/.test(index));
+check('APP_BUILD 20260626_1102',/APP_BUILD='20260626_1102'/.test(app));
+check('HTML cache-bust 1102',index.includes('v=20260626_1102')&&!/v=20260626_(?!1102)\d+/.test(index));
 check('CR-STATE-002 boot restore script olemas',index.includes('veco_boot_html_'+ 'calendar') || index.includes("veco_boot_html_"));
 check('boot snapshot save funktsioon olemas',app.includes('function saveBootHtmlSnapshot'));
 check('shell hydration guard olemas',app.includes('__VECO_BOOT_RESTORED__')&&app.includes('__VECO_BOOT_HYDRATED__'));
@@ -45,5 +45,9 @@ check('Field V1 kasutab ainult tehnikuid',app.includes('function fieldTechnician
 check('Technician V1 väljakutse vormis staatus peidetud',app.includes('name=\"status\" value=\"Planeeritud\"')&&app.includes("${isTechnicianV1?'':`<label>Staatus"));
 check('Technician V1 väljakutse vormis kuupäev/kell peidetud',app.includes('name=\"date\" value=\"${today}\"')&&app.includes('name=\"time\" value=\"${hh}:${mm}\"'));
 
+check('Field admin preview grant olemas',app.includes('FIELD_ADMIN_PREVIEW_KEY')&&app.includes('grantFieldAdminPreview')&&app.includes('adminPreview=1'));
+check('Field admin preview vajab grant lippu',app.includes('consumeFieldAdminPreviewGrant')&&app.includes('FIELD_ADMIN_PREVIEW_TTL'));
+check('Calendar boot snapshot build guarded',index.includes('savedBuild===build')&&index.includes('veco_boot_build_'));
+check('Technician V1 start action rerender',app.includes("if(page==='technicianV1') renderTechnicianV1()")&&app.includes('openTechnicianV1WorkModal(wid)'));
 
 process.exit(ok?0:1);

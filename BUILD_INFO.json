@@ -1,7 +1,7 @@
 {
-  "build": "VECO_V3_20260626_1047",
+  "build": "VECO_V3_20260626_1102",
   "date": "2026-06-26",
-  "change": "Technician V1 callout workflow cleanup + admin callouts view",
-  "timestamp": "2026-06-26 10:31",
-  "version": "20260626_1047"
+  "change": "Field V1 security/admin preview + stale boot snapshot guard + start action fix",
+  "timestamp": "2026-06-26 11:02",
+  "version": "20260626_1102"
 }

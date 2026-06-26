@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_1047';
+const APP_BUILD='20260626_1102';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -280,6 +280,25 @@ function lockText(info){const min=Math.ceil((info.until-Date.now())/60000); retu
 
 const FIELD_LAST_USER_KEY='veco_field_last_user_id';
 const FIELD_PICKER_KEY='veco_field_show_user_picker';
+const FIELD_ADMIN_PREVIEW_KEY='veco_field_admin_preview_grant';
+const FIELD_ADMIN_PREVIEW_TTL=5*60*1000;
+function grantFieldAdminPreview(){
+  const u=currentAuthUser();
+  if(!u||u.role!=='admin') return false;
+  try{localStorage.setItem(FIELD_ADMIN_PREVIEW_KEY,JSON.stringify({id:u.id,name:u.name,role:u.role,at:Date.now()}));return true;}catch(_){return false;}
+}
+function consumeFieldAdminPreviewGrant(){
+  if(page!=='technicianV1') return false;
+  const params=new URLSearchParams(location.search||'');
+  if(params.get('adminPreview')!=='1') return false;
+  try{
+    const raw=localStorage.getItem(FIELD_ADMIN_PREVIEW_KEY);
+    const g=raw?JSON.parse(raw):null;
+    if(!g||g.role!=='admin'||Date.now()-Number(g.at||0)>FIELD_ADMIN_PREVIEW_TTL) return false;
+    authSetSession({id:g.id,name:g.name||'Admin',role:'admin'});
+    return true;
+  }catch(_){return false;}
+}
 function fieldLoginMode(){return page==='technicianV1';}
 function userLoginKey(u){return String((u?.username||u?.name||u?.id||'')+'|'+(u?.role||'')).toLowerCase().trim();}
 function dedupeAuthUsersForLogin(users){
@@ -340,6 +359,7 @@ function authRenderSuperadmin(message=''){
 }
 function requireAuthOrRender(){
   normalizeAuthUsers();
+  if(!currentAuthUser()) consumeFieldAdminPreviewGrant();
   const user=currentAuthUser();
   if(!user){authRenderScreen(); return false;}
   // CR-091: URL based route guard. A technician must not reach admin/manager pages by editing the address bar.
@@ -1126,8 +1146,11 @@ function nav(sidebarMode='full'){
     if(key==='system-export') return `<button type="button" id="exportDataBtn" title="Varukoopia" aria-label="Varukoopia">${icon(ic)}<span class="nav-label">Varukoopia</span></button>`;
     if(key==='system-import') return `<label class="nav-file-action" for="importDataFile" title="Taasta" aria-label="Taasta">${icon(ic)}<span class="nav-label">Taasta</span></label>`;
     const opensNewTab=(key==='mobile'||key==='technicianV1');
+    const isFieldPreviewLink=(key==='technicianV1' && authRole()==='admin');
+    const href=isFieldPreviewLink?'technician-v1.html?adminPreview=1':pageFiles[key];
     const externalAttrs=opensNewTab?' target="_blank" rel="noopener"':'';
-    return `<a class="${page===key?'active':''}" href="${pageFiles[key]}"${externalAttrs} title="${esc(pageTitles[key]||key)}" aria-label="${esc(pageTitles[key]||key)}">${icon(ic)}<span class="nav-label">${pageTitles[key]}${opensNewTab?' ↗':''}</span></a>`;
+    const previewAttr=isFieldPreviewLink?' data-field-admin-preview="1"':'';
+    return `<a class="${page===key?'active':''}" href="${href}"${externalAttrs}${previewAttr} title="${esc(pageTitles[key]||key)}" aria-label="${esc(pageTitles[key]||key)}">${icon(ic)}<span class="nav-label">${pageTitles[key]}${opensNewTab?' ↗':''}</span></a>`;
   };
   const navGroups=groups.map(([title,items])=>{
     const visibleItems=items.filter(([key])=>key.startsWith('system-') ? authRole()==='admin' : canAccessPage(key));
@@ -1365,6 +1388,7 @@ function bindGlobal(){
     const arrow=btn.querySelector('span');
     if(arrow) arrow.textContent=isOpen?'▾':'▸';
   }; });
+  $$('[data-field-admin-preview]').forEach(a=>{ a.onclick=()=>{ grantFieldAdminPreview(); }; });
   $('#databaseBtn')?.addEventListener('click',()=>{ if(window.VECO_API?.configure?.()){ location.reload(); } });
   $('#exportDataBtn')?.addEventListener('click',()=>{
     const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
@@ -3790,7 +3814,8 @@ async function applyMobileWorkorderAction(action,workorderId){
   }
   save();
   state=window.VECO_STORAGE.load();
-  renderMobile();
+  if(page==='technicianV1') renderTechnicianV1();
+  else renderMobile();
 }
 function mobileTomorrowKey(todayKey){
   return dateKeyFromDate(addDateDays(parseDateKey(todayKey),1));
@@ -4124,7 +4149,7 @@ function openTechnicianV1WorkModal(id){
   openModal(`<form id="tv1WorkForm"><div class="dialog-head tv1-detail-head"><div><div class="tv1-kicker">${esc(technicianV1WorkTime(w))} · ${esc(workorderDateRangeLabel(w))}</div><h2>${esc(workorderObjectLabel(w))}</h2><p>${esc(w.title||'Töö')}</p></div><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body tv1-detail-body"><div class="tv1-detail-card"><strong>Objekt</strong><span>${esc(workorderObjectLabel(w))}</span>${address?`<em>${esc(address)}</em>`:''}</div>${desc?`<div class="tv1-detail-card"><strong>Kirjeldus</strong><p>${esc(desc)}</p></div>`:''}<div class="tv1-detail-card"><strong>Staatus</strong><span><span class="status ${statusClass(w.status)}">${esc(w.status||'Planeeritud')}</span></span></div><label class="full tv1-detail-note"><span>Märkus / teostus</span><textarea name="done" placeholder="Lisa lühike märkus tehtud töö kohta...">${esc(performedWorkText(w))}</textarea></label><div class="tv1-detail-actions">${navigation}${mobileWorkflowButtons(w)}</div><div class="tv1-detail-card"><strong>Fotod</strong><div>${workorderPhotoGalleryHtml(w.id,{hint:'Lisa fotod otse töö külge.'})}</div></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Sulge</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
   $('#tv1WorkForm')?.addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const note=String(f.done?.value||'').trim();w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';save();closeModal();renderTechnicianV1();});
-  $$('#tv1WorkForm [data-mobile-action]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();const action=btn.dataset.mobileAction;const wid=btn.dataset.workorderId;const form=$('#tv1WorkForm');const draft=byId(state.workorders,wid);if(form&&draft){const note=String(form.elements.done?.value||'').trim();draft.done=note||draft.done||'';draft.workDone=note||draft.workDone||'';draft.performedWork=note||draft.performedWork||'';save();}closeModal();applyMobileWorkorderAction(action,wid);setTimeout(()=>renderTechnicianV1(),50);}));
+  $$('#tv1WorkForm [data-mobile-action]').forEach(btn=>btn.addEventListener('click',async e=>{e.preventDefault();const action=btn.dataset.mobileAction;const wid=btn.dataset.workorderId;const form=$('#tv1WorkForm');const draft=byId(state.workorders,wid);if(form&&draft){const note=String(form.elements.done?.value||'').trim();draft.done=note||draft.done||'';draft.workDone=note||draft.workDone||'';draft.performedWork=note||draft.performedWork||'';save();}closeModal();await applyMobileWorkorderAction(action,wid);setTimeout(()=>{if(page==='technicianV1'&&byId(state.workorders,wid)) openTechnicianV1WorkModal(wid);},80);}));
   const rebindPhotoActions=()=>bindWorkorderPhotos(()=>{closeModal();openTechnicianV1WorkModal(id);});
   rebindPhotoActions();
   loadWorkorderPhotos(id,true).then(()=>{const modal=$('#modal');const form=$('#tv1WorkForm');if(!modal?.classList.contains('open')||!form) return;const gallery=modal.querySelector(`[data-photo-gallery="${CSS.escape(id)}"]`);const wrap=gallery?.parentElement;if(wrap){wrap.innerHTML=workorderPhotoGalleryHtml(id,{hint:'Lisa fotod otse töö külge.'});rebindPhotoActions();}}).catch(err=>console.warn('VECO tv1 photo refresh failed',err));
