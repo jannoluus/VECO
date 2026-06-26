@@ -4965,7 +4965,7 @@ body.confirm-open #vecoConfirm *{
 .task-properties-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
 .task-properties-grid .check-card{margin:0;}
 
-/* VECO_V3_20260626_0926: kalendrikaardil vastutaja ja osalejad loetavamaks */
+/* VECO_V3_20260626_0938: kalendrikaardil vastutaja ja osalejad loetavamaks */
 .app.page-calendar .calendar-people{
   gap:3px!important;
   margin-top:3px!important;

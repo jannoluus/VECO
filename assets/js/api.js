@@ -272,7 +272,7 @@
       end_date:a.end||a.end_date||null,
       status:a.type||a.status||'Puudumine',
       note:a.note||null,
-      updated_at:a.updatedAt||a.updated_at||null
+      updated_at:a.updatedAt||a.updated_at||new Date().toISOString()
     };
   }
   async function loadAvailabilityEntries(people=[]){
@@ -324,7 +324,7 @@
       is_deleted:c.isDeleted===true||c.is_deleted===true,
       deleted_at:c.deletedAt||c.deleted_at||null,
       deleted_by:c.deletedBy||c.deleted_by||null,
-      updated_at:c.updatedAt||c.updated_at||null
+      updated_at:c.updatedAt||c.updated_at||new Date().toISOString()
     };
   }
   function clientFromDb(row){
@@ -359,7 +359,7 @@
       is_deleted:o.isDeleted===true||o.is_deleted===true,
       deleted_at:o.deletedAt||o.deleted_at||null,
       deleted_by:o.deletedBy||o.deleted_by||null,
-      updated_at:o.updatedAt||o.updated_at||null
+      updated_at:o.updatedAt||o.updated_at||new Date().toISOString()
     };
   }
   function objectFromDb(row){
@@ -621,7 +621,8 @@
       phone:u.phone||'',
       email:u.email||'',
       region:u.region||'',
-      updated_at:u.updatedAt||u.updated_at||null
+      created_at:u.createdAt||u.created_at||new Date().toISOString(),
+      updated_at:new Date().toISOString()
     };
   }
   function authUserFromRow(row){
