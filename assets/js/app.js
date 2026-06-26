@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_0717';
+const APP_BUILD='20260626_0731';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1123,7 +1123,7 @@ function setStoredSidebarMode(mode){
 }
 function shell(main,aside='',opts={}){
   applyTheme();
-  // VECO_V3_20260626_0717 / CR-RENDER-002:
+  // VECO_V3_20260626_0731 / CR-RENDER-002:
   // Google Calendar style shell update. Do not replace the whole <body> on every
   // render. Replacing body rebuilds sidebar, main, modal and calendar DOM and is
   // visible as a short flicker after saves/realtime updates. When the current
@@ -2241,6 +2241,46 @@ function refreshCalendarAfterWorkorderSave(previous,next){
     return true;
   }
   renderCalendar();
+  return true;
+}
+
+function calendarVisibleWorkorders(data=state){
+  try{
+    const storedDate=localStorage.getItem('veco_calendar_week')||weekStartKeyFrom('');
+    const mode=$('#calendarViewMode')?.value||localStorage.getItem('veco_calendar_view')||'week';
+    const hideWeekend=(localStorage.getItem('veco_calendar_hide_weekend')||'false')==='true';
+    const statusFilter=$('#calendarStatusFilter')?.value||'all';
+    const scopedId=scopedPersonId();
+    const techFilter=scopedId?[scopedId]:employeeFilterSelected('calendar');
+    const visibleDays=calendarVisibleDays(storedDate,mode,hideWeekend);
+    const occurs=(w,date)=>{const start=w.date; const end=w.endDate||w.end_date||w.date; return !!start && date>=start && date<=end;};
+    const dateInView=(w)=> mode==='year' ? (w.date&&w.date.startsWith(String(parseDateKey(storedDate).getFullYear())+'-')) : visibleDays.some(d=>occurs(w,d));
+    return (data?.workorders||[]).filter(w=>{
+      const statusOk=statusFilter==='all'||(statusFilter==='open'?workorderStatusOptions.includes(w.status):w.status===statusFilter);
+      return dateInView(w) && employeeFilterMatchesWorkorder(w,techFilter) && statusOk;
+    });
+  }catch(e){
+    return [];
+  }
+}
+function patchCalendarFromRemote(previousData,nextData){
+  if(page!=='calendar') return false;
+  const grid=document.querySelector('.calendar-planner-grid');
+  if(!grid) return false;
+  const prevRows=calendarVisibleWorkorders(previousData);
+  const nextRows=calendarVisibleWorkorders(nextData);
+  const prevIds=new Set(prevRows.map(w=>String(w.id)));
+  const nextIds=new Set(nextRows.map(w=>String(w.id)));
+  if(prevIds.size!==nextIds.size) return false;
+  for(const id of prevIds){ if(!nextIds.has(id)) return false; }
+  const prevById=new Map(prevRows.map(w=>[String(w.id),w]));
+  for(const next of nextRows){
+    const prev=prevById.get(String(next.id));
+    if(!prev) return false;
+    if(calendarLayoutKey(prev)!==calendarLayoutKey(next)) return false;
+    if(!document.querySelector(`[data-calendar-edit="${CSS.escape(String(next.id))}"]`)) return false;
+  }
+  nextRows.forEach(w=>refreshCalendarCardDom(w));
   return true;
 }
 
@@ -5699,7 +5739,7 @@ async function bootstrapApp(){
       selectedWorkorderId=state.workorders?.[0]?.id||selectedWorkorderId||'';
       selectedActId=state.acts?.[0]?.id||selectedActId||'';
       renderCurrentPage('bootstrap');
-      const onRemoteWorkorders=(merged,meta={})=>{ const beforeCalendarSig=page==='calendar'?calendarCurrentViewSignature(state):''; state=merged; if(window.__VECO_CALENDAR_RESIZING__){ showSyncNotice('Uuendus ootel'); return; } if(page==='calendar' && beforeCalendarSig===calendarCurrentViewSignature(state)){ return; } renderCurrentPageWhenIdle('local-peer-refresh'); showSyncNotice(meta.source==='polling'?'Andmed uuendatud':'Realtime uuendus'); };
+      const onRemoteWorkorders=(merged,meta={})=>{ const previousState=state; const beforeCalendarSig=page==='calendar'?calendarCurrentViewSignature(state):''; state=merged; if(window.__VECO_CALENDAR_RESIZING__){ showSyncNotice('Uuendus ootel'); return; } if(page==='calendar'){ if(beforeCalendarSig===calendarCurrentViewSignature(state)) return; if(patchCalendarFromRemote(previousState,state)){ showSyncNotice(meta.source==='polling'?'Andmed uuendatud':'Realtime uuendus'); return; } } renderCurrentPageWhenIdle('local-peer-refresh'); showSyncNotice(meta.source==='polling'?'Andmed uuendatud':'Realtime uuendus'); };
       const realtimeStarted=window.VECO_API.startWorkorderRealtime?.(onRemoteWorkorders,(status)=>{
         if(status==='SUBSCRIBED') showSyncNotice('Realtime ühendus aktiivne');
       });
