@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_1018';
+const APP_BUILD='20260626_1031';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -105,7 +105,7 @@ const AUTH_KEY='veco_v3_auth_v1';
 const AUTH_SESSION_KEY='veco_v3_auth_session_v1';
 const AUTH_LOCK_KEY='veco_v3_auth_locks_v1';
 const AUTH_RULES={technician:{min:4,max:4,label:'4-kohaline PIN'},supervisor:{min:4,max:4,label:'4-kohaline PIN'},admin:{min:6,max:12,label:'vähemalt 6-kohaline PIN'},superadmin:{min:6,max:8,label:'6–8 kohaline PIN'}};
-const ADMIN_PAGES=new Set(['team','people','vacations','oncall','objects','clients','projects','ticker','maintenanceNorms','devices','maintenanceProfiles','granlundClassifier','unplannedMaintenance','mobilePreview','demo','diagnostics']);
+const ADMIN_PAGES=new Set(['team','people','vacations','oncall','objects','clients','projects','ticker','maintenanceNorms','devices','maintenanceProfiles','granlundClassifier','unplannedMaintenance','callouts','mobilePreview','demo','diagnostics']);
 const SUPERVISOR_PAGES=new Set(['calendar','team','mobile','technicianV1','workorders','acts','vacations','oncall','objects','clients','projects','devices','maintenanceProfiles','unplannedMaintenance']);
 // CR-091: technician route guard. Technicians may only use the simplified mobile view.
 const TECH_PAGES=new Set(['mobile','technicianV1']);
@@ -833,8 +833,8 @@ let selectedTeamPersonId='';
 const detailOpen={objects:false,clients:false,projects:false,workorders:false,acts:false};
 let modalEscHandler=null;
 
-const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Minu tööd',technicianV1:'Technician V1',workorders:'Tööd',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',maintenanceProfiles:'Hooldusprofiil',granlundClassifier:'Granlund klassifikaator',unplannedMaintenance:'Planeerimata hooldused',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
-const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',technicianV1:'technician-v1.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',maintenanceProfiles:'maintenance-profiles.html',granlundClassifier:'granlund-classifier.html',unplannedMaintenance:'unplanned-maintenance.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
+const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Minu tööd',technicianV1:'Technician V1',workorders:'Tööd',callouts:'Väljakutsed',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',maintenanceProfiles:'Hooldusprofiil',granlundClassifier:'Granlund klassifikaator',unplannedMaintenance:'Planeerimata hooldused',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
+const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',technicianV1:'technician-v1.html',workorders:'workorders.html',callouts:'callouts.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',maintenanceProfiles:'maintenance-profiles.html',granlundClassifier:'granlund-classifier.html',unplannedMaintenance:'unplanned-maintenance.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
 
 const byId=(arr,id)=>arr.find(x=>x.id===id)||null;
 const isArchivedRecord=(x)=>x?.isDeleted===true||x?.is_deleted===true;
@@ -873,6 +873,7 @@ const projectActs=(id)=>state.acts.filter(a=>projectWorkorders(id).some(w=>w.id=
 const completedStatuses=['Teostatud','Lõpetatud','Täidetud','Suletud','Arhiveeritud'];
 const isCompletedStatus=(s)=>completedStatuses.includes(String(s||'').trim());
 const taskWorkflowOptions=[
+  {value:'valjakutse',label:'Väljakutse'},
   {value:'kontroll',label:'Kontroll'},
   {value:'diagnostika',label:'Diagnostika'},
   {value:'hooldus',label:'Hooldus'},
@@ -1064,7 +1065,7 @@ function uid(prefix){return `${prefix}-${String(Date.now()).slice(-6)}`}
 function icon(i){return `<span class="icon">${i}</span>`}
 function nav(sidebarMode='full'){
   const groups=[
-    ['Tööjuht',[['calendar','▦'],['unplannedMaintenance','⚠'],['workorders','☑'],['team','◫'],['oncall','☎'],['mobile','▤'],['technicianV1','▣'],['acts','▧']]],
+    ['Tööjuht',[['calendar','▦'],['unplannedMaintenance','⚠'],['workorders','☑'],['callouts','☎'],['team','◫'],['oncall','☎'],['mobile','▤'],['technicianV1','▣'],['acts','▧']]],
     ['Tehnikud',[['people','☷'],['vacations','▤']]],
     ['Kliendid ja objektid',[['objects','⌂'],['clients','▥'],['projects','▣']]],
     ['Hooldusinfo',[['devices','▤'],['maintenanceNorms','≡'],['maintenanceProfiles','☑'],['granlundClassifier','⌁']]],
@@ -3941,12 +3942,19 @@ function resolveMobileObjectChoice(raw){
   return created;
 }
 function openMobileAddWorkModal(personId){
+  const isTechnicianV1=page==='technicianV1';
   const today=dateKeyFromDate(new Date());
   const now=new Date();
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=now.getMinutes()<30?'00':'30';
   const objectOptions=state.objects.map(o=>`<option value="${esc(mobileObjectChoiceLabel(o))}"></option>`).join('');
-  openModal(`<form id="mobileAddWorkForm"><div class="dialog-head"><h2>Lisa töö</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="form-grid mobile-form-grid"><label class="full">Objekt<input class="field" name="objectChoice" list="mobileObjectChoices" required autocomplete="off" placeholder="Vali objekt või kirjuta uus objekt..."><datalist id="mobileObjectChoices">${objectOptions}</datalist><span class="muted">Vali olemasolev objekt või kirjuta uue objekti nimi.</span></label><label class="full">Töö lühikirjeldus<input class="field" name="title" required placeholder="nt Telefonitellimus / rike"></label><label>Kuupäev<input class="field" name="date" type="date" required value="${today}"></label><label>Kell<input class="field" name="time" type="time" value="${hh}:${mm}"></label><label>Prioriteet<select class="select" name="priority"><option>Tavaline</option><option>Kõrge</option><option>Madal</option></select></label><label>Workflow<select class="select" name="workflow">${taskWorkflowOptions.map(x=>`<option value="${esc(x.value)}">${esc(x.label)}</option>`).join('')}</select></label><label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${st==='Planeeritud'?'selected':''}>${st}</option>`).join('')}</select></label><label class="check-card"><input type="checkbox" name="actRequired"> <span>Akt vajalik</span></label><label class="full">Märkus<textarea name="description" placeholder="Kes helistas, mida paluti, mis objektil juhtus?"></textarea></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">Salvesta töö</button></div></form>`);
+  const titleText=isTechnicianV1?'Uus väljakutse':'Lisa töö';
+  const submitText=isTechnicianV1?'Salvesta väljakutse':'Salvesta töö';
+  const titlePlaceholder=isTechnicianV1?'nt Klient helistas / rike':'nt Telefonitellimus / rike';
+  const workflowField=isTechnicianV1
+    ? `<input type="hidden" name="workflow" value="valjakutse"><div class="full card soft-warning"><strong>Väljakutse</strong><span class="muted">Workflow määratakse automaatselt. Hooldusjuht näeb seda admini Väljakutsed vaates.</span></div>`
+    : `<label>Workflow<select class="select" name="workflow">${taskWorkflowOptions.map(x=>`<option value="${esc(x.value)}">${esc(x.label)}</option>`).join('')}</select></label>`;
+  openModal(`<form id="mobileAddWorkForm"><div class="dialog-head"><h2>${titleText}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="form-grid mobile-form-grid"><label class="full">Objekt<input class="field" name="objectChoice" list="mobileObjectChoices" required autocomplete="off" placeholder="Vali objekt või kirjuta uus objekt..."><datalist id="mobileObjectChoices">${objectOptions}</datalist><span class="muted">Vali olemasolev objekt või kirjuta uue objekti nimi.</span></label><label class="full">${isTechnicianV1?'Väljakutse lühikirjeldus':'Töö lühikirjeldus'}<input class="field" name="title" required placeholder="${titlePlaceholder}"></label><label>Kuupäev<input class="field" name="date" type="date" required value="${today}"></label><label>Kell<input class="field" name="time" type="time" value="${hh}:${mm}"></label><label>Prioriteet<select class="select" name="priority"><option>${isTechnicianV1?'Kõrge':'Tavaline'}</option><option>${isTechnicianV1?'Tavaline':'Kõrge'}</option><option>Madal</option></select></label>${workflowField}<label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${st==='Planeeritud'?'selected':''}>${st}</option>`).join('')}</select></label><label class="check-card"><input type="checkbox" name="actRequired"> <span>Akt vajalik</span></label><label class="full">Märkus<textarea name="description" placeholder="Kes helistas, mida paluti, mis objektil juhtus?"></textarea></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">${submitText}</button></div></form>`);
   bindClose();
   $('#mobileAddWorkForm').addEventListener('submit',e=>{
     e.preventDefault();
@@ -3954,12 +3962,13 @@ function openMobileAddWorkModal(personId){
     const object=resolveMobileObjectChoice(f.objectChoice.value);
     if(!object){f.objectChoice.focus();return;}
     const project=state.projects.find(p=>p.objectId===object.id);
-    const next={id:uid('WO'),projectId:project?.id||'',objectId:object.id,title:f.title.value,date:f.date.value,time:f.time.value,technicianId:personId,responsibleTechnicianId:personId,participantTechnicianIds:[],status:f.status.value,priority:f.priority.value,description:f.description.value,problemDescription:f.description.value,actRequired:!!f.actRequired?.checked,requiresAct:!!f.actRequired?.checked,workflow:f.workflow?.value||'kontroll',workflowType:f.workflow?.value||'kontroll'};
+    const workflowValue=isTechnicianV1?'valjakutse':(f.workflow?.value||'kontroll');
+    const next={id:uid('WO'),projectId:project?.id||'',objectId:object.id,title:f.title.value,date:f.date.value,time:f.time.value,technicianId:personId,responsibleTechnicianId:personId,participantTechnicianIds:[],status:f.status.value,priority:f.priority.value,description:f.description.value,problemDescription:f.description.value,actRequired:!!f.actRequired?.checked,requiresAct:!!f.actRequired?.checked,workflow:workflowValue,workflowType:workflowValue,source:isTechnicianV1?'technician_v1_callout':'mobile'};
     state.workorders.push(next);
     selectedWorkorderId=next.id;
     save();
     closeModal();
-    renderMobile();
+    if(isTechnicianV1) renderTechnicianV1(); else renderMobile();
   });
 }
 function openMobileWorkModal(id){
@@ -4118,6 +4127,25 @@ function renderTechnicianV1(){
   $$('[data-tv1-work]').forEach(btn=>btn.addEventListener('click',()=>openTechnicianV1WorkModal(btn.dataset.tv1Work)));
 }
 
+
+function isCalloutWorkorder(w){
+  const wf=String(taskWorkflowValue(w)||'').toLowerCase();
+  return wf==='valjakutse' || wf==='väljakutse' || wf==='callout' || String(w?.source||'').toLowerCase().includes('callout');
+}
+function renderCallouts(){
+  const rows=(state.workorders||[]).filter(isCalloutWorkorder).slice().sort((a,b)=>`${b.date||''} ${b.time||''}`.localeCompare(`${a.date||''} ${a.time||''}`));
+  const openRows=rows.filter(w=>!isCompletedStatus(w.status));
+  const doneRows=rows.filter(w=>isCompletedStatus(w.status));
+  const card=w=>{
+    const obj=workorderObjectLabel(w);
+    const createdBy=w.createdByName||techName(workorderResponsibleId(w))||'-';
+    const desc=problemDescriptionText(w)||'';
+    return `<button class="card callout-card" data-callout-open="${esc(w.id)}" type="button"><div class="card-top"><h3>📞 ${esc(w.title||'Väljakutse')}</h3><span class="status ${statusClass(w.status)}">${esc(w.status||'Planeeritud')}</span></div><div class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(obj)}</div><div class="muted">Tehnik: ${esc(createdBy)}</div>${desc?`<p>${esc(desc)}</p>`:''}</button>`;
+  };
+  const body=`<div class="detail-body"><div class="grid cards-3"><div class="card"><strong>Uued/töös</strong><span class="big-number">${openRows.length}</span></div><div class="card"><strong>Lahendatud</strong><span class="big-number">${doneRows.length}</span></div><div class="card"><strong>Kokku</strong><span class="big-number">${rows.length}</span></div></div><div class="section-title">Aktiivsed väljakutsed</div><div class="cards">${openRows.map(card).join('')||'<div class="card muted">Aktiivseid väljakutseid ei ole.</div>'}</div><div class="section-title">Lahendatud</div><div class="cards">${doneRows.slice(0,20).map(card).join('')||'<div class="card muted">Lahendatud väljakutseid ei ole.</div>'}</div></div>`;
+  shell(header('Väljakutsed','','','VÄLJAKUTSED')+body,'',{wide:true});
+  $$('[data-callout-open]').forEach(btn=>btn.addEventListener('click',()=>openWorkorderModal(btn.dataset.calloutOpen)));
+}
 function renderMobilePreview(){
   const devices=[['iPhone SE','320px','568px'],['Android 360','360px','740px'],['iPhone 14','390px','844px'],['Large phone','414px','896px'],['Tahvel','768px','1024px']];
   const cards=devices.map(([name,w,h])=>`<div class="card preview-device"><div class="card-top"><h3>${name}</h3><span class="status">${w} × ${h}</span></div><div class="preview-frame-wrap" style="--preview-w:${w};--preview-h:${h};"><iframe src="mobile.html" title="${esc(name)}"></iframe></div></div>`).join('');
@@ -5945,7 +5973,7 @@ function renderDebug(reason, fn){
 
 function renderCurrentPage(reason='renderCurrentPage'){
   if(!requireAuthOrRender()) return;
-  return renderDebug(reason,()=>({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,technicianV1:renderTechnicianV1,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,unplannedMaintenance:renderUnplannedMaintenance,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)());
+  return renderDebug(reason,()=>({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,technicianV1:renderTechnicianV1,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,callouts:renderCallouts,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,unplannedMaintenance:renderUnplannedMaintenance,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)());
 }
 function selectInitialIdsFromState(){
   selectedObjectId=state.objects?.[0]?.id||selectedObjectId||'';

@@ -1,7 +1,7 @@
 {
-  "build": "VECO_V3_20260626_1018",
+  "build": "VECO_V3_20260626_1031",
   "date": "2026-06-26",
-  "change": "Technician V1.1 admin link + compact cards + detail modal",
-  "timestamp": "2026-06-26 10:18",
-  "version": "20260626_1018"
+  "change": "Technician V1 callout workflow cleanup + admin callouts view",
+  "timestamp": "2026-06-26 10:31",
+  "version": "20260626_1031"
 }

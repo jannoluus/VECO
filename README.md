@@ -1,4 +1,14 @@
-# VECO_V3_20260626_0938
+# VECO V3
+
+Build: VECO_V3_20260626_1031
+
+Muudatused:
+- Technician V1 “Uus väljakutse” ei näita workflow valikut.
+- Väljakutse workflow määratakse automaatselt `valjakutse`.
+- Admin menüüsse lisatud Väljakutsed vaade.
+- Lisatud `callouts.html`.
+- Legacy `mobile.html` jäi alles.
+
 
 ## Muudatus
 

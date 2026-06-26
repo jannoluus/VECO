@@ -11,8 +11,8 @@ function check(name,pass,detail=''){
   console.log(line);
   if(!pass) ok=false;
 }
-check('APP_BUILD 20260626_1018',/APP_BUILD='20260626_1018'/.test(app));
-check('HTML cache-bust 1018',!/v=20260626_(?!1018)\d+/.test(index));
+check('APP_BUILD 20260626_1031',/APP_BUILD='20260626_1031'/.test(app));
+check('HTML cache-bust 1031',!/v=20260626_(?!1031)\d+/.test(index));
 check('CR-STATE-002 boot restore script olemas',index.includes('veco_boot_html_'+ 'calendar') || index.includes("veco_boot_html_"));
 check('boot snapshot save funktsioon olemas',app.includes('function saveBootHtmlSnapshot'));
 check('shell hydration guard olemas',app.includes('__VECO_BOOT_RESTORED__')&&app.includes('__VECO_BOOT_HYDRATED__'));
@@ -32,5 +32,11 @@ check('Technician V1 CSS olemas',fs.readFileSync(path.join(root,'assets/css/app.
 check('Technician V1 admin switch olemas',app.includes('function technicianV1AdminSwitchHtml')&&app.includes('tv1AdminUserSelect'));
 check('Technician V1 valveinfo globaalne',app.includes('shiftName=o=>o?')&&app.includes('state.oncall||[]'));
 check('Technician pages allowed for technician',app.includes("user.role==='technician' && !TECH_PAGES.has(page)"));
+
+
+check('Callouts page olemas',fs.existsSync(path.join(root,'callouts.html')));
+check('Admin Väljakutsed route olemas',app.includes("callouts:'callouts.html'") && app.includes("callouts:'Väljakutsed'"));
+check('Technician V1 väljakutse workflow automaatne',app.includes("workflowValue=isTechnicianV1?'valjakutse'") && app.includes('Uus väljakutse'));
+check('Technician V1 vormis workflow peidetud',app.includes('name="workflow" value="valjakutse"'));
 
 process.exit(ok?0:1);
