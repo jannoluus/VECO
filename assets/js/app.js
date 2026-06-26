@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_0731';
+const APP_BUILD='20260626_0740';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1123,7 +1123,7 @@ function setStoredSidebarMode(mode){
 }
 function shell(main,aside='',opts={}){
   applyTheme();
-  // VECO_V3_20260626_0731 / CR-RENDER-002:
+  // VECO_V3_20260626_0740 / CR-RENDER-002:
   // Google Calendar style shell update. Do not replace the whole <body> on every
   // render. Replacing body rebuilds sidebar, main, modal and calendar DOM and is
   // visible as a short flicker after saves/realtime updates. When the current
@@ -1179,8 +1179,8 @@ function toggleTheme(){
   document.body.classList.toggle('theme-light',light);
 }
 function bindGlobal(){
-  $$('[data-theme-toggle]').forEach(btn=>btn.addEventListener('click',toggleTheme));
-  $$('[data-mobile-theme-toggle]').forEach(btn=>btn.addEventListener('click',()=>{toggleTheme();renderMobile();}));
+  $$('[data-theme-toggle]').forEach(btn=>{ btn.onclick=toggleTheme; });
+  $$('[data-mobile-theme-toggle]').forEach(btn=>{ btn.onclick=()=>{toggleTheme();renderMobile();}; });
   const applySidebarMode=(mode)=>{
     mode=setStoredSidebarMode(mode);
     const appEl=$('.app');
@@ -1203,27 +1203,44 @@ function bindGlobal(){
     const isOpen=!!appEl?.classList.contains('sidebar-full');
     applySidebarMode(isOpen?'hidden':'full');
   };
-  $('#sidebarToggleRail')?.addEventListener('click',sidebarToggleHandler);
-  $('#sidebarToggleBtn')?.addEventListener('click',sidebarToggleHandler);
-  $('#sidebarScrim')?.addEventListener('click',()=>applySidebarMode('hidden'));
+  const railBtn=$('#sidebarToggleRail'); if(railBtn) railBtn.onclick=sidebarToggleHandler;
+  const sideBtn=$('#sidebarToggleBtn'); if(sideBtn) sideBtn.onclick=sidebarToggleHandler;
+  const scrimBtn=$('#sidebarScrim'); if(scrimBtn) scrimBtn.onclick=()=>applySidebarMode('hidden');
 
-  // Build 20260618_1328: sidebar click-outside must cover the whole main area,
-  // including header and filter bar. Do not block the original click target.
-  document.addEventListener('click',(event)=>{
-    const appEl=$('.app');
-    if(!appEl?.classList.contains('sidebar-full')) return;
-    const target=event.target;
-    if(!target) return;
-    if(target.closest?.('.sidebar,#sidebarToggleRail,#sidebarToggleBtn,.sidebar-scrim,.modal,.confirm-modal,.photo-lightbox,.team-people-menu,[data-employee-filter-menu]')) return;
-    if(target.closest?.('main,.content,.panel,.calendar-compact-head,.calendar-filter-panel,.calendar-filter-fields,.calendar-planner-wrap,.calendar-planner')){
-      applySidebarMode('hidden');
-    }
-  },true);
+  // Build 20260626_0740: bind persistent document-level sidebar handlers only once.
+  // After CR-RENDER shell reuse, bindGlobal() can run many times. Multiple handlers
+  // made one click toggle the sidebar open and immediately closed again.
+  if(!window.__VECO_SIDEBAR_DOC_BOUND__){
+    window.__VECO_SIDEBAR_DOC_BOUND__=true;
+    document.addEventListener('click',(event)=>{
+      const appEl=$('.app');
+      if(!appEl?.classList.contains('sidebar-full')) return;
+      const target=event.target;
+      if(!target) return;
+      if(target.closest?.('.sidebar,#sidebarToggleRail,#sidebarToggleBtn,.sidebar-scrim,.modal,.confirm-modal,.photo-lightbox,.team-people-menu,[data-employee-filter-menu]')) return;
+      if(target.closest?.('main,.content,.panel,.calendar-compact-head,.calendar-filter-panel,.calendar-filter-fields,.calendar-planner-wrap,.calendar-planner')){
+        const mode=setStoredSidebarMode('hidden');
+        appEl.classList.toggle('sidebar-full',false);
+        appEl.classList.toggle('sidebar-hidden',true);
+        appEl.classList.remove('sidebar-compact');
+        const sidebar=$('.sidebar'); if(sidebar) sidebar.dataset.sidebarState=mode;
+        const rail=$('#sidebarToggleRail'); if(rail){ rail.setAttribute('title','Ava menüü'); rail.setAttribute('aria-label','Ava menüü'); }
+      }
+    },true);
 
-  document.addEventListener('keydown',(event)=>{
-    if(event.key==='Escape' && $('.app')?.classList.contains('sidebar-full')) applySidebarMode('hidden');
-  });
-  $$('[data-nav-toggle]').forEach(btn=>btn.addEventListener('click',(event)=>{
+    document.addEventListener('keydown',(event)=>{
+      if(event.key==='Escape' && $('.app')?.classList.contains('sidebar-full')){
+        const appEl=$('.app');
+        const mode=setStoredSidebarMode('hidden');
+        appEl.classList.toggle('sidebar-full',false);
+        appEl.classList.toggle('sidebar-hidden',true);
+        appEl.classList.remove('sidebar-compact');
+        const sidebar=$('.sidebar'); if(sidebar) sidebar.dataset.sidebarState=mode;
+        const rail=$('#sidebarToggleRail'); if(rail){ rail.setAttribute('title','Ava menüü'); rail.setAttribute('aria-label','Ava menüü'); }
+      }
+    });
+  }
+  $$('[data-nav-toggle]').forEach(btn=>{ btn.onclick=(event)=>{
     event.preventDefault();
     event.stopPropagation();
     const title=btn.dataset.navToggle;
@@ -1241,7 +1258,7 @@ function bindGlobal(){
     btn.setAttribute('aria-expanded',isOpen?'true':'false');
     const arrow=btn.querySelector('span');
     if(arrow) arrow.textContent=isOpen?'▾':'▸';
-  }));
+  }; });
   $('#databaseBtn')?.addEventListener('click',()=>{ if(window.VECO_API?.configure?.()){ location.reload(); } });
   $('#exportDataBtn')?.addEventListener('click',()=>{
     const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});

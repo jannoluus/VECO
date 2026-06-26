@@ -1,5 +1,5 @@
 {
-  "build": "VECO_V3_20260626_0731",
+  "build": "VECO_V3_20260626_0740",
   "source": "VECO_V3_20260626_0646",
   "changes": [
     "CR-RENDER-002: vähendatud content-only save layout sync",
