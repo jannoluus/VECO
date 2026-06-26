@@ -11,8 +11,8 @@ function check(name,pass,detail=''){
   console.log(line);
   if(!pass) ok=false;
 }
-check('APP_BUILD 20260626_0938',/APP_BUILD='20260626_0938'/.test(app));
-check('HTML cache-bust 0926',!/v=20260626_(?!0926)\d+/.test(index));
+check('APP_BUILD 20260626_0955',/APP_BUILD='20260626_0955'/.test(app));
+check('HTML cache-bust 0955',!/v=20260626_(?!0955)\d+/.test(index));
 check('CR-STATE-002 boot restore script olemas',index.includes('veco_boot_html_'+ 'calendar') || index.includes("veco_boot_html_"));
 check('boot snapshot save funktsioon olemas',app.includes('function saveBootHtmlSnapshot'));
 check('shell hydration guard olemas',app.includes('__VECO_BOOT_RESTORED__')&&app.includes('__VECO_BOOT_HYDRATED__'));
@@ -26,5 +26,8 @@ check('Supabase load salvestab merged state cache’i',api.includes('window.VECO
 check('own realtime echo suppress olemas',api.includes('isLikelyOwnRemoteEcho'));
 check('sidebar handler guard olemas',app.includes('__VECO_SIDEBAR_GLOBAL_BOUND__') || app.includes('document-level sidebar handlers only once'));
 check('calendar technician badges olemas',app.includes('function techInitials')&&app.includes('calendar-tech-badge'));
+check('Technician V1 route olemas',fs.existsSync(path.join(root,'technician-v1.html')) && app.includes('function renderTechnicianV1') && app.includes('technicianV1'));
+check('Legacy mobile alles',fs.existsSync(path.join(root,'mobile.html')) && fs.readFileSync(path.join(root,'mobile.html'),'utf8').includes('window.VECO_PAGE = "mobile"'));
+check('Technician V1 CSS olemas',fs.readFileSync(path.join(root,'assets/css/app.css'),'utf8').includes('VECO Technician V1'));
 
 process.exit(ok?0:1);

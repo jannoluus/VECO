@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_0938';
+const APP_BUILD='20260626_0955';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -106,9 +106,10 @@ const AUTH_SESSION_KEY='veco_v3_auth_session_v1';
 const AUTH_LOCK_KEY='veco_v3_auth_locks_v1';
 const AUTH_RULES={technician:{min:4,max:4,label:'4-kohaline PIN'},supervisor:{min:4,max:4,label:'4-kohaline PIN'},admin:{min:6,max:12,label:'vähemalt 6-kohaline PIN'},superadmin:{min:6,max:8,label:'6–8 kohaline PIN'}};
 const ADMIN_PAGES=new Set(['team','people','vacations','oncall','objects','clients','projects','ticker','maintenanceNorms','devices','maintenanceProfiles','granlundClassifier','unplannedMaintenance','mobilePreview','demo','diagnostics']);
-const SUPERVISOR_PAGES=new Set(['calendar','team','mobile','workorders','acts','vacations','oncall','objects','clients','projects','devices','maintenanceProfiles','unplannedMaintenance']);
+const SUPERVISOR_PAGES=new Set(['calendar','team','mobile','technicianV1','workorders','acts','vacations','oncall','objects','clients','projects','devices','maintenanceProfiles','unplannedMaintenance']);
 // CR-091: technician route guard. Technicians may only use the simplified mobile view.
-const TECH_PAGES=new Set(['mobile']);
+const TECH_PAGES=new Set(['mobile','technicianV1']);
+function isTechnicianUiPage(){return page==='mobile'||page==='technicianV1';}
 function authLoad(){try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'{}')||{};}catch(_){return {};}}
 function authSave(a){localStorage.setItem(AUTH_KEY,JSON.stringify(a||{}));}
 let authRemoteAvailable=false;
@@ -832,8 +833,8 @@ let selectedTeamPersonId='';
 const detailOpen={objects:false,clients:false,projects:false,workorders:false,acts:false};
 let modalEscHandler=null;
 
-const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Minu tööd',workorders:'Tööd',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',maintenanceProfiles:'Hooldusprofiil',granlundClassifier:'Granlund klassifikaator',unplannedMaintenance:'Planeerimata hooldused',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
-const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',maintenanceProfiles:'maintenance-profiles.html',granlundClassifier:'granlund-classifier.html',unplannedMaintenance:'unplanned-maintenance.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
+const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Minu tööd',technicianV1:'Technician V1',workorders:'Tööd',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',maintenanceProfiles:'Hooldusprofiil',granlundClassifier:'Granlund klassifikaator',unplannedMaintenance:'Planeerimata hooldused',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
+const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',technicianV1:'technician-v1.html',workorders:'workorders.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',maintenanceProfiles:'maintenance-profiles.html',granlundClassifier:'granlund-classifier.html',unplannedMaintenance:'unplanned-maintenance.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
 
 const byId=(arr,id)=>arr.find(x=>x.id===id)||null;
 const isArchivedRecord=(x)=>x?.isDeleted===true||x?.is_deleted===true;
@@ -1063,7 +1064,7 @@ function uid(prefix){return `${prefix}-${String(Date.now()).slice(-6)}`}
 function icon(i){return `<span class="icon">${i}</span>`}
 function nav(sidebarMode='full'){
   const groups=[
-    ['Tööjuht',[['calendar','▦'],['unplannedMaintenance','⚠'],['workorders','☑'],['team','◫'],['oncall','☎'],['mobile','▤'],['acts','▧']]],
+    ['Tööjuht',[['calendar','▦'],['unplannedMaintenance','⚠'],['workorders','☑'],['team','◫'],['oncall','☎'],['mobile','▤'],['technicianV1','▣'],['acts','▧']]],
     ['Tehnikud',[['people','☷'],['vacations','▤']]],
     ['Kliendid ja objektid',[['objects','⌂'],['clients','▥'],['projects','▣']]],
     ['Hooldusinfo',[['devices','▤'],['maintenanceNorms','≡'],['maintenanceProfiles','☑'],['granlundClassifier','⌁']]],
@@ -1127,7 +1128,7 @@ function adminHeaderPeriodInfo(){
 }
 function header(title,filters='',actions='',context=''){
   const label=viewContextText(context||title);
-  if(page==='mobile') return `<div class="panel-head mobile-head"><div><h2>${esc(label)}</h2><span class="muted">Lihtne tehniku töövaade</span></div></div>`;
+  if(isTechnicianUiPage()) return `<div class="panel-head mobile-head"><div><h2>${esc(label)}</h2><span class="muted">Lihtne tehniku töövaade</span></div></div>`;
   const employeeFilterPages=['calendar','team','workorders'];
   const controls=`${employeeFilterPages.includes(page)?'':adminViewAsControl()}${authStatusPill()}`;
   const period=adminHeaderPeriodInfo();
@@ -1148,7 +1149,7 @@ function globalTicker(){
   return '';
 }
 function getStoredSidebarMode(){
-  if(page==='mobile') return 'full';
+  if(isTechnicianUiPage()) return 'full';
   // VECO_V3_20260615_1834: slide sidebar is an ephemeral overlay.
   // It must never reopen automatically after refresh, even if old localStorage says open.
   return 'hidden';
@@ -1191,7 +1192,7 @@ function shell(main,aside='',opts={}){
     bindGlobal();
     return;
   }
-  if(existingApp && page!=='mobile' && !opts.forceFullShell){
+  if(existingApp && !isTechnicianUiPage() && !opts.forceFullShell){
     existingApp.classList.toggle('sidebar-full',sidebarMode==='full');
     existingApp.classList.toggle('sidebar-hidden',sidebarMode!=='full');
     existingApp.classList.remove('sidebar-compact');
@@ -1221,11 +1222,11 @@ function shell(main,aside='',opts={}){
       return;
     }
   }
-  document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}${page==='mobile'?'':'<button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Sulge menüü"></button>'}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
+  document.body.innerHTML=`<div class="app page-${page} ${isTechnicianUiPage()?'app-mobile':''} ${sidebarClass}">${isTechnicianUiPage()?'':nav(sidebarMode)}${isTechnicianUiPage()?'':'<button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Sulge menüü"></button>'}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();
 }
 function activeThemeKey(){
-  return page==='mobile' ? 'veco_mobile_theme' : 'veco_theme';
+  return isTechnicianUiPage() ? 'veco_mobile_theme' : 'veco_theme';
 }
 function applyTheme(){
   const key=activeThemeKey();
@@ -1239,7 +1240,7 @@ function toggleTheme(){
 }
 function bindGlobal(){
   $$('[data-theme-toggle]').forEach(btn=>{ btn.onclick=toggleTheme; });
-  $$('[data-mobile-theme-toggle]').forEach(btn=>{ btn.onclick=()=>{toggleTheme();renderMobile();}; });
+  $$('[data-mobile-theme-toggle]').forEach(btn=>{ btn.onclick=()=>{toggleTheme();renderCurrentPage('theme-toggle');}; });
   const applySidebarMode=(mode)=>{
     mode=setStoredSidebarMode(mode);
     const appEl=$('.app');
@@ -3988,6 +3989,86 @@ function openMobileWorkModal(id){
     }
   }).catch(err=>console.warn('VECO photo refresh failed',err));
 }
+
+function technicianV1DateLabel(){
+  const d=new Date();
+  const days=['Pühapäev','Esmaspäev','Teisipäev','Kolmapäev','Neljapäev','Reede','Laupäev'];
+  return `${days[d.getDay()]} · ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+}
+function technicianV1OncallCard(current,todayKey){
+  const ov=mobileOncallOverview(todayKey);
+  const info=mobileOncallForPerson(current?.id,todayKey);
+  const today=info?.today;
+  const next=info?.next;
+  const todayName=today?.user_name||techName(today?.user_id)||'Puudub';
+  const nextName=next?.user_name||techName(next?.user_id)||'Puudub';
+  const own=today && (today.user_id===current?.id || String(today.user_name||'').trim()===String(current?.name||'').trim());
+  return `<div class="tv1-oncall-card ${own?'is-own':''}"><div class="tv1-oncall-status"><span>${own?'🟢':'⚪'}</span><strong>${own?'Oled täna valves':'Valveinfo'}</strong></div><div class="tv1-oncall-grid"><span>Täna</span><strong>${esc(own?'Sina':todayName)}</strong><span>Järgmine</span><strong>${esc(nextName)}</strong></div></div>`;
+}
+function technicianV1WorkTime(w){
+  const start=String(w.time||'').trim();
+  const end=String(w.endTime||w.timeEnd||'').trim();
+  if(start&&end) return `${start}–${end}`;
+  if(start) return start;
+  return 'Aeg määramata';
+}
+function technicianV1Location(w){
+  const o=byId(state.objects||[],w.objectId);
+  return o?.address||o?.name||workorderObjectLabel(w)||'';
+}
+function technicianV1WorkCard(w,current){
+  const status=String(w.status||'Planeeritud');
+  const act=mobileActLabel(w);
+  const desc=problemDescriptionText(w)||'';
+  const photos=(state.workorderPhotos?.[w.id]||[]).length;
+  return `<button class="tv1-work-card" data-tv1-work="${esc(w.id)}" type="button">
+    <div class="tv1-work-main"><div class="tv1-work-time">${esc(technicianV1WorkTime(w))}</div><div class="tv1-work-status ${statusClass(status)}">${esc(status)}</div></div>
+    <div class="tv1-work-object">${esc(workorderObjectLabel(w))}</div>
+    <div class="tv1-work-title">${esc(w.title||'Töö')}</div>
+    ${technicianV1Location(w)?`<div class="tv1-work-location">📍 ${esc(technicianV1Location(w))}</div>`:''}
+    <div class="tv1-work-meta"><span>${esc(workorderDateRangeLabel(w))}</span>${act?`<span>📄 ${esc(act)}</span>`:''}${photos?`<span>📷 ${photos}</span>`:''}</div>
+    ${desc?`<div class="tv1-work-desc">${esc(desc)}</div>`:''}
+  </button>`;
+}
+function renderTechnicianV1(){
+  autoClosePerformedWorkorders();
+  const USER_KEY='veco_mobile_user_id';
+  const activePeople=activeMobilePeople();
+  const current=mobileCurrentUser();
+  if(!current){
+    const today=dateKeyFromDate(new Date());
+    const cards=activePeople.map(p=>`<button class="tv1-user-card" data-mobile-user="${esc(p.id)}" type="button"><strong>${esc(p.name)}</strong><span>${esc(p.role||'Tehnik')}</span>${availabilityBadgesHtml(p.id,today,{empty:true})}</button>`).join('')||'<div class="tv1-empty">Aktiivseid kasutajaid ei ole. Lisa kasutaja admin vaates.</div>';
+    shell(`<div class="tv1-shell"><div class="tv1-login-head"><div><div class="tv1-kicker">VECO Technician V1</div><h1>Vali tehnik</h1><p>Piloodi testimiseks vali kasutaja.</p></div><div>${mobileThemeButton()}</div></div><div class="tv1-user-grid">${cards}</div></div>`,'',{wide:true});
+    $$('[data-mobile-user]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem(USER_KEY,btn.dataset.mobileUser);renderTechnicianV1();}));
+    return;
+  }
+  const today=dateKeyFromDate(new Date());
+  const tomorrow=mobileTomorrowKey(today);
+  const weekEnd=mobileCurrentWeekEndKey(today);
+  const own=state.workorders.filter(w=>workorderMatchesPerson(w,current.id));
+  const open=w=>!isCompletedStatus(w.status);
+  const byDateTime=(a,b)=>`${a.date} ${a.time||''}`.localeCompare(`${b.date} ${b.time||''}`);
+  const groups={
+    today:{label:'Täna',count:0,jobs:own.filter(w=>open(w)&&workorderOccursOnDay(w,today)).sort(byDateTime)},
+    tomorrow:{label:'Homme',count:0,jobs:own.filter(w=>open(w)&&workorderOccursOnDay(w,tomorrow)).sort(byDateTime)},
+    week:{label:'Nädal',count:0,jobs:own.filter(w=>open(w)&&mobileRangeOverlaps(w,today,weekEnd)).sort(byDateTime)},
+    all:{label:'Kõik',count:0,jobs:own.filter(open).sort(byDateTime)},
+    done:{label:'Valmis',count:0,jobs:own.filter(w=>isCompletedStatus(w.status)).sort((a,b)=>`${b.date||''} ${b.time||''}`.localeCompare(`${a.date||''} ${a.time||''}`)).slice(0,20)}
+  };
+  Object.values(groups).forEach(g=>g.count=g.jobs.length);
+  const order=['today','tomorrow','week','all','done'];
+  const stored=localStorage.getItem('veco_technician_v1_tab')||'today';
+  const active=groups[stored]?stored:'today';
+  const g=groups[active];
+  const tabs=order.map(k=>`<button class="tv1-tab ${k===active?'active':''}" data-tv1-tab="${k}" type="button"><span>${esc(groups[k].label)}</span><strong>${groups[k].count}</strong></button>`).join('');
+  const list=g.jobs.map(w=>technicianV1WorkCard(w,current)).join('')||`<div class="tv1-empty"><strong>${esc(g.label)} töid ei ole</strong><span>Vali teine filter või lisa uus väljakutse.</span></div>`;
+  const header=`<div class="tv1-header"><div><div class="tv1-kicker">${esc(technicianV1DateLabel())}</div><h1>${esc(current.name)}</h1></div><div class="tv1-header-actions">${mobileThemeButton()}<button class="tv1-dispatch-btn" id="tv1AddWorkBtn" type="button">📞 Uus väljakutse</button></div></div>`;
+  shell(`<div class="tv1-shell">${header}${technicianV1OncallCard(current,today)}<div class="tv1-tabs">${tabs}</div><div class="tv1-section-title"><strong>${esc(g.label)}</strong><span>${g.count} tööd</span></div><div class="tv1-work-list">${list}</div></div>`,'',{wide:true});
+  $('#tv1AddWorkBtn')?.addEventListener('click',()=>openMobileAddWorkModal(current.id));
+  $$('[data-tv1-tab]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_technician_v1_tab',btn.dataset.tv1Tab);renderTechnicianV1();}));
+  $$('[data-tv1-work]').forEach(btn=>btn.addEventListener('click',()=>openMobileWorkModal(btn.dataset.tv1Work)));
+}
+
 function renderMobilePreview(){
   const devices=[['iPhone SE','320px','568px'],['Android 360','360px','740px'],['iPhone 14','390px','844px'],['Large phone','414px','896px'],['Tahvel','768px','1024px']];
   const cards=devices.map(([name,w,h])=>`<div class="card preview-device"><div class="card-top"><h3>${name}</h3><span class="status">${w} × ${h}</span></div><div class="preview-frame-wrap" style="--preview-w:${w};--preview-h:${h};"><iframe src="mobile.html" title="${esc(name)}"></iframe></div></div>`).join('');
@@ -5815,7 +5896,7 @@ function renderDebug(reason, fn){
 
 function renderCurrentPage(reason='renderCurrentPage'){
   if(!requireAuthOrRender()) return;
-  return renderDebug(reason,()=>({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,unplannedMaintenance:renderUnplannedMaintenance,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)());
+  return renderDebug(reason,()=>({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,technicianV1:renderTechnicianV1,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,unplannedMaintenance:renderUnplannedMaintenance,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)());
 }
 function selectInitialIdsFromState(){
   selectedObjectId=state.objects?.[0]?.id||selectedObjectId||'';
