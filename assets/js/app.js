@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_0826';
+const APP_BUILD='20260626_0905';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -68,6 +68,33 @@ document.addEventListener('keydown',e=>{
 });
 let state=window.VECO_STORAGE.load();
 state.projects=state.projects||[]; state.workorders=state.workorders||[]; state.acts=state.acts||[]; state.devices=state.devices||[]; state.objects=state.objects||[]; state.clients=state.clients||[]; state.people=state.people||[]; state.absences=state.absences||[]; state.oncall=state.oncall||[]; state.maintenanceNorms=state.maintenanceNorms||[]; state.maintenanceProfiles=state.maintenanceProfiles||[]; state.granlundClassifiers=state.granlundClassifiers||[]; state.unplannedMaintenance=state.unplannedMaintenance||[]; state.photos=state.photos||[];
+
+// CR-STATE-002: startup hydration. The calendar may restore the last rendered
+// shell before app.js loads, so refresh does not show a blank/semi-rendered
+// calendar. app.js then hydrates event handlers and updates data in background.
+const VECO_BOOT_HTML_PREFIX='veco_boot_html_';
+const VECO_BOOT_BUILD_PREFIX='veco_boot_build_';
+let __vecoBootSnapshotTimer=null;
+function normalizeStateArrays(target=state){
+  target.projects=target.projects||[]; target.workorders=target.workorders||[]; target.acts=target.acts||[]; target.devices=target.devices||[]; target.objects=target.objects||[]; target.clients=target.clients||[]; target.people=target.people||[]; target.absences=target.absences||[]; target.oncall=target.oncall||[]; target.maintenanceNorms=target.maintenanceNorms||[]; target.maintenanceProfiles=target.maintenanceProfiles||[]; target.granlundClassifiers=target.granlundClassifiers||[]; target.unplannedMaintenance=target.unplannedMaintenance||[]; target.photos=target.photos||[];
+  return target;
+}
+function saveBootHtmlSnapshot(){
+  if(page!=='calendar') return;
+  clearTimeout(__vecoBootSnapshotTimer);
+  __vecoBootSnapshotTimer=setTimeout(()=>{
+    try{
+      const app=document.querySelector('.app.page-calendar');
+      const modal=document.getElementById('modal');
+      if(!app||!modal||modal.classList.contains('open')) return;
+      const clone=document.body.cloneNode(true);
+      clone.querySelectorAll('script').forEach(n=>n.remove());
+      localStorage.setItem(VECO_BOOT_HTML_PREFIX+'calendar',clone.innerHTML);
+      localStorage.setItem(VECO_BOOT_BUILD_PREFIX+'calendar',APP_BUILD);
+      localStorage.setItem('veco_boot_saved_at_calendar',new Date().toISOString());
+    }catch(err){ console.warn('VECO boot snapshot save failed',err); }
+  },120);
+}
 
 const AUTH_KEY='veco_v3_auth_v1';
 const AUTH_SESSION_KEY='veco_v3_auth_session_v1';
@@ -1132,6 +1159,24 @@ function shell(main,aside='',opts={}){
   const sidebarMode=setStoredSidebarMode(getStoredSidebarMode());
   const sidebarClass=sidebarMode==='hidden'?'sidebar-hidden':'sidebar-full';
   const existingApp=document.querySelector(`.app.page-${page}`);
+  if(existingApp && page==='calendar' && window.__VECO_BOOT_RESTORED__ && !window.__VECO_BOOT_HYDRATED__ && !opts.forceFullShell){
+    // CR-STATE-002: F5 hydration. A restored calendar shell already exists in
+    // DOM from localStorage. Do not replace it on the first render; only attach
+    // listeners below in renderCalendar(). This removes the refresh flash.
+    window.__VECO_BOOT_HYDRATED__=true;
+    existingApp.classList.toggle('sidebar-full',sidebarMode==='full');
+    existingApp.classList.toggle('sidebar-hidden',sidebarMode!=='full');
+    existingApp.classList.remove('sidebar-compact');
+    document.body.classList.remove('veco-boot-restored');
+    if(!document.getElementById('modal')){
+      const modal=document.createElement('div');
+      modal.className='modal';
+      modal.id='modal';
+      document.body.appendChild(modal);
+    }
+    bindGlobal();
+    return;
+  }
   if(existingApp && page!=='mobile' && !opts.forceFullShell){
     existingApp.classList.toggle('sidebar-full',sidebarMode==='full');
     existingApp.classList.toggle('sidebar-hidden',sidebarMode!=='full');
@@ -4605,6 +4650,7 @@ function renderCalendar(){
   bindCalendarSpanResize();
   bindCalendarDragDrop(calendarStartHour,calendarEndHour);
   $$('[data-calendar-edit]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation(); if(window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__){window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false; return;} openWorkorderModal(el.dataset.calendarEdit);}));
+  saveBootHtmlSnapshot();
 }
 
 
@@ -5753,12 +5799,28 @@ function selectInitialIdsFromState(){
 function applyBackgroundState(nextState,reason='background-sync'){
   const previousState=state;
   const beforeCalendarSig=page==='calendar'?calendarCurrentViewSignature(state):'';
+  nextState=normalizeStateArrays(nextState||{});
+  // Keep the latest remote state in local cache so the next F5 starts from the
+  // already-hydrated state, not from an older/stale cache. This is the main
+  // anti-rollback guard for refresh flicker.
+  try{ window.VECO_STORAGE.save(nextState); }catch(err){ console.warn('VECO background cache save failed',err); }
   state=nextState;
+  localStateSnapshot=localStateSignature(state);
   selectInitialIdsFromState();
   if(window.__VECO_CALENDAR_RESIZING__){ showSyncNotice('Uuendus ootel'); return; }
   if(page==='calendar'){
-    if(beforeCalendarSig===calendarCurrentViewSignature(state)) return;
-    if(patchCalendarFromRemote(previousState,state)){ showSyncNotice('Andmed uuendatud taustal'); return; }
+    const afterCalendarSig=calendarCurrentViewSignature(state);
+    if(beforeCalendarSig===afterCalendarSig){ saveBootHtmlSnapshot(); return; }
+    if(patchCalendarFromRemote(previousState,state)){ showSyncNotice('Andmed uuendatud taustal'); saveBootHtmlSnapshot(); return; }
+    // During initial background hydration, avoid a hard calendar rebuild over a
+    // visible cache unless there is no usable calendar DOM. This matches Google
+    // Calendar style stale-while-revalidate: cache stays visible, remote state is
+    // persisted, and the next explicit view/action uses the fresh data.
+    if(String(reason||'').includes('bootstrap') && document.querySelector('.calendar-planner-grid')){
+      showSyncNotice('Andmed uuendatud taustal');
+      saveBootHtmlSnapshot();
+      return;
+    }
   }
   renderCurrentPageWhenIdle(reason);
   showSyncNotice('Andmed uuendatud taustal');
