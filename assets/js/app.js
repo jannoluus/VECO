@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_0914';
+const APP_BUILD='20260626_0926';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -767,11 +767,20 @@ function workorderAssigneeLabel(w){
   const base=techName(resp)||'-';
   return participants.length?`${base} +${participants.length}`:base;
 }
+function techInitials(name){
+  const parts=String(name||'').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return '?';
+  if(parts.length===1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0]+parts[parts.length-1][0]).toUpperCase();
+}
 function workorderCalendarPeopleHtml(w){
   const respName=techName(workorderResponsibleId(w))||'-';
   const participants=workorderParticipantIds(w).map(techName).filter(n=>n&&n!=='-');
+  const allNames=[respName,...participants].filter(n=>n&&n!=='-');
   const participantText=participants.length===1?participants[0]:(participants.length>1?`${participants[0]} +${participants.length-1}`:'');
-  return `<span class="calendar-people"><span class="calendar-person-resp" title="Vastutaja: ${esc(respName)}">👑 ${esc(respName)}</span>${participantText?`<span class="calendar-person-participants" title="Osalejad: ${esc(participants.join(', '))}">👥 ${esc(participantText)}</span>`:''}</span>`;
+  const badges=allNames.slice(0,4).map((name,i)=>`<span class="calendar-tech-badge ${i===0?'responsible':''}" title="${i===0?'Vastutaja':'Osaleja'}: ${esc(name)}">${esc(techInitials(name))}</span>`).join('');
+  const more=allNames.length>4?`<span class="calendar-tech-more" title="Tehnikud: ${esc(allNames.join(', '))}">+${allNames.length-4}</span>`:'';
+  return `<span class="calendar-people"><span class="calendar-person-resp" title="Vastutaja: ${esc(respName)}">${esc(respName)}</span>${participantText?`<span class="calendar-person-participants" title="Osalejad: ${esc(participants.join(', '))}">+ ${esc(participantText)}</span>`:''}<span class="calendar-tech-badges" aria-label="Tehnikud">${badges}${more}</span></span>`;
 }
 function workorderCalendarTitle(w){
   const respName=techName(workorderResponsibleId(w))||'-';

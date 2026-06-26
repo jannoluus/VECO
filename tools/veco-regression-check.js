@@ -11,8 +11,8 @@ function check(name,pass,detail=''){
   console.log(line);
   if(!pass) ok=false;
 }
-check('APP_BUILD 20260626_0914',/APP_BUILD='20260626_0914'/.test(app));
-check('HTML cache-bust 0914',!/v=20260626_(?!0914)\d+/.test(index));
+check('APP_BUILD 20260626_0926',/APP_BUILD='20260626_0926'/.test(app));
+check('HTML cache-bust 0926',!/v=20260626_(?!0926)\d+/.test(index));
 check('CR-STATE-002 boot restore script olemas',index.includes('veco_boot_html_'+ 'calendar') || index.includes("veco_boot_html_"));
 check('boot snapshot save funktsioon olemas',app.includes('function saveBootHtmlSnapshot'));
 check('shell hydration guard olemas',app.includes('__VECO_BOOT_RESTORED__')&&app.includes('__VECO_BOOT_HYDRATED__'));
@@ -25,4 +25,6 @@ check('title ei ole description fallbackis',!problemLine.includes('w?.title'));
 check('Supabase load salvestab merged state cache’i',api.includes('window.VECO_STORAGE.save(merged)'));
 check('own realtime echo suppress olemas',api.includes('isLikelyOwnRemoteEcho'));
 check('sidebar handler guard olemas',app.includes('__VECO_SIDEBAR_GLOBAL_BOUND__') || app.includes('document-level sidebar handlers only once'));
+check('calendar technician badges olemas',app.includes('function techInitials')&&app.includes('calendar-tech-badge'));
+
 process.exit(ok?0:1);

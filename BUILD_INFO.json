@@ -1,5 +1,5 @@
 {
-  "build": "VECO_V3_20260626_0914",
+  "build": "VECO_V3_20260626_0926",
   "date": "2026-06-26",
   "change": "CR-STATE-002 startup hydration / no blank refresh",
   "timestamp": "2026-06-26 09:14"

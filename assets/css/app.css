@@ -4964,3 +4964,53 @@ body.confirm-open #vecoConfirm *{
 /* Build 20260626_0702: Task properties in work modal */
 .task-properties-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
 .task-properties-grid .check-card{margin:0;}
+
+/* VECO_V3_20260626_0926: kalendrikaardil vastutaja ja osalejad loetavamaks */
+.app.page-calendar .calendar-people{
+  gap:3px!important;
+  margin-top:3px!important;
+}
+.app.page-calendar .calendar-person-resp{
+  color:#eaf4ff!important;
+  font-size:12px!important;
+  font-weight:900!important;
+  letter-spacing:.01em!important;
+}
+.app.page-calendar .calendar-person-participants{
+  color:#9fb6c8!important;
+  font-size:10.5px!important;
+  font-weight:800!important;
+}
+.app.page-calendar .calendar-tech-badges{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  gap:3px!important;
+  margin-top:1px!important;
+  min-width:0!important;
+}
+.app.page-calendar .calendar-tech-badge,
+.app.page-calendar .calendar-tech-more{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:21px!important;
+  height:18px!important;
+  padding:0 5px!important;
+  border-radius:999px!important;
+  border:1px solid rgba(125,211,252,.32)!important;
+  background:rgba(59,130,246,.16)!important;
+  color:#dff3ff!important;
+  font-size:9.5px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+}
+.app.page-calendar .calendar-tech-badge.responsible{
+  border-color:rgba(251,191,36,.50)!important;
+  background:rgba(251,191,36,.18)!important;
+  color:#fff4cf!important;
+}
+.app.page-calendar .calendar-event.compact .calendar-tech-badges,
+.app.page-calendar .calendar-event.overlapping.narrow .calendar-tech-badges{
+  display:none!important;
+}
