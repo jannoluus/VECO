@@ -1,5 +1,5 @@
 {
-  "build": "VECO_V3_20260626_0810",
+  "build": "VECO_V3_20260626_0826",
   "created_at": "2026-06-26T08:10:00Z",
   "notes": "CR-STATE-001 optimistic/offline-first bootstrap"
 }

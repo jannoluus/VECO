@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_0810';
+const APP_BUILD='20260626_0826';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -697,7 +697,7 @@ normalizeOncallPeople();
 
 function normalizeWorkorderContentFields(){
   (state.workorders||[]).forEach(w=>{
-    if(w.problemDescription===undefined) w.problemDescription=w.description||w.title||'';
+    if(w.problemDescription===undefined) w.problemDescription=w.description||'';
     if(w.performedWork===undefined && (w.workPerformed||w.workText)) w.performedWork=w.workPerformed||w.workText||'';
     if(w.workResult===undefined) w.workResult=w.resultNotes||w.result||'';
     if(w.recommendations===undefined) w.recommendations=w.defects||w.suggestions||'';
@@ -890,7 +890,7 @@ const openWorkorders=()=>state.workorders.filter(w=>!isCompletedStatus(w.status)
 const workorderStatusOptions=['Planeeritud','Töös','Peatatud','Teostatud','Lõpetatud'];
 const completedByLabel=(w)=>techName(workorderResponsibleId(w))||'VECO';
 const completionCommentText=(w)=>String(w?.completionComment||w?.completion_comment||w?.done||w?.workDone||'').trim();
-const problemDescriptionText=(w={})=>String(w?.problemDescription||w?.issueDescription||w?.problem||w?.customerRequest||w?.title||w?.description||'').trim();
+const problemDescriptionText=(w={})=>String(w?.problemDescription||w?.description||w?.issueDescription||w?.problem||w?.customerRequest||'').trim();
 const performedWorkText=(w={})=>String(w?.performedWork||w?.workPerformed||w?.workText||w?.workDone||w?.done||w?.completionComment||w?.completion_comment||'').trim();
 const workResultText=(w={})=>String(w?.workResult||w?.resultNotes||w?.result||'').trim();
 const workRecommendationsText=(w={})=>String(w?.recommendations||w?.defects||w?.suggestions||'').trim();
@@ -1123,7 +1123,7 @@ function setStoredSidebarMode(mode){
 }
 function shell(main,aside='',opts={}){
   applyTheme();
-  // VECO_V3_20260626_0810 / CR-RENDER-002:
+  // VECO_V3_20260626_0826 / CR-RENDER-002:
   // Google Calendar style shell update. Do not replace the whole <body> on every
   // render. Replacing body rebuilds sidebar, main, modal and calendar DOM and is
   // visible as a short flicker after saves/realtime updates. When the current
@@ -1207,7 +1207,7 @@ function bindGlobal(){
   const sideBtn=$('#sidebarToggleBtn'); if(sideBtn) sideBtn.onclick=sidebarToggleHandler;
   const scrimBtn=$('#sidebarScrim'); if(scrimBtn) scrimBtn.onclick=()=>applySidebarMode('hidden');
 
-  // Build 20260626_0810: bind persistent document-level sidebar handlers only once.
+  // Build 20260626_0826: bind persistent document-level sidebar handlers only once.
   // After CR-RENDER shell reuse, bindGlobal() can run many times. Multiple handlers
   // made one click toggle the sidebar open and immediately closed again.
   if(!window.__VECO_SIDEBAR_DOC_BOUND__){
@@ -1859,7 +1859,7 @@ function workorderCopyDefaults(source){
     participantTechnicianIds:workorderParticipantIds(source).filter(id=>id&&id!==responsibleId),
     status:'Planeeritud',
     description:source.problemDescription||source.description||'',
-    problemDescription:source.problemDescription||source.description||source.title||'',
+    problemDescription:source.problemDescription||source.description||'',
     performedWork:source.performedWork||source.workPerformed||'',
     workResult:source.workResult||'',
     recommendations:source.recommendations||'',
@@ -1893,7 +1893,7 @@ function openWorkorderModal(id='',defaults={}){
   const w=existing||{
     projectId:defaults.projectId||'',objectId:defaults.objectId||'',title:defaults.title||'',
     date:defaults.date||'',time:defaults.time||'',
-    technicianId:defaults.technicianId||defaults.responsibleTechnicianId||'',responsibleTechnicianId:defaults.responsibleTechnicianId||defaults.technicianId||'',participantTechnicianIds:defaults.participantTechnicianIds||[],status:defaults.status||'Planeeritud',description:defaults.description||'',problemDescription:defaults.problemDescription||defaults.description||defaults.title||'',performedWork:defaults.performedWork||'',workResult:defaults.workResult||'',recommendations:defaults.recommendations||'',materials:defaults.materials||'',
+    technicianId:defaults.technicianId||defaults.responsibleTechnicianId||'',responsibleTechnicianId:defaults.responsibleTechnicianId||defaults.technicianId||'',participantTechnicianIds:defaults.participantTechnicianIds||[],status:defaults.status||'Planeeritud',description:defaults.description||'',problemDescription:defaults.problemDescription||defaults.description||'',performedWork:defaults.performedWork||'',workResult:defaults.workResult||'',recommendations:defaults.recommendations||'',materials:defaults.materials||'',
     plannedHours:defaults.plannedHours||2,durationHours:defaults.durationHours||2,hours:defaults.hours||2,
     actRequired:defaults.actRequired!==undefined?defaults.actRequired:undefined,requiresAct:defaults.requiresAct,isBillable:defaults.isBillable,trackTime:defaults.trackTime,usesMaterials:defaults.usesMaterials,requiresSignature:defaults.requiresSignature,workflow:defaults.workflow||defaults.workflowType||'kontroll'
   };
