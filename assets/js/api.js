@@ -33,6 +33,20 @@
   let supabaseSupportsParticipantFields=true;
   let supabaseSupportsEndDate=true;
   let supabaseSupportsTaskFields=true;
+  const syncedWorkorderRowSignatures=new Map();
+  function stableWorkorderRowSignature(row={}){
+    const normalized={...row};
+    delete normalized.updated_at;
+    return JSON.stringify(Object.keys(normalized).sort().map(k=>[k,normalized[k]]));
+  }
+  function rememberSyncedWorkorder(w){
+    if(!w) return;
+    const row=toDb(w);
+    if(row.workorder_no) syncedWorkorderRowSignatures.set(String(row.workorder_no),stableWorkorderRowSignature(row));
+  }
+  function rememberSyncedWorkorders(workorders=[]){
+    (workorders||[]).forEach(rememberSyncedWorkorder);
+  }
 
   function cleanUrl(value){
     return String(value||'').trim().replace(/\/rest\/v1\/?$/,'').replace(/\/+$/,'');
@@ -62,7 +76,7 @@
       status:w.status||'Planeeritud',
       date:w.date||null,
       time:w.time||null,
-      updated_at:w.updatedAt||w.updated_at||new Date().toISOString()
+      updated_at:w.updatedAt||w.updated_at||null
     };
     if(supabaseSupportsPlannedHours){
       row.planned_hours=Number(w.plannedHours||w.durationHours||w.hours||2)||2;
@@ -152,6 +166,7 @@
       }
       return r;
     });
+    rememberSyncedWorkorders(data.workorders||[]);
     return data;
   }
 
@@ -251,7 +266,7 @@
       end_date:a.end||a.end_date||null,
       status:a.type||a.status||'Puudumine',
       note:a.note||null,
-      updated_at:w.updatedAt||w.updated_at||new Date().toISOString()
+      updated_at:w.updatedAt||w.updated_at||null
     };
   }
   async function loadAvailabilityEntries(people=[]){
@@ -303,7 +318,7 @@
       is_deleted:c.isDeleted===true||c.is_deleted===true,
       deleted_at:c.deletedAt||c.deleted_at||null,
       deleted_by:c.deletedBy||c.deleted_by||null,
-      updated_at:w.updatedAt||w.updated_at||new Date().toISOString()
+      updated_at:w.updatedAt||w.updated_at||null
     };
   }
   function clientFromDb(row){
@@ -338,7 +353,7 @@
       is_deleted:o.isDeleted===true||o.is_deleted===true,
       deleted_at:o.deletedAt||o.deleted_at||null,
       deleted_by:o.deletedBy||o.deleted_by||null,
-      updated_at:w.updatedAt||w.updated_at||new Date().toISOString()
+      updated_at:w.updatedAt||w.updated_at||null
     };
   }
   function objectFromDb(row){
@@ -402,7 +417,7 @@
     if(!client) return false;
     const key=String(clientNo||'').trim();
     if(!key) return false;
-    const patch={is_deleted:true,deleted_at:new Date().toISOString(),deleted_by:deletedBy||'VECO',updated_at:w.updatedAt||w.updated_at||new Date().toISOString()};
+    const patch={is_deleted:true,deleted_at:new Date().toISOString(),deleted_by:deletedBy||'VECO',updated_at:w.updatedAt||w.updated_at||null};
     const {error}=await client.from(CLIENTS_TABLE).update(patch).eq('client_no',key);
     if(error) throw error;
     return true;
@@ -412,7 +427,7 @@
     if(!client) return false;
     const key=String(objectNo||'').trim();
     if(!key) return false;
-    const patch={is_deleted:true,deleted_at:new Date().toISOString(),deleted_by:deletedBy||'VECO',updated_at:w.updatedAt||w.updated_at||new Date().toISOString()};
+    const patch={is_deleted:true,deleted_at:new Date().toISOString(),deleted_by:deletedBy||'VECO',updated_at:w.updatedAt||w.updated_at||null};
     const {error}=await client.from(OBJECTS_TABLE).update(patch).eq('object_no',key);
     if(error) throw error;
     return true;
@@ -422,7 +437,7 @@
     if(!client) return false;
     const key=String(clientNo||'').trim();
     if(!key) return false;
-    const patch={is_deleted:false,deleted_at:null,deleted_by:null,updated_at:w.updatedAt||w.updated_at||new Date().toISOString()};
+    const patch={is_deleted:false,deleted_at:null,deleted_by:null,updated_at:w.updatedAt||w.updated_at||null};
     const {error}=await client.from(CLIENTS_TABLE).update(patch).eq('client_no',key);
     if(error) throw error;
     return true;
@@ -432,7 +447,7 @@
     if(!client) return false;
     const key=String(objectNo||'').trim();
     if(!key) return false;
-    const patch={is_deleted:false,deleted_at:null,deleted_by:null,updated_at:w.updatedAt||w.updated_at||new Date().toISOString()};
+    const patch={is_deleted:false,deleted_at:null,deleted_by:null,updated_at:w.updatedAt||w.updated_at||null};
     const {error}=await client.from(OBJECTS_TABLE).update(patch).eq('object_no',key);
     if(error) throw error;
     return true;
@@ -501,9 +516,16 @@
   async function syncWorkorders(workorders){
     const client=getClient();
     if(!client) return;
-    const snapshot=JSON.parse(JSON.stringify(workorders||[]));
+    const allSnapshot=JSON.parse(JSON.stringify(workorders||[]));
+    const snapshot=allSnapshot.filter(w=>{
+      const row=toDb(w);
+      if(!row.workorder_no) return false;
+      const sig=stableWorkorderRowSignature(row);
+      return syncedWorkorderRowSignatures.get(String(row.workorder_no))!==sig;
+    });
+    if(!snapshot.length) return;
     if(syncing){
-      pendingWorkorders=snapshot;
+      pendingWorkorders=allSnapshot;
       return;
     }
     syncing=true;
@@ -520,6 +542,7 @@
             ({error}=await client.from(TABLE).update(fallback).eq('id',found.data.id));
           }
           if(error) throw error;
+          rememberSyncedWorkorder(w);
         }else{
           let {error}=await client.from(TABLE).insert(row);
           if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date|workflow|requires_act|is_billable|track_time|uses_materials|requires_signature/.test(String(error.message||''))){
@@ -527,6 +550,7 @@
             ({error}=await client.from(TABLE).insert(fallback));
           }
           if(error) throw error;
+          rememberSyncedWorkorder(w);
         }
       }
     }catch(err){
@@ -591,7 +615,7 @@
       phone:u.phone||'',
       email:u.email||'',
       region:u.region||'',
-      updated_at:w.updatedAt||w.updated_at||new Date().toISOString()
+      updated_at:w.updatedAt||w.updated_at||null
     };
   }
   function authUserFromRow(row){
@@ -675,7 +699,7 @@
     if(!client) return false;
     const username=authUsernameFromId(userId);
     if(!username) return false;
-    const {error}=await client.from(AUTH_TABLE).update({active:false,updated_at:w.updatedAt||w.updated_at||new Date().toISOString()}).eq('username',username);
+    const {error}=await client.from(AUTH_TABLE).update({active:false,updated_at:w.updatedAt||w.updated_at||null}).eq('username',username);
     if(error) throw error;
     return true;
   }

@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260625_1807';
+const APP_BUILD='20260626_0638';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -954,13 +954,13 @@ function isUserEditingOrChoosing(){
   if(el.closest?.('.dialog')) return true;
   return false;
 }
-function renderCurrentPageWhenIdle(){
+function renderCurrentPageWhenIdle(reason='idle'){
   if(isUserEditingOrChoosing()){
     clearTimeout(localSyncTimer);
-    localSyncTimer=setTimeout(renderCurrentPageWhenIdle,650);
+    localSyncTimer=setTimeout(()=>renderCurrentPageWhenIdle(reason),650);
     return;
   }
-  renderCurrentPage();
+  renderCurrentPage(reason);
 }
 function scheduleLocalRefresh(meta={}){
   if(meta?.tabId && meta.tabId===LOCAL_SYNC_TAB_ID) return;
@@ -976,7 +976,7 @@ function scheduleLocalRefresh(meta={}){
       if(nextSig===localStateSnapshot) return;
       state=latest;
       localStateSnapshot=nextSig;
-      renderCurrentPageWhenIdle();
+      renderCurrentPageWhenIdle('local-peer-refresh');
     }catch(e){ console.warn('VECO local peer refresh failed',e); }
     finally{ localRefreshInProgress=false; }
   },160);
@@ -995,7 +995,7 @@ function startLocalStateWatch(){
       if(nextSig!==localStateSnapshot){
         localStateSnapshot=nextSig;
         state=latest;
-        renderCurrentPageWhenIdle();
+        renderCurrentPageWhenIdle('local-peer-refresh');
       }
     }catch(e){ console.warn('VECO local state watch failed',e); }
   },1000);
@@ -2141,6 +2141,8 @@ function openWorkorderModal(id='',defaults={}){
       next.recommendations=existing?.recommendations||'';
       next.materials=existing?.materials||'';
     }
+    next.updatedAt=new Date().toISOString();
+    next.updated_at=next.updatedAt;
     const previousWorkorder=isEdit?{...existing,participantTechnicianIds:[...(existing.participantTechnicianIds||[])]}:null;
     if(isEdit){Object.assign(existing,next)}else{state.workorders.push(next);selectedWorkorderId=next.id;detailOpen.workorders=true}
     save();
@@ -5631,9 +5633,22 @@ function calendarCurrentViewSignature(data=state){
   }
 }
 
-function renderCurrentPage(){
+
+// CR-RENDER-001: lightweight render diagnostics. Enable with localStorage.veco_render_debug = '1'.
+let __vecoRenderSeq=0;
+function renderDebug(reason, fn){
+  const seq=++__vecoRenderSeq;
+  const debug=localStorage.getItem('veco_render_debug')==='1';
+  const start=performance.now();
+  if(debug) console.log(`[VECO render #${seq}] start`, reason||'unknown');
+  const result=fn();
+  if(debug) console.log(`[VECO render #${seq}] end`, reason||'unknown', `${Math.round(performance.now()-start)}ms`);
+  return result;
+}
+
+function renderCurrentPage(reason='renderCurrentPage'){
   if(!requireAuthOrRender()) return;
-  ({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,unplannedMaintenance:renderUnplannedMaintenance,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)();
+  return renderDebug(reason,()=>({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,unplannedMaintenance:renderUnplannedMaintenance,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)());
 }
 async function bootstrapApp(){
   bindLocalPeerSync();
@@ -5647,18 +5662,18 @@ async function bootstrapApp(){
       selectedProjectId=state.projects?.[0]?.id||selectedProjectId||'';
       selectedWorkorderId=state.workorders?.[0]?.id||selectedWorkorderId||'';
       selectedActId=state.acts?.[0]?.id||selectedActId||'';
-      renderCurrentPage();
-      const onRemoteWorkorders=(merged,meta={})=>{ const beforeCalendarSig=page==='calendar'?calendarCurrentViewSignature(state):''; state=merged; if(window.__VECO_CALENDAR_RESIZING__){ showSyncNotice('Uuendus ootel'); return; } if(page==='calendar' && beforeCalendarSig===calendarCurrentViewSignature(state)){ return; } renderCurrentPageWhenIdle(); showSyncNotice(meta.source==='polling'?'Andmed uuendatud':'Realtime uuendus'); };
+      renderCurrentPage('bootstrap');
+      const onRemoteWorkorders=(merged,meta={})=>{ const beforeCalendarSig=page==='calendar'?calendarCurrentViewSignature(state):''; state=merged; if(window.__VECO_CALENDAR_RESIZING__){ showSyncNotice('Uuendus ootel'); return; } if(page==='calendar' && beforeCalendarSig===calendarCurrentViewSignature(state)){ return; } renderCurrentPageWhenIdle('local-peer-refresh'); showSyncNotice(meta.source==='polling'?'Andmed uuendatud':'Realtime uuendus'); };
       const realtimeStarted=window.VECO_API.startWorkorderRealtime?.(onRemoteWorkorders,(status)=>{
         if(status==='SUBSCRIBED') showSyncNotice('Realtime ühendus aktiivne');
       });
       if(!realtimeStarted) window.VECO_API.startWorkorderPolling?.(onRemoteWorkorders);
     }catch(err){
       console.warn('VECO bootstrap Supabase load failed',err);
-      renderCurrentPage();
+      renderCurrentPage('bootstrap-fallback');
     }
   }else{
-    renderCurrentPage();
+    renderCurrentPage('bootstrap-local');
   }
 }
 bootstrapApp();
