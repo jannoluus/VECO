@@ -5166,3 +5166,23 @@ body.theme-light .veco-loading-card{
 .veco-loading-text{font-size:13px;font-weight:750;color:var(--muted,#9aa8bb);}
 @keyframes vecoLoadingSpin{to{transform:rotate(1turn)}}
 @media (prefers-reduced-motion:reduce){.veco-loading-o{animation:none}}
+
+/* VECO_V3_20260627_0002 — Callouts dark-mode contrast fix */
+.callout-card p,
+.callout-card .callout-description,
+.callout-card .callout-problem{
+  color:var(--text);
+}
+body.theme-dark .callout-card p,
+body.theme-dark .callout-card .callout-description,
+body.theme-dark .callout-card .callout-problem{
+  color:#eaf2ff;
+}
+body.theme-light .callout-card p,
+body.theme-light .callout-card .callout-description,
+body.theme-light .callout-card .callout-problem{
+  color:#172033;
+}
+.callout-card p{
+  opacity:.96;
+}

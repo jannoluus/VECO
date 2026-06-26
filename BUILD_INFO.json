@@ -1,5 +1,5 @@
 {
-  "build": "VECO_V3_20260627_0001",
+  "build": "VECO_V3_20260627_0002",
   "date": "2026-06-27",
-  "notes": "Admin LoadingManager: VECO O-spinner laadimisvaade ainult adminis; Field V1 ja legacy mobile muutmata."
+  "notes": "Fix: callouts dark-mode text contrast; Admin loader starts immediately on admin boot and stays visible briefly; Field V1 and legacy mobile unchanged."
 }

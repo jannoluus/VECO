@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.25';
-const APP_BUILD='20260627_0001';
+const APP_BUILD='20260627_0002';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -71,7 +71,7 @@ const VECO_LOADING=(()=>{
   }
   return {show,hide,withLoading,ensureActive};
 })();
-if(vecoAdminLoadingEnabled()) VECO_LOADING.show('Laen töölauda...');
+if(vecoAdminLoadingEnabled()) VECO_LOADING.show('Laen töölauda...', {immediate:true});
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -6231,11 +6231,11 @@ async function bootstrapApp(){
       state=window.VECO_STORAGE.load();
       selectInitialIdsFromState();
       renderCurrentPage('bootstrap-local-cache');
-      VECO_LOADING?.hide?.({force:true});
+      setTimeout(()=>VECO_LOADING?.hide?.({force:true}),420);
     }catch(err){
       console.warn('VECO local bootstrap failed',err);
       renderCurrentPage('bootstrap-local-cache-fallback');
-      VECO_LOADING?.hide?.({force:true});
+      setTimeout(()=>VECO_LOADING?.hide?.({force:true}),420);
     }
     (async()=>{
       try{
@@ -6256,7 +6256,7 @@ async function bootstrapApp(){
     })();
   }else{
     renderCurrentPage('bootstrap-local');
-    VECO_LOADING?.hide?.({force:true});
+    setTimeout(()=>VECO_LOADING?.hide?.({force:true}),420);
   }
 }
 bootstrapApp();

@@ -1,5 +1,3 @@
-# VECO V3
+# VECO V3 20260627_0002
 
-Build: VECO_V3_20260627_0001
-
-Muudatus: Admin LoadingManager lisatud ainult admini vaadetele. Field V1 ja legacy mobile jäid puutumata.
+Fix: väljakutsete dark-mode tekstikontrast ja Admin loaderi nähtav boot-käitumine. Field V1 / legacy mobile muutmata.
