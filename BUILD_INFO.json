@@ -1,5 +1,9 @@
 {
-  "build": "VECO_V3_20260626_0646",
-  "created_at": "2026-06-25T18:07:00Z",
-  "notes": "Terminoloogia Tööd, workflow väli ja töö omadused."
+  "build": "VECO_V3_20260626_0702",
+  "source": "VECO_V3_20260626_0646",
+  "changes": [
+    "CR-RENDER-002: vähendatud content-only save layout sync",
+    "CR-RENDER-002: masterdata/oncall/availability sync ainult muutuse korral",
+    "workflow/properties lisatud cross-tab signatuuri"
+  ]
 }

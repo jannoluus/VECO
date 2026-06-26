@@ -33,6 +33,12 @@
   let supabaseSupportsParticipantFields=true;
   let supabaseSupportsEndDate=true;
   let supabaseSupportsTaskFields=true;
+  let lastMasterDataSyncSignature='';
+  let lastOncallSyncSignature='';
+  let lastAvailabilitySyncSignature='';
+  function stableListSignature(value){
+    try{return JSON.stringify(value||[]);}catch(_){return String(Date.now());}
+  }
   const syncedWorkorderRowSignatures=new Map();
   function stableWorkorderRowSignature(row={}){
     const normalized={...row};
@@ -806,10 +812,28 @@
       const saved=window.VECO_STORAGE.save(data);
       if(this.mode()==='supabase'){
         markLocalWrite();
-        scheduleMasterDataSync(saved.clients,saved.objects);
+
+        // CR-RENDER-002: avoid background sync noise after every work edit.
+        // Master data / valve / availability are synced only when their own payload changed.
+        const masterSig=stableListSignature([saved.clients||[],saved.objects||[]]);
+        if(masterSig!==lastMasterDataSyncSignature){
+          lastMasterDataSyncSignature=masterSig;
+          scheduleMasterDataSync(saved.clients,saved.objects);
+        }
+
         syncWorkorders(saved.workorders);
-        scheduleOncallSync(saved.oncall,saved.people);
-        scheduleAvailabilitySync(saved.absences,saved.people);
+
+        const oncallSig=stableListSignature([saved.oncall||[],(saved.people||[]).map(p=>[p.id,p.name,p.username])]);
+        if(oncallSig!==lastOncallSyncSignature){
+          lastOncallSyncSignature=oncallSig;
+          scheduleOncallSync(saved.oncall,saved.people);
+        }
+
+        const availabilitySig=stableListSignature([saved.absences||[],(saved.people||[]).map(p=>[p.id,p.name,p.username])]);
+        if(availabilitySig!==lastAvailabilitySyncSignature){
+          lastAvailabilitySyncSignature=availabilitySig;
+          scheduleAvailabilitySync(saved.absences,saved.people);
+        }
       }
       return saved;
     },

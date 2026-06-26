@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_0646';
+const APP_BUILD='20260626_0702';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -935,7 +935,7 @@ let localStateWatchTimer=null;
 let localStateSnapshot='';
 let localRefreshInProgress=false;
 function localStateSignature(data){
-  return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.endDate||w.end_date||'',w.time,w.title,w.technicianId,w.responsibleTechnicianId,(w.participantTechnicianIds||[]).join(','),w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,w.completedAt||'',w.completedBy||'',w.completionComment||'',w.updatedAt||w.updated_at||'']));
+  return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.endDate||w.end_date||'',w.time,w.title,w.technicianId,w.responsibleTechnicianId,(w.participantTechnicianIds||[]).join(','),w.objectId,w.projectId,w.description,w.workflow||w.workflowType||'',w.actRequired||w.requiresAct||false,w.isBillable||false,w.trackTime||false,w.usesMaterials||false,w.requiresSignature||false,w.plannedHours||w.durationHours||w.hours,w.completedAt||'',w.completedBy||'',w.completionComment||'',w.updatedAt||w.updated_at||'']));
 }
 function notifyLocalPeers(){
   try{
@@ -2201,7 +2201,8 @@ function refreshCalendarAfterWorkorderSave(previous,next){
     return true;
   }
   if(refreshCalendarCardDom(next)){
-    scheduleCalendarLayoutSync({delay:0});
+    // CR-RENDER-002: content-only save must not trigger layout recalculation.
+    // Re-running responsive layout after every field edit causes a visible micro-flicker.
     return true;
   }
   renderCalendar();
