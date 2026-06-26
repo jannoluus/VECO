@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_0740';
+const APP_BUILD='20260626_0810';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1123,7 +1123,7 @@ function setStoredSidebarMode(mode){
 }
 function shell(main,aside='',opts={}){
   applyTheme();
-  // VECO_V3_20260626_0740 / CR-RENDER-002:
+  // VECO_V3_20260626_0810 / CR-RENDER-002:
   // Google Calendar style shell update. Do not replace the whole <body> on every
   // render. Replacing body rebuilds sidebar, main, modal and calendar DOM and is
   // visible as a short flicker after saves/realtime updates. When the current
@@ -1207,7 +1207,7 @@ function bindGlobal(){
   const sideBtn=$('#sidebarToggleBtn'); if(sideBtn) sideBtn.onclick=sidebarToggleHandler;
   const scrimBtn=$('#sidebarScrim'); if(scrimBtn) scrimBtn.onclick=()=>applySidebarMode('hidden');
 
-  // Build 20260626_0740: bind persistent document-level sidebar handlers only once.
+  // Build 20260626_0810: bind persistent document-level sidebar handlers only once.
   // After CR-RENDER shell reuse, bindGlobal() can run many times. Multiple handlers
   // made one click toggle the sidebar open and immediately closed again.
   if(!window.__VECO_SIDEBAR_DOC_BOUND__){
@@ -5743,28 +5743,56 @@ function renderCurrentPage(reason='renderCurrentPage'){
   if(!requireAuthOrRender()) return;
   return renderDebug(reason,()=>({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,unplannedMaintenance:renderUnplannedMaintenance,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)());
 }
+function selectInitialIdsFromState(){
+  selectedObjectId=state.objects?.[0]?.id||selectedObjectId||'';
+  selectedClientId=state.clients?.[0]?.id||selectedClientId||'';
+  selectedProjectId=state.projects?.[0]?.id||selectedProjectId||'';
+  selectedWorkorderId=state.workorders?.[0]?.id||selectedWorkorderId||'';
+  selectedActId=state.acts?.[0]?.id||selectedActId||'';
+}
+function applyBackgroundState(nextState,reason='background-sync'){
+  const previousState=state;
+  const beforeCalendarSig=page==='calendar'?calendarCurrentViewSignature(state):'';
+  state=nextState;
+  selectInitialIdsFromState();
+  if(window.__VECO_CALENDAR_RESIZING__){ showSyncNotice('Uuendus ootel'); return; }
+  if(page==='calendar'){
+    if(beforeCalendarSig===calendarCurrentViewSignature(state)) return;
+    if(patchCalendarFromRemote(previousState,state)){ showSyncNotice('Andmed uuendatud taustal'); return; }
+  }
+  renderCurrentPageWhenIdle(reason);
+  showSyncNotice('Andmed uuendatud taustal');
+}
 async function bootstrapApp(){
   bindLocalPeerSync();
   if(window.VECO_API?.mode?.()==='supabase'){
-    document.body.innerHTML='<div class="auth-page"><div class="auth-card"><div class="auth-brand">VECO</div><h1>Laen andmeid…</h1><p class="muted">Kontrollin keskset kasutajate ja PIN-ide andmehoidlat.</p></div></div>';
+    // CR-STATE-001: optimistic/offline-first bootstrap. Render the cached state immediately
+    // and let Supabase refresh in the background. This avoids the F5 blank/loading flash.
     try{
-      state=await window.VECO_API.load();
-      await authLoadRemoteIntoLocal();
-      selectedObjectId=state.objects?.[0]?.id||selectedObjectId||'';
-      selectedClientId=state.clients?.[0]?.id||selectedClientId||'';
-      selectedProjectId=state.projects?.[0]?.id||selectedProjectId||'';
-      selectedWorkorderId=state.workorders?.[0]?.id||selectedWorkorderId||'';
-      selectedActId=state.acts?.[0]?.id||selectedActId||'';
-      renderCurrentPage('bootstrap');
-      const onRemoteWorkorders=(merged,meta={})=>{ const previousState=state; const beforeCalendarSig=page==='calendar'?calendarCurrentViewSignature(state):''; state=merged; if(window.__VECO_CALENDAR_RESIZING__){ showSyncNotice('Uuendus ootel'); return; } if(page==='calendar'){ if(beforeCalendarSig===calendarCurrentViewSignature(state)) return; if(patchCalendarFromRemote(previousState,state)){ showSyncNotice(meta.source==='polling'?'Andmed uuendatud':'Realtime uuendus'); return; } } renderCurrentPageWhenIdle('local-peer-refresh'); showSyncNotice(meta.source==='polling'?'Andmed uuendatud':'Realtime uuendus'); };
-      const realtimeStarted=window.VECO_API.startWorkorderRealtime?.(onRemoteWorkorders,(status)=>{
-        if(status==='SUBSCRIBED') showSyncNotice('Realtime ühendus aktiivne');
-      });
-      if(!realtimeStarted) window.VECO_API.startWorkorderPolling?.(onRemoteWorkorders);
+      state=window.VECO_STORAGE.load();
+      selectInitialIdsFromState();
+      renderCurrentPage('bootstrap-local-cache');
     }catch(err){
-      console.warn('VECO bootstrap Supabase load failed',err);
-      renderCurrentPage('bootstrap-fallback');
+      console.warn('VECO local bootstrap failed',err);
+      renderCurrentPage('bootstrap-local-cache-fallback');
     }
+    (async()=>{
+      try{
+        const remoteState=await window.VECO_API.load();
+        await authLoadRemoteIntoLocal();
+        applyBackgroundState(remoteState,'bootstrap-background-sync');
+        const onRemoteWorkorders=(merged,meta={})=>{
+          applyBackgroundState(merged,meta.source==='polling'?'polling-background-sync':'realtime-background-sync');
+        };
+        const realtimeStarted=window.VECO_API.startWorkorderRealtime?.(onRemoteWorkorders,(status)=>{
+          if(status==='SUBSCRIBED') showSyncNotice('Realtime ühendus aktiivne');
+        });
+        if(!realtimeStarted) window.VECO_API.startWorkorderPolling?.(onRemoteWorkorders);
+      }catch(err){
+        console.warn('VECO bootstrap Supabase background load failed',err);
+        showSyncNotice('Taustasünk ebaõnnestus');
+      }
+    })();
   }else{
     renderCurrentPage('bootstrap-local');
   }
