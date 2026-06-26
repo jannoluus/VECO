@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_0702';
+const APP_BUILD='20260626_0717';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -1123,10 +1123,45 @@ function setStoredSidebarMode(mode){
 }
 function shell(main,aside='',opts={}){
   applyTheme();
-  // VECO_V3_20260615_1755: persist left sidebar open/hidden state across refreshes.
-  // If the menu was closed before refresh, it must stay closed after reload.
+  // VECO_V3_20260626_0717 / CR-RENDER-002:
+  // Google Calendar style shell update. Do not replace the whole <body> on every
+  // render. Replacing body rebuilds sidebar, main, modal and calendar DOM and is
+  // visible as a short flicker after saves/realtime updates. When the current
+  // page shell already exists, update only the content panel + optional detail
+  // panel and keep the static app chrome in place.
   const sidebarMode=setStoredSidebarMode(getStoredSidebarMode());
   const sidebarClass=sidebarMode==='hidden'?'sidebar-hidden':'sidebar-full';
+  const existingApp=document.querySelector(`.app.page-${page}`);
+  if(existingApp && page!=='mobile' && !opts.forceFullShell){
+    existingApp.classList.toggle('sidebar-full',sidebarMode==='full');
+    existingApp.classList.toggle('sidebar-hidden',sidebarMode!=='full');
+    existingApp.classList.remove('sidebar-compact');
+    const content=existingApp.querySelector('main > section.content');
+    const mainPanel=content?.querySelector(':scope > .panel:not(.detail)');
+    if(content&&mainPanel){
+      content.classList.toggle('wide',(!aside||opts.wide));
+      mainPanel.innerHTML=main;
+      let detail=content.querySelector(':scope > aside.panel.detail');
+      if(aside){
+        if(!detail){
+          detail=document.createElement('aside');
+          detail.className='panel detail';
+          content.appendChild(detail);
+        }
+        detail.innerHTML=aside;
+      }else if(detail){
+        detail.remove();
+      }
+      if(!document.getElementById('modal')){
+        const modal=document.createElement('div');
+        modal.className='modal';
+        modal.id='modal';
+        document.body.appendChild(modal);
+      }
+      bindGlobal();
+      return;
+    }
+  }
   document.body.innerHTML=`<div class="app page-${page} ${page==='mobile'?'app-mobile':''} ${sidebarClass}">${page==='mobile'?'':nav(sidebarMode)}${page==='mobile'?'':'<button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Sulge menüü"></button>'}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();
 }
