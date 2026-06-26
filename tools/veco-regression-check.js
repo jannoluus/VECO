@@ -11,8 +11,8 @@ function check(name,pass,detail=''){
   console.log(line);
   if(!pass) ok=false;
 }
-check('APP_BUILD 20260626_1124',/APP_BUILD='20260626_1124'/.test(app));
-check('HTML cache-bust 1124',index.includes('v=20260626_1124')&&!/v=20260626_(?!1124)\d+/.test(index));
+check('APP_BUILD 20260626_1134',/APP_BUILD='20260626_1134'/.test(app));
+check('HTML cache-bust 1134',index.includes('v=20260626_1134')&&!/v=20260626_(?!1134)\d+/.test(index));
 check('CR-STATE-002 boot restore script olemas',index.includes('veco_boot_html_'+ 'calendar') || index.includes("veco_boot_html_"));
 check('boot snapshot save funktsioon olemas',app.includes('function saveBootHtmlSnapshot'));
 check('shell hydration guard olemas',app.includes('__VECO_BOOT_RESTORED__')&&app.includes('__VECO_BOOT_HYDRATED__'));
@@ -52,5 +52,9 @@ check('Technician V1 start action rerender',app.includes("if(page==='technicianV
 check('Field completion uses one performed work field', app.includes('Teostatud töö *') && !app.includes('completionResultInput') && !app.includes('completionRecommendationsInput'));
 check('Technician V1 detail label is Teostatud töö', app.includes('<span>Teostatud töö</span>') && app.includes('technicianV1WorkflowButtons(w)'));
 check('Technician V1 detail hides Täida button', app.includes('function technicianV1WorkflowButtons') && app.includes('data-mobile-edit'));
+
+check('Field completion time capture olemas', app.includes('completionStartInput') && app.includes('completionEndInput') && app.includes('completionDurationInput'));
+check('Act duration uses actual timestamps', app.includes('function actualDurationLabel') && app.includes('duration:actDurationLabel(w)'));
+
 
 process.exit(ok?0:1);

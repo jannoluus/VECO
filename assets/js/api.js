@@ -84,6 +84,9 @@
       time:w.time||null,
       updated_at:new Date().toISOString()
     };
+    if(w.createdAt||w.created_at){
+      row.created_at=w.createdAt||w.created_at;
+    }
     if(supabaseSupportsPlannedHours){
       row.planned_hours=Number(w.plannedHours||w.durationHours||w.hours||2)||2;
     }
@@ -140,6 +143,8 @@
       startedByUuid:row.started_by||'',
       updatedAt:row.updated_at||'',
       updated_at:row.updated_at||'',
+      createdAt:row.created_at||'',
+      created_at:row.created_at||'',
       workflow:row.workflow||'kontroll',
       workflowType:row.workflow||'kontroll',
       requiresAct:row.requires_act===true,
@@ -624,6 +629,9 @@
       created_at:u.createdAt||u.created_at||new Date().toISOString(),
       updated_at:new Date().toISOString()
     };
+    if(w.createdAt||w.created_at){
+      row.created_at=w.createdAt||w.created_at;
+    }
   }
   function authUserFromRow(row){
     const username=row.username||'';
