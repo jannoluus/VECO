@@ -1,6 +1,6 @@
 # VECO V3
 
-Build: VECO_V3_20260626_1031
+Build: VECO_V3_20260626_1047
 
 Muudatused:
 - Technician V1 “Uus väljakutse” ei näita workflow valikut.

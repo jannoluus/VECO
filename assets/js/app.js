@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_1031';
+const APP_BUILD='20260626_1047';
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -277,17 +277,59 @@ function authRegisterFailure(role){const locks=authLocksLoad(); const limit=role
 function authClearFailure(role){const locks=authLocksLoad(); locks[role]={failures:0,until:0}; authLocksSave(locks);}
 function validatePin(role,pin){const r=AUTH_RULES[role]||AUTH_RULES.technician; const v=String(pin||'').trim(); return /^\d+$/.test(v) && v.length>=r.min && v.length<=r.max;}
 function lockText(info){const min=Math.ceil((info.until-Date.now())/60000); return `Liiga palju valesid katseid. Proovi uuesti ${Math.max(1,min)} minuti pärast.`;}
-function authUsersForLogin(){const auth=normalizeAuthUsers(); return Object.values(auth.users||{}).filter(u=>u.active!==false).sort((a,b)=>(a.role===b.role?0:a.role==='admin'?-1:1)||String(a.name).localeCompare(String(b.name),'et'));}
-function authRenderScreen(message=''){
-  applyTheme?.();
+
+const FIELD_LAST_USER_KEY='veco_field_last_user_id';
+const FIELD_PICKER_KEY='veco_field_show_user_picker';
+function fieldLoginMode(){return page==='technicianV1';}
+function userLoginKey(u){return String((u?.username||u?.name||u?.id||'')+'|'+(u?.role||'')).toLowerCase().trim();}
+function dedupeAuthUsersForLogin(users){
+  const peopleIds=new Set((state.people||[]).map(p=>p.id));
+  const seen=new Map();
+  (users||[]).forEach(u=>{
+    if(!u||u.active===false) return;
+    const key=userLoginKey(u);
+    const score=(peopleIds.has(u.id)?1000:0)+(u.pinHash?100:0)+(u.pinResetRequired?20:0)+(u.updatedAt?1:0);
+    const prev=seen.get(key);
+    if(!prev||score>prev.score){
+      const merged={...(prev?.u||{}),...u};
+      if(prev?.u?.pinResetRequired||u.pinResetRequired) merged.pinResetRequired=true;
+      if(prev?.u?.pinHash&&!merged.pinHash) merged.pinHash=prev.u.pinHash;
+      seen.set(key,{u:merged,score});
+    }
+  });
+  return Array.from(seen.values()).map(x=>x.u);
+}
+function fieldLoginUsers(users){
+  if(!fieldLoginMode()) return users;
+  const allowedIds=new Set((state.people||[]).filter(p=>p.active!==false && authRoleFromPersonRole(p.role)==='technician').map(p=>p.id));
+  return users.filter(u=>(u.role||'technician')==='technician' && (!allowedIds.size || allowedIds.has(u.id)));
+}
+function authUsersForLogin(){
   const auth=normalizeAuthUsers();
-  const users=authUsersForLogin();
-  const options=users.map(u=>`<option value="${esc(u.id)}">${esc(u.name)} · ${authRoleLabel(u.role)}${u.pinResetRequired?' · vali uus PIN':(u.pinHash?'':' · PIN puudub')}</option>`).join('');
-  document.body.innerHTML=`<div class="auth-page"><form class="auth-card" id="authLoginForm"><div class="auth-brand">VECO</div><h1>Sisselogimine</h1><p class="muted" id="authHelpText">Vali kasutaja ja sisesta PIN.</p>${message?`<div class="auth-message">${esc(message)}</div>`:''}<label>Kasutaja<select class="select" name="userId" required>${options}</select></label><label id="authPinLabel">PIN<input class="field" name="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN" required></label><label id="authPinRepeatLabel" class="hidden">Korda uut PIN-i<input class="field" name="pin2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Korda PIN-i"></label><button class="btn primary" type="submit" id="authSubmitBtn">Logi sisse</button><div class="auth-build">VECO_V3_${APP_BUILD}</div></form></div>`;
+  const users=fieldLoginUsers(dedupeAuthUsersForLogin(Object.values(auth.users||{})));
+  return users.sort((a,b)=>{
+    const ar=a.role||'technician', br=b.role||'technician';
+    if(ar!==br) return ar==='admin'?-1:br==='admin'?1:ar.localeCompare(br,'et');
+    return String(a.name||'').localeCompare(String(b.name||''),'et');
+  });
+}
+function authRenderScreen(message=''){
+  const auth=normalizeAuthUsers();
+  const allUsers=authUsersForLogin();
+  const rememberedId=fieldLoginMode()?localStorage.getItem(FIELD_LAST_USER_KEY)||'':'';
+  const showPicker=localStorage.getItem(FIELD_PICKER_KEY)==='1';
+  const remembered=rememberedId && !showPicker ? allUsers.find(u=>u.id===rememberedId) : null;
+  const users=remembered?[remembered]:allUsers;
+  const options=users.map(u=>`<option value="${esc(u.id)}">${esc(u.name)} · ${fieldLoginMode()?'Tehnik':authRoleLabel(u.role)}${u.pinResetRequired?' · uus PIN vajalik':(u.pinHash?'':' · PIN puudub')}</option>`).join('');
+  const userControl=remembered
+    ? `<input type="hidden" name="userId" value="${esc(remembered.id)}"><div class="auth-remembered-user"><span>Kasutaja</span><strong>${esc(remembered.name)}</strong><button class="btn small ghost" type="button" id="fieldChangeUserBtn">Vaheta kasutajat</button></div>`
+    : `<label>Kasutaja<select class="select" name="userId" required>${options}</select></label>`;
+  document.body.innerHTML=`<div class="auth-page"><form class="auth-card" id="authLoginForm"><div class="auth-brand">VECO</div><h1>${fieldLoginMode()?'VECO Field':'Sisselogimine'}</h1><p class="muted" id="authHelpText">${fieldLoginMode()?'Sisesta tehniku PIN.':'Vali kasutaja ja sisesta PIN.'}</p>${message?`<div class="auth-message">${esc(message)}</div>`:''}${userControl}<label id="authPinLabel">PIN<input class="field" name="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN" required></label><label id="authPinRepeatLabel" class="hidden">Korda uut PIN-i<input class="field" name="pin2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Korda PIN-i"></label><button class="btn primary" type="submit" id="authSubmitBtn">Logi sisse</button><div class="auth-build">VECO_V3_${APP_BUILD}</div></form></div>`;
   const form=document.getElementById('authLoginForm');
-  const syncPinMode=()=>{const authNow=normalizeAuthUsers(); const u=authNow.users?.[form.elements.userId.value]; const reset=u?.pinResetRequired===true; const role=u?.role||'technician'; const pin2=form.elements.pin2; document.getElementById('authPinRepeatLabel')?.classList.toggle('hidden',!reset); if(pin2) pin2.required=reset; const pinLabel=document.getElementById('authPinLabel'); if(pinLabel) pinLabel.childNodes[0].nodeValue=reset?'Uus PIN':'PIN'; const help=document.getElementById('authHelpText'); if(help) help.textContent=reset?`Admin lubas PIN-i uuesti seadistada. Sisesta uus ${AUTH_RULES[role].label} kaks korda.`:'Vali kasutaja ja sisesta PIN.'; const btn=document.getElementById('authSubmitBtn'); if(btn) btn.textContent=reset?'Salvesta PIN ja logi sisse':'Logi sisse';};
-  form.elements.userId.addEventListener('change',syncPinMode); syncPinMode();
-  form.addEventListener('submit',async e=>{e.preventDefault(); const uid=form.elements.userId.value; const pin=form.elements.pin.value; const pin2=form.elements.pin2?.value; const authNow=normalizeAuthUsers(); const u=authNow.users?.[uid]; if(!u) return authRenderScreen('Kasutajat ei leitud.'); const role=u.role||'technician'; const lock=authLockInfo(role); if(lock.locked) return authRenderScreen(lockText(lock)); if(u.pinResetRequired===true){ if(pin!==pin2) return authRenderScreen('PIN-i kordus ei ühti.'); if(!validatePin(role,pin)) return authRenderScreen(`PIN peab olema ${AUTH_RULES[role].label}.`); u.pinHash=authHash(pin); u.pinSetAt=new Date().toISOString(); u.pinResetRequired=false; authNow.users[uid]=u; authSave(authNow); try{ await authSaveUserRemoteNow(u); }catch(err){ console.warn('VECO PIN remote save failed',err); return authRenderScreen('PIN-i salvestamine Supabase’i ebaõnnestus. Kontrolli ühendust ja RLS õiguseid.'); } authClearFailure(role); authSetSession(u); location.reload(); return; } if(!u.pinHash){ return authRenderScreen(`${u.name}: PIN puudub. Admin peab kasutajale lubama PIN-i uuesti seadistamise või määrama ajutise PIN-i.`); } if(!authVerify(pin,u.pinHash)){const l=authRegisterFailure(role); return authRenderScreen(l.locked?lockText(l):'Vale PIN.');} authClearFailure(role); authSetSession(u); location.reload(); });
+  document.getElementById('fieldChangeUserBtn')?.addEventListener('click',()=>{localStorage.setItem(FIELD_PICKER_KEY,'1');localStorage.removeItem(FIELD_LAST_USER_KEY);authRenderScreen();});
+  const syncPinMode=()=>{const authNow=normalizeAuthUsers(); const u=authNow.users?.[form.elements.userId.value]; const reset=u?.pinResetRequired===true; const role=u?.role||'technician'; const pin2=form.elements.pin2; document.getElementById('authPinRepeatLabel')?.classList.toggle('hidden',!reset); if(pin2) pin2.required=reset; const pinLabel=document.getElementById('authPinLabel'); if(pinLabel) pinLabel.childNodes[0].nodeValue=reset?'Uus PIN':'PIN'; const help=document.getElementById('authHelpText'); if(help) help.textContent=reset?`Admin lubas PIN-i uuesti seadistada. Sisesta uus ${AUTH_RULES[role].label} kaks korda.`:(fieldLoginMode()?'Sisesta tehniku PIN.':'Vali kasutaja ja sisesta PIN.'); const btn=document.getElementById('authSubmitBtn'); if(btn) btn.textContent=reset?'Salvesta PIN ja logi sisse':'Logi sisse';};
+  if(form.elements.userId?.tagName==='SELECT') form.elements.userId.addEventListener('change',syncPinMode); syncPinMode();
+  form.addEventListener('submit',async e=>{e.preventDefault(); const uid=form.elements.userId.value; const pin=form.elements.pin.value; const pin2=form.elements.pin2?.value; const authNow=normalizeAuthUsers(); const u=authNow.users?.[uid]; if(!u) return authRenderScreen('Kasutajat ei leitud.'); const role=u.role||'technician'; const lock=authLockInfo(role); if(lock.locked) return authRenderScreen(lockText(lock)); if(u.pinResetRequired===true){ if(pin!==pin2) return authRenderScreen('PIN-i kordus ei ühti.'); if(!validatePin(role,pin)) return authRenderScreen(`PIN peab olema ${AUTH_RULES[role].label}.`); u.pinHash=authHash(pin); u.pinSetAt=new Date().toISOString(); u.pinResetRequired=false; authNow.users[uid]=u; authSave(authNow); try{ await authSaveUserRemoteNow(u); }catch(err){ console.warn('VECO PIN remote save failed',err); return authRenderScreen('PIN-i salvestamine Supabase’i ebaõnnestus. Kontrolli ühendust ja RLS õiguseid.'); } authClearFailure(role); if(fieldLoginMode()){localStorage.setItem(FIELD_LAST_USER_KEY,u.id);localStorage.removeItem(FIELD_PICKER_KEY);} authSetSession(u); location.reload(); return; } if(!u.pinHash){ return authRenderScreen(`${u.name}: PIN puudub. Admin peab kasutajale lubama PIN-i uuesti seadistamise või määrama ajutise PIN-i.`); } if(!authVerify(pin,u.pinHash)){const l=authRegisterFailure(role); return authRenderScreen(l.locked?lockText(l):'Vale PIN.');} authClearFailure(role); if(fieldLoginMode()){localStorage.setItem(FIELD_LAST_USER_KEY,u.id);localStorage.removeItem(FIELD_PICKER_KEY);} authSetSession(u); location.reload(); });
 }
 function authRenderSuperadmin(message=''){
   applyTheme?.();
@@ -338,6 +380,8 @@ function currentEffectiveUser(){
   return u;
 }
 function activeTechnicians(){return (state.people||[]).filter(p=>p.active!==false && p.id!=='U-DEMO' && String(p.role||'').toLowerCase()!=='demo');}
+function dedupePeopleById(list){const m=new Map();(list||[]).forEach(p=>{if(p&&p.id&&!m.has(p.id))m.set(p.id,p);});return Array.from(m.values());}
+function fieldTechnicianPeople(){return dedupePeopleById((state.people||[]).filter(p=>p.active!==false && authRoleFromPersonRole(p.role)==='technician')).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'et'));}
 function visiblePeopleForCurrentScope(){const id=scopedPersonId(); return id ? activeTechnicians().filter(p=>p.id===id) : activeTechnicians();}
 function personAuthRole(p){return authRoleFromPersonRole(p?.role||'technician');}
 const EMPLOYEE_FILTER_ROLES=[
@@ -3626,7 +3670,7 @@ function openAbsenceModal(id=''){
 }
 function activeMobilePeople(){
   const scopedId=scopedPersonId();
-  const people=visiblePeopleForCurrentScope();
+  const people=page==='technicianV1'?fieldTechnicianPeople():visiblePeopleForCurrentScope();
   return scopedId ? people.filter(p=>p.id===scopedId) : people;
 }
 function mobileCurrentUser(){
@@ -3828,7 +3872,7 @@ function mobileWorkCard(w,opts={}){
 function renderMobile(){
   autoClosePerformedWorkorders();
   const USER_KEY='veco_mobile_user_id';
-  const activePeople=authRole()==='admin'?activeTechnicians():activeMobilePeople();
+  const activePeople=authRole()==='admin'?fieldTechnicianPeople():activeMobilePeople();
   const current=technicianV1CurrentUser();
   if(!current){
     const today=dateKeyFromDate(new Date());
@@ -3952,9 +3996,9 @@ function openMobileAddWorkModal(personId){
   const submitText=isTechnicianV1?'Salvesta väljakutse':'Salvesta töö';
   const titlePlaceholder=isTechnicianV1?'nt Klient helistas / rike':'nt Telefonitellimus / rike';
   const workflowField=isTechnicianV1
-    ? `<input type="hidden" name="workflow" value="valjakutse"><div class="full card soft-warning"><strong>Väljakutse</strong><span class="muted">Workflow määratakse automaatselt. Hooldusjuht näeb seda admini Väljakutsed vaates.</span></div>`
+    ? `<input type="hidden" name="workflow" value="valjakutse"><input type="hidden" name="date" value="${today}"><input type="hidden" name="time" value="${hh}:${mm}"><input type="hidden" name="status" value="Planeeritud"><input type="hidden" name="actRequired" value="">`
     : `<label>Workflow<select class="select" name="workflow">${taskWorkflowOptions.map(x=>`<option value="${esc(x.value)}">${esc(x.label)}</option>`).join('')}</select></label>`;
-  openModal(`<form id="mobileAddWorkForm"><div class="dialog-head"><h2>${titleText}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="form-grid mobile-form-grid"><label class="full">Objekt<input class="field" name="objectChoice" list="mobileObjectChoices" required autocomplete="off" placeholder="Vali objekt või kirjuta uus objekt..."><datalist id="mobileObjectChoices">${objectOptions}</datalist><span class="muted">Vali olemasolev objekt või kirjuta uue objekti nimi.</span></label><label class="full">${isTechnicianV1?'Väljakutse lühikirjeldus':'Töö lühikirjeldus'}<input class="field" name="title" required placeholder="${titlePlaceholder}"></label><label>Kuupäev<input class="field" name="date" type="date" required value="${today}"></label><label>Kell<input class="field" name="time" type="time" value="${hh}:${mm}"></label><label>Prioriteet<select class="select" name="priority"><option>${isTechnicianV1?'Kõrge':'Tavaline'}</option><option>${isTechnicianV1?'Tavaline':'Kõrge'}</option><option>Madal</option></select></label>${workflowField}<label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${st==='Planeeritud'?'selected':''}>${st}</option>`).join('')}</select></label><label class="check-card"><input type="checkbox" name="actRequired"> <span>Akt vajalik</span></label><label class="full">Märkus<textarea name="description" placeholder="Kes helistas, mida paluti, mis objektil juhtus?"></textarea></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">${submitText}</button></div></form>`);
+  openModal(`<form id="mobileAddWorkForm"><div class="dialog-head"><h2>${titleText}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="form-grid mobile-form-grid"><label class="full">Objekt<input class="field" name="objectChoice" list="mobileObjectChoices" required autocomplete="off" placeholder="Vali objekt või kirjuta uus objekt..."><datalist id="mobileObjectChoices">${objectOptions}</datalist><span class="muted">Vali olemasolev objekt või kirjuta uue objekti nimi.</span></label><label class="full">${isTechnicianV1?'Väljakutse lühikirjeldus':'Töö lühikirjeldus'}<input class="field" name="title" required placeholder="${titlePlaceholder}"></label>${isTechnicianV1?'':`<label>Kuupäev<input class="field" name="date" type="date" required value="${today}"></label><label>Kell<input class="field" name="time" type="time" value="${hh}:${mm}"></label>`}<label>Prioriteet<select class="select" name="priority"><option>${isTechnicianV1?'Kõrge':'Tavaline'}</option><option>${isTechnicianV1?'Tavaline':'Kõrge'}</option><option>Madal</option></select></label>${workflowField}${isTechnicianV1?'':`<label>Staatus<select class="select" name="status">${workorderStatusOptions.map(st=>`<option ${st==='Planeeritud'?'selected':''}>${st}</option>`).join('')}</select></label><label class="check-card"><input type="checkbox" name="actRequired"> <span>Akt vajalik</span></label>`}<label class="full">Märkus<textarea name="description" placeholder="Kes helistas, mida paluti, mis objektil juhtus?"></textarea></label></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">${submitText}</button></div></form>`);
   bindClose();
   $('#mobileAddWorkForm').addEventListener('submit',e=>{
     e.preventDefault();
@@ -3963,7 +4007,7 @@ function openMobileAddWorkModal(personId){
     if(!object){f.objectChoice.focus();return;}
     const project=state.projects.find(p=>p.objectId===object.id);
     const workflowValue=isTechnicianV1?'valjakutse':(f.workflow?.value||'kontroll');
-    const next={id:uid('WO'),projectId:project?.id||'',objectId:object.id,title:f.title.value,date:f.date.value,time:f.time.value,technicianId:personId,responsibleTechnicianId:personId,participantTechnicianIds:[],status:f.status.value,priority:f.priority.value,description:f.description.value,problemDescription:f.description.value,actRequired:!!f.actRequired?.checked,requiresAct:!!f.actRequired?.checked,workflow:workflowValue,workflowType:workflowValue,source:isTechnicianV1?'technician_v1_callout':'mobile'};
+    const next={id:uid('WO'),projectId:project?.id||'',objectId:object.id,title:f.title.value,date:f.date.value,time:f.time.value,technicianId:personId,responsibleTechnicianId:personId,participantTechnicianIds:[],status:f.status.value,priority:f.priority.value,description:f.description.value,problemDescription:f.description.value,actRequired:!!f.actRequired?.checked,requiresAct:!!f.actRequired?.checked,workflow:workflowValue,workflowType:workflowValue,source:isTechnicianV1?'technician_v1_callout':'mobile',createdBy:personId,createdByName:techName(personId),createdAt:new Date().toISOString()};
     state.workorders.push(next);
     selectedWorkorderId=next.id;
     save();
@@ -4089,7 +4133,7 @@ function openTechnicianV1WorkModal(id){
 function renderTechnicianV1(){
   autoClosePerformedWorkorders();
   const USER_KEY='veco_mobile_user_id';
-  const activePeople=activeMobilePeople();
+  const activePeople=authRole()==='admin'?fieldTechnicianPeople():activeMobilePeople();
   const current=mobileCurrentUser();
   if(!current){
     const today=dateKeyFromDate(new Date());
