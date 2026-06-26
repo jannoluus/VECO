@@ -1,5 +1,5 @@
 {
-  "build": "VECO_V3_20260626_1134",
-  "date": "2026-06-26",
-  "notes": "Field V1 callout actual time capture: registered/start/end/duration."
+  "build": "VECO_V3_20260627_0001",
+  "date": "2026-06-27",
+  "notes": "Admin LoadingManager: VECO O-spinner laadimisvaade ainult adminis; Field V1 ja legacy mobile muutmata."
 }

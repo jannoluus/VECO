@@ -2,8 +2,76 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.19.24';
-const APP_BUILD='20260626_1134';
+const APP_VERSION='v3.19.25';
+const APP_BUILD='20260627_0001';
+
+// VECO Admin LoadingManager: admin-only delayed loader.
+// Field V1 and legacy mobile stay intentionally simple and unaffected.
+function vecoAdminLoadingEnabled(){
+  const p=window.VECO_PAGE||'objects';
+  return p!=='mobile' && p!=='technicianV1';
+}
+const VECO_LOADING=(()=>{
+  let counter=0;
+  let timer=null;
+  let visible=false;
+  let lastText='Laen...';
+  const delayMs=160;
+  function enabled(){ return vecoAdminLoadingEnabled(); }
+  function ensure(){
+    if(!enabled()) return null;
+    let el=document.getElementById('vecoLoadingOverlay');
+    if(!el){
+      el=document.createElement('div');
+      el.id='vecoLoadingOverlay';
+      el.className='veco-loading-overlay';
+      el.setAttribute('role','status');
+      el.setAttribute('aria-live','polite');
+      el.innerHTML=`<div class="veco-loading-card"><div class="veco-loading-logo" aria-hidden="true"><span>VEC</span><span class="veco-loading-o"></span></div><div class="veco-loading-text">Laen...</div></div>`;
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  function render(){
+    const el=ensure();
+    if(!el) return;
+    const textEl=el.querySelector('.veco-loading-text');
+    if(textEl) textEl.textContent=lastText||'Laen...';
+    el.classList.remove('is-hiding');
+    el.classList.add('is-visible');
+    visible=true;
+  }
+  function show(text='Laen...',opts={}){
+    if(!enabled()) return;
+    counter+=1;
+    lastText=text||'Laen...';
+    clearTimeout(timer);
+    timer=setTimeout(render,opts.immediate?0:delayMs);
+  }
+  function hide(opts={}){
+    if(!enabled()) return;
+    counter=opts.force?0:Math.max(0,counter-1);
+    if(counter>0) return;
+    clearTimeout(timer);
+    timer=null;
+    const el=document.getElementById('vecoLoadingOverlay');
+    if(el){
+      el.classList.add('is-hiding');
+      el.classList.remove('is-visible');
+      setTimeout(()=>{ if(!counter) el.remove(); },180);
+    }
+    visible=false;
+  }
+  async function withLoading(text,fn){
+    show(text);
+    try{ return await fn(); } finally { hide(); }
+  }
+  function ensureActive(){
+    if(enabled() && (counter>0 || visible)) render();
+  }
+  return {show,hide,withLoading,ensureActive};
+})();
+if(vecoAdminLoadingEnabled()) VECO_LOADING.show('Laen töölauda...');
 window.__VECO_EMPLOYEE_FILTER_RENDERERS__=window.__VECO_EMPLOYEE_FILTER_RENDERERS__||{};
 function closeEmployeeFilterMenu(scope,{render=false}={}){
   const menu=document.querySelector(`[data-employee-filter-menu="${scope}"]`);
@@ -333,6 +401,7 @@ function authUsersForLogin(){
   });
 }
 function authRenderScreen(message=''){
+  VECO_LOADING?.hide?.({force:true});
   const auth=normalizeAuthUsers();
   const allUsers=authUsersForLogin();
   const rememberedId=fieldLoginMode()?localStorage.getItem(FIELD_LAST_USER_KEY)||'':'';
@@ -351,6 +420,7 @@ function authRenderScreen(message=''){
   form.addEventListener('submit',async e=>{e.preventDefault(); const uid=form.elements.userId.value; const pin=form.elements.pin.value; const pin2=form.elements.pin2?.value; const authNow=normalizeAuthUsers(); const u=authNow.users?.[uid]; if(!u) return authRenderScreen('Kasutajat ei leitud.'); const role=u.role||'technician'; const lock=authLockInfo(role); if(lock.locked) return authRenderScreen(lockText(lock)); if(u.pinResetRequired===true){ if(fieldLoginMode()) return authRenderScreen('PIN-i uuendamine ei ole avalikus Field loginis lubatud. Palu hooldusjuhil määrata ajutine PIN admini vaatest.'); if(pin!==pin2) return authRenderScreen('PIN-i kordus ei ühti.'); if(!validatePin(role,pin)) return authRenderScreen(`PIN peab olema ${AUTH_RULES[role].label}.`); u.pinHash=authHash(pin); u.pinSetAt=new Date().toISOString(); u.pinResetRequired=false; authNow.users[uid]=u; authSave(authNow); try{ await authSaveUserRemoteNow(u); }catch(err){ console.warn('VECO PIN remote save failed',err); return authRenderScreen('PIN-i salvestamine Supabase’i ebaõnnestus. Kontrolli ühendust ja RLS õiguseid.'); } authClearFailure(role); if(fieldLoginMode()){localStorage.setItem(FIELD_LAST_USER_KEY,u.id);localStorage.removeItem(FIELD_PICKER_KEY);} authSetSession(u); location.reload(); return; } if(!u.pinHash){ return authRenderScreen(`${u.name}: PIN puudub. Admin peab kasutajale lubama PIN-i uuesti seadistamise või määrama ajutise PIN-i.`); } if(!authVerify(pin,u.pinHash)){const l=authRegisterFailure(role); return authRenderScreen(l.locked?lockText(l):'Vale PIN.');} authClearFailure(role); if(fieldLoginMode()){localStorage.setItem(FIELD_LAST_USER_KEY,u.id);localStorage.removeItem(FIELD_PICKER_KEY);} authSetSession(u); location.reload(); });
 }
 function authRenderSuperadmin(message=''){
+  VECO_LOADING?.hide?.({force:true});
   applyTheme?.();
   const auth=normalizeAuthUsers(); const setup=!auth.superadmin?.pinHash;
   document.body.innerHTML=`<div class="auth-page"><form class="auth-card" id="superForm"><div class="auth-brand">VECO</div><h1>Superadmin</h1><p class="muted">${setup?'Loo esmane superadmin PIN.':'Sisesta superadmin PIN süsteemi taastamiseks.'}</p>${message?`<div class="auth-message">${esc(message)}</div>`:''}<label>${setup?'Uus superadmin PIN':'Superadmin PIN'}<input class="field" name="pin" type="password" inputmode="numeric" autocomplete="current-password" required></label>${setup?`<label>Korda PIN-i<input class="field" name="pin2" type="password" inputmode="numeric" autocomplete="new-password" required></label>`:''}<button class="btn primary" type="submit">${setup?'Loo PIN':'Sisene'}</button><button class="btn ghost" type="button" id="backLoginBtn">Tagasi</button></form></div>`;
@@ -1288,11 +1358,13 @@ function shell(main,aside='',opts={}){
         document.body.appendChild(modal);
       }
       bindGlobal();
+      VECO_LOADING?.ensureActive?.();
       return;
     }
   }
   document.body.innerHTML=`<div class="app page-${page} ${isTechnicianUiPage()?'app-mobile':''} ${sidebarClass}">${isTechnicianUiPage()?'':nav(sidebarMode)}${isTechnicianUiPage()?'':'<button class="sidebar-scrim" id="sidebarScrim" type="button" aria-label="Sulge menüü"></button>'}<main><section class="content ${(!aside||opts.wide)?'wide':''}"><div class="panel">${main}</div>${aside?`<aside class="panel detail">${aside}</aside>`:''}</section>${globalTicker()}</main></div><div class="modal" id="modal"></div>`;
   bindGlobal();
+  VECO_LOADING?.ensureActive?.();
 }
 function activeThemeKey(){
   return isTechnicianUiPage() ? 'veco_mobile_theme' : 'veco_theme';
@@ -6159,9 +6231,11 @@ async function bootstrapApp(){
       state=window.VECO_STORAGE.load();
       selectInitialIdsFromState();
       renderCurrentPage('bootstrap-local-cache');
+      VECO_LOADING?.hide?.({force:true});
     }catch(err){
       console.warn('VECO local bootstrap failed',err);
       renderCurrentPage('bootstrap-local-cache-fallback');
+      VECO_LOADING?.hide?.({force:true});
     }
     (async()=>{
       try{
@@ -6182,6 +6256,7 @@ async function bootstrapApp(){
     })();
   }else{
     renderCurrentPage('bootstrap-local');
+    VECO_LOADING?.hide?.({force:true});
   }
 }
 bootstrapApp();

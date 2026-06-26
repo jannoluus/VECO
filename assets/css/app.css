@@ -5104,3 +5104,65 @@ body.theme-light .tv1-detail-card p{color:#24384f;}
 .auth-remembered-user span{font-size:12px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.06em}
 .auth-remembered-user strong{font-size:18px;color:var(--text)}
 .auth-remembered-user .btn{justify-self:start;margin-top:4px}
+
+/* VECO_V3_20260627_0001 — Admin LoadingManager */
+.veco-loading-overlay{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:grid;
+  place-items:center;
+  padding:24px;
+  background:rgba(9,16,28,.36);
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .16s ease;
+}
+body.theme-light .veco-loading-overlay{background:rgba(245,248,252,.58);}
+.veco-loading-overlay.is-visible{opacity:1;pointer-events:auto;}
+.veco-loading-overlay.is-hiding{opacity:0;pointer-events:none;}
+.veco-loading-card{
+  min-width:220px;
+  display:grid;
+  justify-items:center;
+  gap:12px;
+  padding:22px 26px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:24px;
+  background:rgba(16,24,38,.72);
+  box-shadow:0 22px 70px rgba(0,0,0,.32);
+  color:#eaf2ff;
+}
+body.theme-light .veco-loading-card{
+  border-color:rgba(20,35,58,.08);
+  background:rgba(255,255,255,.82);
+  box-shadow:0 20px 64px rgba(24,45,78,.18);
+  color:#172033;
+}
+.veco-loading-logo{
+  display:flex;
+  align-items:center;
+  gap:2px;
+  font-weight:900;
+  font-size:42px;
+  line-height:1;
+  letter-spacing:-.08em;
+  color:var(--accent,#2f82f4);
+  filter:drop-shadow(0 8px 18px rgba(47,130,244,.18));
+}
+.veco-loading-o{
+  width:.78em;
+  height:.78em;
+  display:inline-block;
+  border-radius:50%;
+  border:.14em solid color-mix(in srgb, var(--accent,#2f82f4) 22%, transparent);
+  border-top-color:var(--accent,#2f82f4);
+  border-right-color:var(--accent,#2f82f4);
+  margin-left:.03em;
+  animation:vecoLoadingSpin .78s linear infinite;
+}
+.veco-loading-text{font-size:13px;font-weight:750;color:var(--muted,#9aa8bb);}
+@keyframes vecoLoadingSpin{to{transform:rotate(1turn)}}
+@media (prefers-reduced-motion:reduce){.veco-loading-o{animation:none}}
