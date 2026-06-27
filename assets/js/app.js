@@ -2,8 +2,8 @@ const $=(s)=>document.querySelector(s);
 const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
-const APP_VERSION='v3.19.26';
-const APP_BUILD='20260627_0003';
+const APP_VERSION='v3.19.27';
+const APP_BUILD='20260627_0004';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -27,7 +27,7 @@ const VECO_LOADING=(()=>{
       el.className='veco-loading-overlay';
       el.setAttribute('role','status');
       el.setAttribute('aria-live','polite');
-      el.innerHTML=`<div class="veco-loading-card"><div class="veco-loading-logo" aria-hidden="true"><span>VEC</span><span class="veco-loading-o"></span></div><div class="veco-loading-text">Laen...</div></div>`;
+      el.innerHTML=`<div class="veco-loading-card"><div class="veco-loading-logo" aria-hidden="true"><span class="veco-loading-word">VECO</span></div><div class="veco-loading-text">Laen...</div></div>`;
       document.body.appendChild(el);
     }
     return el;
@@ -1079,7 +1079,7 @@ const actRecommendationsText=(a,w={})=>String(workRecommendationsText(w)||a?.rec
 const actMaterialsText=(a,w={})=>String(workMaterialsText(w)||a?.materials||'').trim();
 function normalizeActContentFromWorkorder(a,w={}){
   if(!a) return a;
-  // VECO_V3_20260627_0003: töö on akti sisu master-allikas.
+  // VECO_V3_20260627_0004: töö on akti sisu master-allikas.
   // Kui tehnik muudab Field V1-s "Teostatud töö" teksti, peab akti eelvaade/PDF võtma viimase tööinfo.
   const problem=problemDescriptionText(w);
   const performed=performedWorkText(w);
