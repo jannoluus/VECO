@@ -5204,9 +5204,9 @@ body.theme-light .veco-loading-word::before{
 @keyframes vecoLoadingSweep{to{transform:translateY(-50%) rotate(1turn)}}
 @media (prefers-reduced-motion:reduce){.veco-loading-word::before{animation:none}}
 
-/* VECO_V3_20260627_0004 — Loader Variant A: static VECO word + animated O light ring */
+/* VECO_V3_20260627_0005 — Loader Variant A: static VECO word + animated O light ring */
 
-/* VECO_V3_20260627_0004 — Callouts dark-mode contrast fix */
+/* VECO_V3_20260627_0005 — Callouts dark-mode contrast fix */
 .callout-card p,
 .callout-card .callout-description,
 .callout-card .callout-problem{
@@ -5227,7 +5227,7 @@ body.theme-light .callout-card .callout-problem{
 }
 
 
-/* VECO_V3_20260627_0004 — admin completed-work visibility and callout readability */
+/* VECO_V3_20260627_0005 — admin completed-work visibility and callout readability */
 .admin-completed-work-card{
   display:grid;
   gap:8px;
@@ -5260,3 +5260,83 @@ body.theme-dark .callout-card .callout-performed,
 body.theme-dark .callout-card .callout-problem{color:#eaf2ff;}
 body.theme-light .callout-card .callout-performed,
 body.theme-light .callout-card .callout-problem{color:#172033;}
+
+
+/* VECO_V3_20260627_0005 — callout card hierarchy based on same-page subcards */
+.callout-card{
+  gap:12px;
+  text-align:left;
+  align-content:start;
+}
+.callout-card .card-top{
+  align-items:flex-start;
+  gap:10px;
+}
+.callout-card h3{
+  color:var(--ink);
+  font-size:15px;
+  line-height:1.25;
+  font-weight:950;
+  letter-spacing:-.01em;
+  margin:0;
+}
+.callout-card .muted{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.35;
+  font-weight:750;
+}
+.callout-card .callout-problem,
+.callout-card .callout-performed{
+  margin:0;
+  padding:11px 12px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:rgba(255,255,255,.035);
+  color:var(--ink);
+  font-size:13px;
+  line-height:1.45;
+  font-weight:800;
+  white-space:pre-wrap;
+}
+.callout-card .callout-problem strong,
+.callout-card .callout-performed strong{
+  display:block;
+  margin:0 0 5px;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1;
+  font-weight:950;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.callout-card .callout-performed{
+  border-color:rgba(56,217,156,.22);
+  background:rgba(56,217,156,.075);
+}
+.callout-card .callout-meta{
+  margin-top:0;
+  padding-top:2px;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:850;
+}
+body.theme-dark .callout-card h3{color:#f3f7ff;}
+body.theme-dark .callout-card .callout-problem,
+body.theme-dark .callout-card .callout-performed{color:#dbeafe;}
+body.theme-dark .callout-card .callout-problem strong,
+body.theme-dark .callout-card .callout-performed strong{color:#aebbd0;}
+body.theme-light .callout-card h3{color:#132235;}
+body.theme-light .callout-card .callout-problem,
+body.theme-light .callout-card .callout-performed{
+  color:#24384f;
+  background:#f8fafc;
+  border-color:#d8e2ee;
+}
+body.theme-light .callout-card .callout-performed{
+  color:#163828;
+  background:#eefaf4;
+  border-color:#bfe9d2;
+}
+body.theme-light .callout-card .callout-problem strong,
+body.theme-light .callout-card .callout-performed strong{color:#52657a;}
