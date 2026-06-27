@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.27';
-const APP_BUILD='20260627_0006';
+const APP_BUILD='20260627_0007';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -681,8 +681,11 @@ function mergePhotoCache(list){
   try{window.VECO_STORAGE.save(state);}catch(_){/* ignore cache save */}
 }
 function workorderPhotos(workorderId){
+  if(!isStoredWorkorderId(workorderId)) return [];
   const key=photoWorkorderDbId(workorderId);
-  return (state.photos||[]).filter(p=>!p.deletedAt && (p.workorderId===key || p.workorderNo===workorderId)).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')) || Number(a.sortOrder||0)-Number(b.sortOrder||0));
+  // P0 data-integrity: photos belong only to the exact workorder UUID/key.
+  // Do not fall back to workorderNo, because old WO-number collisions can attach foreign photos.
+  return (state.photos||[]).filter(p=>!p.deletedAt && p.workorderId===key).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')) || Number(a.sortOrder||0)-Number(b.sortOrder||0));
 }
 function photoPreviewSrc(p){return p.previewUrl||p.signedUrl||p.publicUrl||p.fileUrl||'';}
 function isLikelyHttpUrl(value){return /^https?:\/\//i.test(String(value||'')) || /^blob:/i.test(String(value||'')) || /^data:image\//i.test(String(value||''));}
@@ -712,6 +715,7 @@ async function signedPhotoUrl(path){
   return data?.signedUrl||'';
 }
 async function loadWorkorderPhotos(workorderId,force=false){
+  if(!isStoredWorkorderId(workorderId)) return [];
   const key=photoWorkorderDbId(workorderId);
   if(!force && workorderPhotos(workorderId).some(p=>p.previewUrl)) return workorderPhotos(workorderId);
   if(photoCacheLoading.has(key)) return workorderPhotos(workorderId);
@@ -728,6 +732,7 @@ async function loadWorkorderPhotos(workorderId,force=false){
   return workorderPhotos(workorderId);
 }
 function workorderPhotoGalleryHtml(workorderId,opts={}){
+  if(!isStoredWorkorderId(workorderId)) return `<div class="muted photo-empty">Pilte saab lisada pärast töö salvestamist.</div>`;
   const photos=workorderPhotos(workorderId);
   const empty=photoCacheLoading.has(photoWorkorderDbId(workorderId))?'Pilte laetakse...':'Pilte pole lisatud.';
   const cards=photos.map(p=>{
@@ -775,6 +780,7 @@ async function openPhotoMetaModal(files){
   });
 }
 async function uploadWorkorderPhotos(workorderId,files,renderFn){
+  if(!isStoredWorkorderId(workorderId)) return;
   const w=byId(state.workorders,workorderId);
   if(!w||!files?.length) return;
   const meta=await openPhotoMetaModal(files);
@@ -1079,7 +1085,7 @@ const actRecommendationsText=(a,w={})=>String(workRecommendationsText(w)||a?.rec
 const actMaterialsText=(a,w={})=>String(workMaterialsText(w)||a?.materials||'').trim();
 function normalizeActContentFromWorkorder(a,w={}){
   if(!a) return a;
-  // VECO_V3_20260627_0006: töö on akti sisu master-allikas.
+  // VECO_V3_20260627_0007: töö on akti sisu master-allikas.
   // Kui tehnik muudab Field V1-s "Teostatud töö" teksti, peab akti eelvaade/PDF võtma viimase tööinfo.
   const problem=problemDescriptionText(w);
   const performed=performedWorkText(w);
@@ -1203,7 +1209,18 @@ function bindLocalPeerSync(){
     startLocalStateWatch();
   }catch(e){ console.warn('VECO local peer sync unavailable',e); }
 }
-function uid(prefix){return `${prefix}-${String(Date.now()).slice(-6)}`}
+function uid(prefix){
+  const p=String(prefix||'ID').replace(/[^A-Za-z0-9_-]/g,'')||'ID';
+  const rnd=(crypto?.randomUUID?.()||`${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`);
+  return `${p}-${rnd}`;
+}
+function isStoredWorkorderId(value){
+  const v=String(value||'').trim();
+  return !!v && v!=='undefined' && v!=='null';
+}
+function isRenderableWorkorder(w){
+  return !!(w && isStoredWorkorderId(w.id) && w.date && (w.objectId || w.title));
+}
 function icon(i){return `<span class="icon">${i}</span>`}
 function nav(sidebarMode='full'){
   const groups=[
@@ -2137,9 +2154,23 @@ function workorderCompletedWorkAdminHtml(w){
   const materials=workMaterialsText(w);
   return `<div class="full admin-completed-work-card"><div class="section-title">Teostatud töö</div><div class="admin-completed-work-text">${esc(performed||'Teostatud töö kirjeldus puudub.').replace(/\n/g,'<br>')}</div>${result?`<div class="section-title small">Töö tulemus / märkused</div><div class="muted preline">${esc(result)}</div>`:''}${recommendations?`<div class="section-title small">Soovitused / puudused</div><div class="muted preline">${esc(recommendations)}</div>`:''}${materials?`<div class="section-title small">Materjalid</div><div class="muted preline">${esc(materials)}</div>`:''}</div>`;
 }
+function openMissingWorkorderModal(id='',source='calendar'){
+  const safeId=String(id||'').trim();
+  openModal(`<div class="dialog-head"><h2>Vigane kalendrikirje</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="card warn-card"><strong>Seotud tööd ei leitud.</strong><span class="muted">See võib juhtuda, kui väljakutse/töö on juba kustutatud, aga vana kalendrivaade on veel ekraanil või brauseri vahemälus.</span></div><div class="card"><strong>Tehniline info</strong><span class="muted">Allikas: ${esc(source||'calendar')} · ID: ${esc(safeId||'-')}</span></div></div><div class="dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn">Sulge</button><button type="button" class="btn primary" id="removeBrokenCalendarBtn">Eemalda kalendrist</button></div>`);
+  bindClose();
+  document.getElementById('removeBrokenCalendarBtn')?.addEventListener('click',()=>{
+    if(safeId){
+      state.workorders=(state.workorders||[]).filter(w=>String(w.id)!==safeId);
+      try{window.VECO_STORAGE.save(state);}catch(_){/* ignore */}
+    }
+    closeModal();
+    if(page==='calendar') renderCalendar();
+  });
+}
 function openWorkorderModal(id='',defaults={}){
   const isEdit=!!id;
   const existing=isEdit?byId(state.workorders,id):null;
+  if(isEdit && !existing){ openMissingWorkorderModal(id,defaults.source||'openWorkorderModal'); return; }
   const w=existing||{
     projectId:defaults.projectId||'',objectId:defaults.objectId||'',title:defaults.title||'',
     date:defaults.date||'',time:defaults.time||'',
@@ -2351,11 +2382,9 @@ function openWorkorderModal(id='',defaults={}){
       danger:true
     });
     if(!ok) return;
-    state.workorders=state.workorders.filter(x=>x.id!==existing.id);
-    window.VECO_STORAGE.save(state);
-    if(window.VECO_API?.deleteWorkorder) await window.VECO_API.deleteWorkorder(existing.id);
+    await deleteWorkorderCascade(existing.id);
     closeModal();
-    if(page==='calendar') renderCalendar(); else if(page==='projects') renderProjects(); else if(page==='objects') renderObjects(); else renderWorkorders();
+    if(page==='calendar') renderCalendar(); else if(page==='projects') renderProjects(); else if(page==='objects') renderObjects(); else if(page==='callouts') renderCallouts(); else renderWorkorders();
   });
   form.addEventListener('submit',async e=>{
     e.preventDefault();
@@ -2446,6 +2475,10 @@ function openWorkorderModal(id='',defaults={}){
     }
     next.updatedAt=new Date().toISOString();
     next.updated_at=next.updatedAt;
+    if(!next.title.trim()){ alert('Töö nimetus on kohustuslik.'); f.title.focus(); return; }
+    if(!next.objectId){ alert('Objekt on kohustuslik.'); f.objectName.focus(); return; }
+    if(!next.date){ alert('Kuupäev on kohustuslik.'); f.date.focus(); return; }
+    if(!next.time){ alert('Algusaeg on kohustuslik.'); f.time.focus(); return; }
     const previousWorkorder=isEdit?{...existing,participantTechnicianIds:[...(existing.participantTechnicianIds||[])]}:null;
     if(isEdit){Object.assign(existing,next)}else{state.workorders.push(next);selectedWorkorderId=next.id;detailOpen.workorders=true}
     save();
@@ -2455,6 +2488,26 @@ function openWorkorderModal(id='',defaults={}){
   });
 }
 
+async function deleteWorkorderCascade(workorderId){
+  if(!isStoredWorkorderId(workorderId)) return false;
+  const key=photoWorkorderDbId(workorderId);
+  const now=new Date().toISOString();
+  state.photos=(state.photos||[]).map(p=>{
+    if(p.workorderId===key || p.workorderNo===workorderId){ return {...p,deletedAt:p.deletedAt||now}; }
+    return p;
+  });
+  state.acts=(state.acts||[]).map(a=>a.workorderId===workorderId ? {...a,archived:true,archivedAt:a.archivedAt||now,status:a.status==='Allkirjastatud'?a.status:'Arhiveeritud'} : a);
+  state.workorders=(state.workorders||[]).filter(x=>x.id!==workorderId);
+  window.VECO_STORAGE.save(state);
+  try{
+    const client=vecoSupabaseClient();
+    if(client){
+      await client.from('photos').update({deleted_at:now}).eq('workorder_id',key);
+    }
+  }catch(err){console.warn('VECO photo cleanup failed',err);}
+  if(window.VECO_API?.deleteWorkorder) await window.VECO_API.deleteWorkorder(workorderId);
+  return true;
+}
 function calendarLayoutKey(w={}){
   return [w.date||'', w.time||'', workorderHours(w), workorderEndDate(w), workorderResponsibleId(w), String(w.status||'')].join('|');
 }
@@ -2523,7 +2576,7 @@ function calendarVisibleWorkorders(data=state){
     const visibleDays=calendarVisibleDays(storedDate,mode,hideWeekend);
     const occurs=(w,date)=>{const start=w.date; const end=w.endDate||w.end_date||w.date; return !!start && date>=start && date<=end;};
     const dateInView=(w)=> mode==='year' ? (w.date&&w.date.startsWith(String(parseDateKey(storedDate).getFullYear())+'-')) : visibleDays.some(d=>occurs(w,d));
-    return (data?.workorders||[]).filter(w=>{
+    return (data?.workorders||[]).filter(isRenderableWorkorder).filter(w=>{
       const statusOk=statusFilter==='all'||(statusFilter==='open'?workorderStatusOptions.includes(w.status):w.status===statusFilter);
       return dateInView(w) && employeeFilterMatchesWorkorder(w,techFilter) && statusOk;
     });
@@ -4361,7 +4414,7 @@ function isCalloutWorkorder(w){
   return wf==='valjakutse' || wf==='väljakutse' || wf==='callout' || String(w?.source||'').toLowerCase().includes('callout');
 }
 function renderCallouts(){
-  const rows=(state.workorders||[]).filter(isCalloutWorkorder).slice().sort((a,b)=>`${b.date||''} ${b.time||''}`.localeCompare(`${a.date||''} ${a.time||''}`));
+  const rows=(state.workorders||[]).filter(isRenderableWorkorder).filter(isCalloutWorkorder).slice().sort((a,b)=>`${b.date||''} ${b.time||''}`.localeCompare(`${a.date||''} ${a.time||''}`));
   const openRows=rows.filter(w=>!isCompletedStatus(w.status));
   const doneRows=rows.filter(w=>isCompletedStatus(w.status));
   const card=w=>{
@@ -4899,7 +4952,7 @@ function renderCalendar(){
     if(mode==='year') return w.date && w.date.startsWith(String(parseDateKey(currentDate).getFullYear())+'-');
     return workorderIntersectsVisibleDays(w);
   };
-  const filtered=state.workorders.filter(w=>{
+  const filtered=(state.workorders||[]).filter(isRenderableWorkorder).filter(w=>{
     const techOk=employeeFilterMatchesWorkorder(w,techFilter);
     const statusOk=statusFilter==='all'||(statusFilter==='open'?calendarDefaultStatuses.includes(w.status):w.status===statusFilter);
     const hay=`${w.id} ${w.title} ${clientName(objectClientId(w.objectId))} ${objectName(w.objectId)} ${projectName(w.projectId)} ${workorderPeopleLabel(w)} ${w.status}`.toLowerCase();
@@ -5083,7 +5136,14 @@ function renderCalendar(){
   bindCalendarResize(calendarStartHour,calendarEndHour);
   bindCalendarSpanResize();
   bindCalendarDragDrop(calendarStartHour,calendarEndHour);
-  $$('[data-calendar-edit]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation(); if(window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__){window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false; return;} openWorkorderModal(el.dataset.calendarEdit);}));
+  $$('[data-calendar-edit]').forEach(el=>el.addEventListener('click',e=>{
+    e.stopPropagation();
+    if(window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__){window.__VECO_CALENDAR_DRAG_CLICK_BLOCK__=false; return;}
+    const id=el.dataset.calendarEdit;
+    if(!isStoredWorkorderId(id)){ openMissingWorkorderModal('', 'calendar-event-click'); return; }
+    if(!byId(state.workorders,id)){ openMissingWorkorderModal(id, 'calendar-event-click'); return; }
+    openWorkorderModal(id,{source:'calendar-event-click'});
+  }));
   saveBootHtmlSnapshot();
 }
 

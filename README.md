@@ -1,3 +1,3 @@
-# VECO V3 20260627_0006
+# VECO V3 20260627_0007
 
-Fix: väljakutsete dark-mode tekstikontrast ja Admin loaderi nähtav boot-käitumine. Field V1 / legacy mobile muutmata.
+P0 data-integrity fix: robust unique IDs, strict photo ownership, delete cascade and calendar missing-workorder guard.
