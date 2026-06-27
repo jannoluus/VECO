@@ -173,8 +173,8 @@ const AUTH_KEY='veco_v3_auth_v1';
 const AUTH_SESSION_KEY='veco_v3_auth_session_v1';
 const AUTH_LOCK_KEY='veco_v3_auth_locks_v1';
 const AUTH_RULES={technician:{min:4,max:4,label:'4-kohaline PIN'},supervisor:{min:4,max:4,label:'4-kohaline PIN'},admin:{min:6,max:12,label:'vähemalt 6-kohaline PIN'},superadmin:{min:6,max:8,label:'6–8 kohaline PIN'}};
-const ADMIN_PAGES=new Set(['team','people','vacations','oncall','objects','clients','projects','ticker','maintenanceNorms','devices','maintenanceProfiles','granlundClassifier','unplannedMaintenance','callouts','mobilePreview','demo','diagnostics']);
-const SUPERVISOR_PAGES=new Set(['calendar','team','mobile','technicianV1','workorders','acts','vacations','oncall','objects','clients','projects','devices','maintenanceProfiles','unplannedMaintenance']);
+const ADMIN_PAGES=new Set(['team','people','vacations','oncall','objects','clients','projects','ticker','maintenanceNorms','devices','maintenanceProfiles','granlundClassifier','unplannedMaintenance','activities','callouts','mobilePreview','demo','diagnostics']);
+const SUPERVISOR_PAGES=new Set(['calendar','activities','team','mobile','technicianV1','workorders','acts','vacations','oncall','objects','clients','projects','devices','maintenanceProfiles','unplannedMaintenance']);
 // CR-091: technician route guard. Technicians may only use the simplified mobile view.
 const TECH_PAGES=new Set(['mobile','technicianV1']);
 function isTechnicianUiPage(){return page==='mobile'||page==='technicianV1';}
@@ -973,8 +973,8 @@ let selectedTeamPersonId='';
 const detailOpen={objects:false,clients:false,projects:false,workorders:false,acts:false};
 let modalEscHandler=null;
 
-const pageTitles={calendar:'Kalender',team:'Tiimivaade',mobile:'Minu tööd',technicianV1:'Technician V1',workorders:'Tööd',callouts:'Väljakutsed',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',maintenanceProfiles:'Hooldusprofiil',granlundClassifier:'Granlund klassifikaator',unplannedMaintenance:'Planeerimata hooldused',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
-const pageFiles={calendar:'index.html',team:'team.html',mobile:'mobile.html',technicianV1:'technician-v1.html',workorders:'workorders.html',callouts:'callouts.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',maintenanceProfiles:'maintenance-profiles.html',granlundClassifier:'granlund-classifier.html',unplannedMaintenance:'unplanned-maintenance.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
+const pageTitles={calendar:'Kalender',activities:'Tegevused',team:'Tiimivaade',mobile:'Minu tööd',technicianV1:'Technician V1',workorders:'Tööd',callouts:'Väljakutsed',acts:'Aktid',oncall:'Valvegraafik',vacations:'Saadavus',people:'Tehnikud',objects:'Objektid',clients:'Kliendid',projects:'Projektid',ticker:'Ticker',maintenanceNorms:'Hooldusnormid',devices:'Seadmed',maintenanceProfiles:'Hooldusprofiil',granlundClassifier:'Granlund klassifikaator',unplannedMaintenance:'Planeerimata hooldused',mobilePreview:'Mobiili eelvaade',demo:'Demoandmed',diagnostics:'Diagnostika'};
+const pageFiles={calendar:'index.html',activities:'activities.html',team:'team.html',mobile:'mobile.html',technicianV1:'technician-v1.html',workorders:'workorders.html',callouts:'callouts.html',acts:'acts.html',oncall:'oncall.html',vacations:'vacations.html',people:'people.html',objects:'objects.html',clients:'clients.html',projects:'projects.html',ticker:'ticker.html',maintenanceNorms:'maintenance-norms.html',devices:'devices.html',maintenanceProfiles:'maintenance-profiles.html',granlundClassifier:'granlund-classifier.html',unplannedMaintenance:'unplanned-maintenance.html',mobilePreview:'mobile-preview.html',demo:'demo.html',diagnostics:'diagnostics.html'};
 
 const byId=(arr,id)=>arr.find(x=>x.id===id)||null;
 const isArchivedRecord=(x)=>x?.isDeleted===true||x?.is_deleted===true;
@@ -1224,7 +1224,7 @@ function isRenderableWorkorder(w){
 function icon(i){return `<span class="icon">${i}</span>`}
 function nav(sidebarMode='full'){
   const groups=[
-    ['Tööjuht',[['calendar','▦'],['unplannedMaintenance','⚠'],['workorders','☑'],['callouts','☎'],['team','◫'],['oncall','☎'],['mobile','▤'],['technicianV1','▣'],['acts','▧']]],
+    ['Tööjuht',[['calendar','▦'],['activities','◎'],['unplannedMaintenance','⚠'],['workorders','☑'],['callouts','☎'],['team','◫'],['oncall','☎'],['mobile','▤'],['technicianV1','▣'],['acts','▧']]],
     ['Tehnikud',[['people','☷'],['vacations','▤']]],
     ['Kliendid ja objektid',[['objects','⌂'],['clients','▥'],['projects','▣']]],
     ['Hooldusinfo',[['devices','▤'],['maintenanceNorms','≡'],['maintenanceProfiles','☑'],['granlundClassifier','⌁']]],
@@ -4413,6 +4413,68 @@ function isCalloutWorkorder(w){
   const wf=String(taskWorkflowValue(w)||'').toLowerCase();
   return wf==='valjakutse' || wf==='väljakutse' || wf==='callout' || String(w?.source||'').toLowerCase().includes('callout');
 }
+
+// VECO_V3_20260627_0008: Activity Engine V1 mapping layer.
+// This is intentionally UI-only: it does not migrate database tables yet and does not alter legacy Calendar/Workorders/Callouts behavior.
+const activityTypeDefs={
+  event:{label:'Sündmus',icon:'📅',className:'event',hint:'Lihtne Field-kaart / päevaplaani kirje'},
+  maintenance:{label:'Hooldustöö',icon:'🔧',className:'maintenance',hint:'Planeeritud hooldus- või remonditöö'},
+  callout:{label:'Väljakutse',icon:'🚨',className:'callout',hint:'Rike või kliendi teavitus'}
+};
+function activityTypeFromWorkorder(w={}){
+  const wf=taskWorkflowValue(w).toLowerCase();
+  const raw=`${w.activityType||w.type||w.title||''}`.toLowerCase();
+  if(wf==='valjakutse'||raw.includes('väljakutse')||raw.includes('valjakutse')||raw.includes('rike')) return 'callout';
+  if(['hooldus','remont','paigaldus','diagnostika','kontroll'].includes(wf)||raw.includes('hooldus')||raw.includes('remont')) return 'maintenance';
+  return 'event';
+}
+function activityBaseStatus(w={}){
+  const st=String(w.status||'').trim();
+  if(/töös|käimas/i.test(st)) return 'Käimas';
+  if(/teostatud|lõpetatud|täidetud|valmis|suletud/i.test(st)) return 'Lõpetatud';
+  return 'Planeeritud';
+}
+function activityCapabilitySummary(w={}){
+  const type=activityTypeFromWorkorder(w);
+  const items=['Kalender','Field'];
+  if(type==='event') items.push('Märgi tehtuks');
+  if(type==='maintenance') items.push('Tööaeg','Teostatud töö','Fotod','Akt valikuline');
+  if(type==='callout') items.push('Tööaeg','Teostatud töö','Fotod','Akt','Akteerimine','Arveldus');
+  return items;
+}
+function activityRows(){
+  return (state.workorders||[]).filter(isRenderableWorkorder).map(w=>{
+    const type=activityTypeFromWorkorder(w);
+    const def=activityTypeDefs[type]||activityTypeDefs.event;
+    const o=byId(state.objects,w.objectId);
+    const c=o?byId(state.clients,o.clientId):null;
+    const start=[w.date,w.time].filter(Boolean).join(' ');
+    return {id:w.id,workorder:w,type,def,title:w.title||taskWorkflowLabel(w)||'Tegevus',status:activityBaseStatus(w),object:o?.name||workorderObjectLabel(w),client:c?.name||'',technician:workorderPeopleNames(w).join(', ')||techName(workorderResponsibleId(w)),start,performed:performedWorkText(w),problem:problemDescriptionText(w),capabilities:activityCapabilitySummary(w)};
+  }).sort((a,b)=>String(a.start||'9999').localeCompare(String(b.start||'9999'))||String(a.title).localeCompare(String(b.title),'et'));
+}
+function renderActivities(){
+  const search=($('#activitySearch')?.value||'').toLowerCase();
+  const typeFilter=$('#activityTypeFilter')?.value||'all';
+  const statusFilter=$('#activityStatusFilter')?.value||'all';
+  const rows=activityRows().filter(a=>{
+    if(typeFilter!=='all'&&a.type!==typeFilter) return false;
+    if(statusFilter!=='all'&&a.status!==statusFilter) return false;
+    const hay=[a.title,a.object,a.client,a.technician,a.status,a.def.label,a.problem,a.performed].join(' ').toLowerCase();
+    return !search||hay.includes(search);
+  });
+  const counts=activityRows().reduce((acc,a)=>{acc[a.type]=(acc[a.type]||0)+1; acc.total=(acc.total||0)+1; return acc;},{});
+  const filters=`<input class="field" id="activitySearch" placeholder="Otsi tegevust, objekti, klienti või tehnikut..." value="${esc($('#activitySearch')?.value||'')}"><select class="select" id="activityTypeFilter"><option value="all">Kõik tüübid</option>${Object.entries(activityTypeDefs).map(([key,def])=>`<option value="${esc(key)}" ${typeFilter===key?'selected':''}>${def.icon} ${esc(def.label)}</option>`).join('')}</select><select class="select" id="activityStatusFilter"><option value="all">Kõik staatused</option>${['Planeeritud','Käimas','Lõpetatud'].map(st=>`<option value="${esc(st)}" ${statusFilter===st?'selected':''}>${esc(st)}</option>`).join('')}</select>`;
+  const summary=`<div class="summary-grid activity-summary">${summaryBox('Tegevusi',counts.total||0)}${summaryBox('Sündmused',counts.event||0)}${summaryBox('Hooldustööd',counts.maintenance||0)}${summaryBox('Väljakutsed',counts.callout||0)}</div>`;
+  const cards=rows.map(a=>`<article class="activity-card activity-${esc(a.def.className)}" data-open-workorder="${esc(a.id)}"><div class="activity-card-head"><div class="activity-type"><span class="activity-type-icon">${a.def.icon}</span><span>${esc(a.def.label)}</span></div><span class="status ${statusClass(a.status)}">${esc(a.status)}</span></div><h3>${esc(a.title)}</h3><div class="activity-meta"><span>📍 ${esc(a.object||'-')}</span><span>🕒 ${esc(a.start||'-')}</span><span>👤 ${esc(a.technician||'-')}</span></div>${a.problem?`<div class="activity-block"><strong>Probleem</strong><div>${esc(a.problem)}</div></div>`:''}${a.performed?`<div class="activity-block"><strong>Teostatud töö</strong><div>${esc(a.performed)}</div></div>`:''}<div class="activity-capabilities">${a.capabilities.map(x=>`<span>${esc(x)}</span>`).join('')}</div></article>`).join('')||`<div class="empty-state"><strong>Tegevusi ei leitud.</strong><div class="muted">Activity Engine V1 kasutab praegu olemasolevaid tööde/väljakutsete kirjeid mapping layer'ina.</div></div>`;
+  const actions=`<a class="btn ghost" href="index.html">Vana kalender</a><a class="btn primary" href="workorders.html">Lisa töö</a>`;
+  const intro=`<div class="activity-engine-note"><strong>VECO Activity Engine V1</strong><span>Kõik Fieldis nähtavad planeeringud käsitletakse tegevustena: 📅 Sündmus, 🔧 Hooldustöö või 🚨 Väljakutse. See vaade on uus testvaade vana kalendri kõrval ega muuda andmebaasi struktuuri.</span></div>`;
+  shell(header('Tegevused',filters,actions)+`<div class="detail-body">${intro}${summary}<div class="activity-grid">${cards}</div></div>`,'',{wide:true});
+  $('#activitySearch')?.addEventListener('input',renderActivities);
+  $('#activityTypeFilter')?.addEventListener('change',renderActivities);
+  $('#activityStatusFilter')?.addEventListener('change',renderActivities);
+  $$('[data-open-workorder]').forEach(card=>card.addEventListener('click',()=>{selectedWorkorderId=card.dataset.openWorkorder; openWorkorderModal(selectedWorkorderId);}));
+}
+
 function renderCallouts(){
   const rows=(state.workorders||[]).filter(isRenderableWorkorder).filter(isCalloutWorkorder).slice().sort((a,b)=>`${b.date||''} ${b.time||''}`.localeCompare(`${a.date||''} ${a.time||''}`));
   const openRows=rows.filter(w=>!isCompletedStatus(w.status));
@@ -6281,7 +6343,7 @@ function renderDebug(reason, fn){
 
 function renderCurrentPage(reason='renderCurrentPage'){
   if(!requireAuthOrRender()) return;
-  return renderDebug(reason,()=>({calendar:renderCalendar,team:renderTeam,mobile:renderMobile,technicianV1:renderTechnicianV1,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,callouts:renderCallouts,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,unplannedMaintenance:renderUnplannedMaintenance,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)());
+  return renderDebug(reason,()=>({calendar:renderCalendar,activities:renderActivities,team:renderTeam,mobile:renderMobile,technicianV1:renderTechnicianV1,clients:renderClients,objects:renderObjects,projects:renderProjects,workorders:renderWorkorders,callouts:renderCallouts,people:renderPeople,acts:renderActs,oncall:renderOncall,vacations:renderVacations,ticker:renderTicker,maintenanceNorms:renderMaintenanceNorms,devices:renderDevices,maintenanceProfiles:renderMaintenanceProfiles,granlundClassifier:renderGranlundClassifier,unplannedMaintenance:renderUnplannedMaintenance,mobilePreview:renderMobilePreview,demo:renderDemo,diagnostics:renderDiagnostics}[page]||renderCalendar)());
 }
 function selectInitialIdsFromState(){
   selectedObjectId=state.objects?.[0]?.id||selectedObjectId||'';

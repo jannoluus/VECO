@@ -1,3 +1,3 @@
-# VECO V3 20260627_0007
+# VECO_V3_20260627_0008
 
-P0 data-integrity fix: robust unique IDs, strict photo ownership, delete cascade and calendar missing-workorder guard.
+Activity Engine V1 testvaade: uus `Tegevused` menüüpunkt vana kalendri kõrval.
