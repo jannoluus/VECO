@@ -1,7 +1,7 @@
 {
-  "build": "20260627_0005",
+  "build": "20260627_0006",
   "date": "2026-06-27",
   "notes": "Fix: callouts dark-mode text contrast; Admin loader starts immediately on admin boot and stays visible briefly; Field V1 and legacy mobile unchanged.",
   "version": "v3.19.27",
-  "label": "VECO_V3_20260627_0005"
+  "label": "VECO_V3_20260627_0006"
 }
