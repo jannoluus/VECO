@@ -1,10 +1,6 @@
 {
-  "build": "20260627_0008",
-  "name": "VECO_V3_20260627_0008",
+  "build": "20260627_0009",
+  "name": "VECO_V3_20260627_0009",
   "created_at": "2026-06-27",
-  "notes": [
-    "Activity Engine V1 mapping layer",
-    "New Tegevused page next to existing Kalender",
-    "Existing calendar/workorders/callouts behavior preserved"
-  ]
+  "notes": "VECO V3 stabilization: Field finish workflow, Work Time V1, PDF logo sizing, equal callout cards, accepted status foundation."
 }

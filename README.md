@@ -1,3 +1,3 @@
-# VECO_V3_20260627_0008
+# VECO_V3_20260627_0009
 
-Activity Engine V1 testvaade: uus `Tegevused` menüüpunkt vana kalendri kõrval.
+Stabilization release: Field finish workflow, Work Time Engine V1, PDF logo sizing, equal callout cards, accepted status foundation.

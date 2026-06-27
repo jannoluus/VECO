@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.27';
-const APP_BUILD='20260627_0007';
+const APP_BUILD='20260627_0009';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -1070,7 +1070,7 @@ function autoClosePerformedWorkorders(){
   if(changed) save();
 }
 const openWorkorders=()=>state.workorders.filter(w=>!isCompletedStatus(w.status));
-const workorderStatusOptions=['Planeeritud','Töös','Peatatud','Teostatud','Lõpetatud'];
+const workorderStatusOptions=['Planeeritud','Töös','Peatatud','Teostatud','Akteeritud','Lõpetatud'];
 const completedByLabel=(w)=>techName(workorderResponsibleId(w))||'VECO';
 const completionCommentText=(w)=>String(w?.completionComment||w?.completion_comment||w?.done||w?.workDone||'').trim();
 const problemDescriptionText=(w={})=>String(w?.problemDescription||w?.description||w?.issueDescription||w?.problem||w?.customerRequest||'').trim();
@@ -1696,7 +1696,7 @@ function openCompletionCommentModal(w,initial=''){
         <div class="confirm-message">Lisa teostatud töö ja kontrolli tegelik tööaeg. Registreerimise aeg säilib eraldi jäljena.</div>
         <div class="confirm-details"><strong>${esc(w?.id||'')}</strong><br>${esc(objectName(w?.objectId))}<br>${esc(w?.title||'')}${registered?`<br><span class="muted">Registreeritud: ${esc(fmtDateTimeShort(registered))}</span>`:''}</div>
         <div class="tv1-detail-card"><strong>Probleem</strong><p>${esc(problem)}</p></div>
-        <div class="tv1-detail-card"><strong>Töö aeg</strong><div class="form-grid" style="margin-top:8px"><label>Algus<input class="field" id="completionStartInput" type="datetime-local" value="${esc(isoToLocalDatetimeInput(startIso))}"></label><label>Lõpp<input class="field" id="completionEndInput" type="datetime-local" value="${esc(isoToLocalDatetimeInput(endIso))}"></label><label>Kestus<input class="field" id="completionDurationInput" inputmode="decimal" placeholder="nt 1.5"></label></div><div class="muted" id="completionDurationPreview" style="margin-top:6px"></div></div>
+        <div class="tv1-detail-card"><strong>Töö aeg</strong><div class="form-grid" style="margin-top:8px"><label>Algus<input class="field" id="completionStartInput" type="datetime-local" value="${esc(isoToLocalDatetimeInput(startIso))}"></label><label>Lõpp<input class="field" id="completionEndInput" type="datetime-local" value="${esc(isoToLocalDatetimeInput(endIso))}"></label></div><div class="muted" id="completionDurationPreview" style="margin-top:8px"></div></div>
         <label class="full" style="display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650;">Teostatud töö *<textarea id="completionCommentInput" required minlength="5" placeholder="Kirjelda, mida objektil tehti.">${esc(initial||'')}</textarea></label>
         <div class="form-error hidden" id="completionCommentError">Teostatud töö ja korrektne tööaeg on kohustuslikud.</div>
       </div>
@@ -1716,24 +1716,16 @@ function openCompletionCommentModal(w,initial=''){
     const input=()=>el.querySelector('#completionCommentInput');
     const startInput=()=>el.querySelector('#completionStartInput');
     const endInput=()=>el.querySelector('#completionEndInput');
-    const durInput=()=>el.querySelector('#completionDurationInput');
     const preview=()=>el.querySelector('#completionDurationPreview');
     const error=()=>el.querySelector('#completionCommentError');
     const onKey=(e)=>{ if(e.key==='Escape'){ e.preventDefault(); cleanup(null); } };
     const updatePreview=()=>{
       const sIso=localDatetimeInputToIso(startInput()?.value||'');
-      let eIso=localDatetimeInputToIso(endInput()?.value||'');
-      const manual=String(durInput()?.value||'').replace(',','.').trim();
-      if(sIso && manual){
-        const hours=Number(manual);
-        if(Number.isFinite(hours)&&hours>0){
-          eIso=new Date(new Date(sIso).getTime()+Math.round(hours*60)*60000).toISOString();
-          if(endInput()) endInput().value=isoToLocalDatetimeInput(eIso);
-        }
-      }
+      const eIso=localDatetimeInputToIso(endInput()?.value||'');
       const mins=minutesBetweenIso(sIso,eIso);
-      if(preview()) preview().textContent=mins?`Kestus: ${durationLabelFromMinutes(mins)}`:'Sisesta algus ja lõpp.';
-      return {startedAt:sIso,completedAt:eIso,durationMinutes:mins};
+      const billable=billableMinutesFromActual(mins,60);
+      if(preview()) preview().innerHTML=mins?workTimeSummaryHtml(mins,billable,60):'Sisesta algus ja lõpp.';
+      return {startedAt:sIso,completedAt:eIso,durationMinutes:mins,billableDurationMinutes:billable,minimumBillableMinutes:60};
     };
     const submitCompletion=()=>{
       const value=String(input()?.value||'').trim();
@@ -1757,7 +1749,7 @@ function openCompletionCommentModal(w,initial=''){
       e.preventDefault();
       submitCompletion();
     });
-    [input(),startInput(),endInput(),durInput()].forEach(elm=>elm?.addEventListener('input',()=>{error()?.classList.add('hidden'); updatePreview();}));
+    [input(),startInput(),endInput()].forEach(elm=>elm?.addEventListener('input',()=>{error()?.classList.add('hidden'); updatePreview();}));
     setTimeout(()=>{ updatePreview(); input()?.focus(); },0);
   });
 }
@@ -1766,7 +1758,7 @@ function normalizeCompletionResult(result){
   if(!result) return null;
   if(typeof result==='string') return {comment:result,performedWork:result,workResult:'',recommendations:'',materials:'',actType:'Väljakutse akt'};
   const performed=String(result.performedWork||result.comment||'').trim();
-  return {comment:performed,performedWork:performed,workResult:String(result.workResult||'').trim(),recommendations:String(result.recommendations||'').trim(),materials:String(result.materials||'').trim(),actType:result.actType||'Väljakutse akt',startedAt:result.startedAt||'',completedAt:result.completedAt||'',durationMinutes:Number(result.durationMinutes||0)||0};
+  return {comment:performed,performedWork:performed,workResult:String(result.workResult||'').trim(),recommendations:String(result.recommendations||'').trim(),materials:String(result.materials||'').trim(),actType:result.actType||'Väljakutse akt',startedAt:result.startedAt||'',completedAt:result.completedAt||'',durationMinutes:Number(result.durationMinutes||0)||0,billableDurationMinutes:Number(result.billableDurationMinutes||0)||0,minimumBillableMinutes:Number(result.minimumBillableMinutes||60)||60};
 }
 
 function shortActDateCode(dateKey){
@@ -2778,7 +2770,7 @@ function actPrintHtml(actId,{autoPrint=false,autoPdf=false}={}){
   const autoScript=autoPrint?`<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>`:'';
   const helper=autoPrint?'Prindivaade avatakse automaatselt.':'Akti eelvaade.';
   return `<!doctype html><html lang="et"><head><meta charset="utf-8"><title>${esc(actNumber(a))} · ${esc(a.title||'Väljakutse akt')}</title><style>
-    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;font-size:12px;line-height:1.42;background:#fff}.actions{margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.act-head{display:grid;grid-template-columns:1fr 170px 1fr;gap:18px;align-items:start;margin-bottom:18px}.head-side{display:grid;gap:10px}.head-card{border:1.6px solid #94a3b8;border-radius:8px;min-height:48px;padding:9px 11px;background:#f3f7fb}.head-card .value{font-size:13px;white-space:pre-line}.top{text-align:center;display:flex;align-items:flex-start;justify-content:center;min-height:118px;padding-top:10px}.logo-img{width:68px;height:68px;object-fit:contain;display:block;margin:0 auto}.muted{color:#555;font-size:11px}.meta{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.meta-item{border:1.6px solid #94a3b8;border-radius:8px;min-height:48px;height:auto;padding:9px 11px;overflow:visible;background:#f3f7fb}.label{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}.value{font-size:13px;font-weight:700;color:#0f172a;overflow-wrap:anywhere;white-space:pre-line}.content-start{margin-top:26px;padding-top:16px;border-top:1.5px solid #94a3b8}.section-title{font-size:15px;font-weight:800;margin:24px 0 10px;border-bottom:1px solid #cbd5e1;padding-bottom:6px;letter-spacing:.02em}.content-start .section-title{margin-top:0}.box{border:1px solid #cbd5e1;border-radius:8px;padding:15px 16px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.42}.box.description{min-height:50px}.box.result{min-height:72px}.act-line{margin:0 0 7px}.act-line:last-child{margin-bottom:0}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #cbd5e1;border-radius:8px;min-height:80px;padding:12px 14px}.signature-line{border-top:1px solid #334155;margin-top:26px;padding-top:5px;color:#555}@media(max-width:800px){.act-head{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}}@media print{.actions{display:none} body{margin:10mm}.act-head{grid-template-columns:1fr 150px 1fr;gap:12px;margin-bottom:16px}.top{min-height:116px;padding-top:8px}.logo-img{width:62px;height:62px}.head-card,.meta-item{min-height:42px;padding:7px 9px}.meta{gap:8px}.content-start{margin-top:24px;padding-top:14px}.section-title{margin-top:22px;margin-bottom:9px}.content-start .section-title{margin-top:0}.box{padding:13px 14px;line-height:1.42}.box.description{min-height:44px}.box.result{min-height:72px}.signature{min-height:74px}}
+    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;font-size:12px;line-height:1.42;background:#fff}.actions{margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.act-head{display:grid;grid-template-columns:1fr 240px 1fr;gap:18px;align-items:start;margin-bottom:18px}.head-side{display:grid;gap:10px}.head-card{border:1.6px solid #94a3b8;border-radius:8px;min-height:48px;padding:9px 11px;background:#f3f7fb}.head-card .value{font-size:13px;white-space:pre-line}.top{text-align:center;display:flex;align-items:center;justify-content:center;min-height:130px;padding-top:0}.logo-img{width:132px;height:118px;object-fit:contain;display:block;margin:0 auto}.muted{color:#555;font-size:11px}.meta{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.meta-item{border:1.6px solid #94a3b8;border-radius:8px;min-height:48px;height:auto;padding:9px 11px;overflow:visible;background:#f3f7fb}.label{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}.value{font-size:13px;font-weight:700;color:#0f172a;overflow-wrap:anywhere;white-space:pre-line}.content-start{margin-top:26px;padding-top:16px;border-top:1.5px solid #94a3b8}.section-title{font-size:15px;font-weight:800;margin:24px 0 10px;border-bottom:1px solid #cbd5e1;padding-bottom:6px;letter-spacing:.02em}.content-start .section-title{margin-top:0}.box{border:1px solid #cbd5e1;border-radius:8px;padding:15px 16px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.42}.box.description{min-height:50px}.box.result{min-height:72px}.act-line{margin:0 0 7px}.act-line:last-child{margin-bottom:0}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #cbd5e1;border-radius:8px;min-height:80px;padding:12px 14px}.signature-line{border-top:1px solid #334155;margin-top:26px;padding-top:5px;color:#555}@media(max-width:800px){.act-head{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}}@media print{.actions{display:none} body{margin:10mm}.act-head{grid-template-columns:1fr 210px 1fr;gap:12px;margin-bottom:16px}.top{min-height:122px;padding-top:0}.logo-img{width:120px;height:110px}.head-card,.meta-item{min-height:42px;padding:7px 9px}.meta{gap:8px}.content-start{margin-top:24px;padding-top:14px}.section-title{margin-top:22px;margin-bottom:9px}.content-start .section-title{margin-top:0}.box{padding:13px 14px;line-height:1.42}.box.description{min-height:44px}.box.result{min-height:72px}.signature{min-height:74px}}
   </style>${autoScript}</head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi</button><button class="btn" onclick="window.close()">Sulge</button><span class="muted">${esc(helper)}</span></div><div class="act-head"><div class="head-side">${headerLeft.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="top"><img class="logo-img" src="${logoUrl}" alt="VECO"></div><div class="head-side">${headerRight.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div></div><div class="section-title">Üldandmed</div><div class="meta">${topItems.map(([k,v])=>`<div class="meta-item"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="content-start"><div class="section-title desc">Probleemi kirjeldus</div><div class="box description">${sectionHtml(actProblemDescriptionText(a,w)||'-')}</div><div class="section-title">Teostatud tööd</div><div class="box result">${sectionHtml(performed)}</div>${result?`<div class="section-title">Töö tulemus / märkused</div><div class="box result">${sectionHtml(result)}</div>`:''}${recommendations?`<div class="section-title">Soovitused / puudused</div><div class="box result">${sectionHtml(recommendations)}</div>`:''}${materials?`<div class="section-title">Materjalid</div><div class="box description">${sectionHtml(materials)}</div>`:''}</div><div class="section-title">Allkirjad</div><div class="signatures"><div class="signature"><strong>${esc(workorderPeopleHeading(w,'Teostaja','Teostajad'))}</strong><div style="white-space:pre-line">${esc(workorderPeopleMultiline(w))}</div><div class="signature-line">Allkiri / kuupäev</div></div><div class="signature"><strong>Tellija</strong><div>&nbsp;</div><div class="signature-line">Allkiri / kuupäev</div></div></div></body></html>`;
 }
 function openActWindow(actId,mode='preview'){
@@ -2913,14 +2905,14 @@ async function renderActPdfCanvas(actId){
   ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
   const left=70, gap=14, colW=(canvas.width-left*2-gap*4)/5;
   const logo=await loadActLogo();
-  const logoSize=88;
+  const logoSize=150;
   const headY=46;
   drawInfoCell(ctx,'Kuupäev',d.date,left,headY,colW*1.55,58);
   drawInfoCell(ctx,'Akt nr',d.number,left,headY+72,colW*1.55,58);
   drawInfoCell(ctx,'Objekt',d.objectName,canvas.width-left-colW*1.55,headY,colW*1.55,58);
   drawInfoCell(ctx,'Klient',d.clientName,canvas.width-left-colW*1.55,headY+72,colW*1.55,58);
-  if(logo){ ctx.drawImage(logo, (canvas.width-logoSize)/2, headY+16, logoSize, logoSize); }
-  else { ctx.fillStyle='#2483ff'; ctx.beginPath(); ctx.arc(canvas.width/2,headY+16+logoSize/2,logoSize/2,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#fff'; ctx.font='700 26px Arial'; ctx.textAlign='center'; ctx.fillText('VECO',canvas.width/2,headY+16+logoSize/2+8); ctx.textAlign='left'; }
+  if(logo){ ctx.drawImage(logo, (canvas.width-logoSize)/2, headY-2, logoSize, logoSize); }
+  else { ctx.fillStyle='#2483ff'; ctx.beginPath(); ctx.arc(canvas.width/2,headY-2+logoSize/2,logoSize/2,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#fff'; ctx.font='700 34px Arial'; ctx.textAlign='center'; ctx.fillText('VECO',canvas.width/2,headY-2+logoSize/2+10); ctx.textAlign='left'; }
   ctx.textAlign='left';
 
   let y=205;
@@ -3921,6 +3913,30 @@ function durationLabelFromMinutes(total){
   if(h) return `${h} h`;
   return `${m} min`;
 }
+function billableMinutesFromActual(actualMinutes, minimumMinutes=60){
+  const actual=Math.max(0,Number(actualMinutes)||0);
+  const minimum=Math.max(0,Number(minimumMinutes)||0);
+  if(!actual) return 0;
+  return Math.max(actual,minimum);
+}
+function updateWorkorderDurationFields(w,startedAt,completedAt,minimumMinutes=60){
+  const actual=minutesBetweenIso(startedAt,completedAt);
+  const billable=billableMinutesFromActual(actual,minimumMinutes);
+  w.actualDurationMinutes=actual;
+  w.actual_duration_minutes=actual;
+  w.billableDurationMinutes=billable;
+  w.billable_duration_minutes=billable;
+  w.minimumBillableMinutes=minimumMinutes;
+  w.minimum_billable_minutes=minimumMinutes;
+  return {actual,billable,minimum:minimumMinutes};
+}
+function workTimeSummaryHtml(durationMinutes,billableMinutes,minimumMinutes=60){
+  const actualLabel=durationLabelFromMinutes(durationMinutes);
+  const billableLabel=durationLabelFromMinutes(billableMinutes);
+  const minimumLabel=durationLabelFromMinutes(minimumMinutes);
+  const note=billableMinutes>durationMinutes?`<br><span class="muted">Minimaalne arvestus: ${esc(minimumLabel)}</span>`:'';
+  return `<strong>Tegelik kestus:</strong> ${esc(actualLabel)}<br><strong>Arvestatav kestus:</strong> ${esc(billableLabel)}${note}`;
+}
 function actualDurationLabel(w={}){
   const mins=minutesBetweenIso(w.startedAt||w.started_at,w.completedAt||w.completed_at);
   return mins?durationLabelFromMinutes(mins):`${workorderHours(w)} h`;
@@ -3996,7 +4012,8 @@ async function applyMobileWorkorderAction(action,workorderId){
     let result=normalizeCompletionResult(await openCompletionCommentModal(w,performedWorkText(w)||completionCommentText(w)));
     if(!result || !String(result.comment||'').trim()) return;
     const comment=String(result.performedWork||result.comment||'').trim();
-    const timeSummary=`<strong>Algus:</strong> ${esc(fmtDateTimeShort(result.startedAt))}<br><strong>Lõpp:</strong> ${esc(fmtDateTimeShort(result.completedAt))}<br><strong>Kestus:</strong> ${esc(durationLabelFromMinutes(result.durationMinutes))}`;
+    const billableMinutes=result.billableDurationMinutes||billableMinutesFromActual(result.durationMinutes,60);
+    const timeSummary=`<strong>Algus:</strong> ${esc(fmtDateTimeShort(result.startedAt))}<br><strong>Lõpp:</strong> ${esc(fmtDateTimeShort(result.completedAt))}<br>${workTimeSummaryHtml(result.durationMinutes,billableMinutes,result.minimumBillableMinutes||60)}`;
     const ok=await openVecoConfirm({title:'Lõpeta töö',message:'Kas oled kindel, et töö on valmis?',details:`${workDetails}<br><br>${timeSummary}<br><br><strong>Teostatud töö:</strong><br>${esc(comment).replace(/\n/g,'<br>')}<br><br><strong>Töö märgitakse teostatuks.</strong> Kalendris jääb kaart alles, Field vaates liigub see lõpetatud tööde alla.`,confirmText:'Lõpeta töö',cancelText:'Tagasi'});
     if(!ok) return;
     w.startedAt=result.startedAt||now;
@@ -4004,6 +4021,7 @@ async function applyMobileWorkorderAction(action,workorderId){
     if(actorName && !w.startedBy) w.startedBy=actorName;
     w.status='Teostatud';
     w.completedAt=result.completedAt||now;
+    updateWorkorderDurationFields(w,w.startedAt,w.completedAt,result.minimumBillableMinutes||60);
     w.completedBy=actorName;
     w.completedByUuid=actorUuid;
     w.completionComment=comment;
@@ -4361,7 +4379,7 @@ function openTechnicianV1WorkModal(id){
   openModal(`<form id="tv1WorkForm"><div class="dialog-head tv1-detail-head"><div><div class="tv1-kicker">${esc(technicianV1WorkTime(w))} · ${esc(workorderDateRangeLabel(w))}</div><h2>${esc(workorderObjectLabel(w))}</h2><p>${esc(w.title||'Töö')}</p></div><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body tv1-detail-body"><div class="tv1-detail-card"><strong>Objekt</strong><span>${esc(workorderObjectLabel(w))}</span>${address?`<em>${esc(address)}</em>`:''}</div>${desc?`<div class="tv1-detail-card"><strong>Kirjeldus</strong><p>${esc(desc)}</p></div>`:''}<div class="tv1-detail-card"><strong>Staatus</strong><span><span class="status ${statusClass(w.status)}">${esc(w.status||'Planeeritud')}</span></span>${workorderRegisteredAt(w)?`<em>Registreeritud: ${esc(fmtDateTimeShort(workorderRegisteredAt(w)))}</em>`:''}${w.startedAt?`<em>Algus: ${esc(fmtDateTimeShort(w.startedAt))}</em>`:''}${w.completedAt?`<em>Lõpp: ${esc(fmtDateTimeShort(w.completedAt))}</em>`:''}</div><label class="full tv1-detail-note"><span>Teostatud töö</span><textarea name="done" placeholder="Kirjelda lühidalt, mida objektil tehti...">${esc(performedWorkText(w))}</textarea></label><div class="tv1-detail-actions">${navigation}${technicianV1WorkflowButtons(w)}</div><div class="tv1-detail-card"><strong>Fotod</strong><div>${workorderPhotoGalleryHtml(w.id,{hint:'Lisa fotod otse töö külge.'})}</div></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Sulge</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
   $('#tv1WorkForm')?.addEventListener('submit',e=>{e.preventDefault();const f=e.currentTarget.elements;const note=String(f.done?.value||'').trim();w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';const act=actForWorkorder(w.id); if(act) normalizeActContentFromWorkorder(act,w); save();closeModal();state=window.VECO_STORAGE.load();renderTechnicianV1();});
-  $$('#tv1WorkForm [data-mobile-action]').forEach(btn=>btn.addEventListener('click',async e=>{e.preventDefault();const action=btn.dataset.mobileAction;const wid=btn.dataset.workorderId;const form=$('#tv1WorkForm');const draft=byId(state.workorders,wid);if(form&&draft){const note=String(form.elements.done?.value||'').trim();draft.done=note||draft.done||'';draft.workDone=note||draft.workDone||'';draft.performedWork=note||draft.performedWork||'';const act=actForWorkorder(draft.id); if(act) normalizeActContentFromWorkorder(act,draft); save();}closeModal();await applyMobileWorkorderAction(action,wid);setTimeout(()=>{if(page==='technicianV1'&&byId(state.workorders,wid)) openTechnicianV1WorkModal(wid);},80);}));
+  $$('#tv1WorkForm [data-mobile-action]').forEach(btn=>btn.addEventListener('click',async e=>{e.preventDefault();const action=btn.dataset.mobileAction;const wid=btn.dataset.workorderId;const form=$('#tv1WorkForm');const draft=byId(state.workorders,wid);if(form&&draft){const note=String(form.elements.done?.value||'').trim();draft.done=note||draft.done||'';draft.workDone=note||draft.workDone||'';draft.performedWork=note||draft.performedWork||'';const act=actForWorkorder(draft.id); if(act) normalizeActContentFromWorkorder(act,draft); save();}closeModal();await applyMobileWorkorderAction(action,wid);if(action!=='finish'){setTimeout(()=>{if(page==='technicianV1'&&byId(state.workorders,wid)) openTechnicianV1WorkModal(wid);},80);}}));
   const rebindPhotoActions=()=>bindWorkorderPhotos(()=>{closeModal();openTechnicianV1WorkModal(id);});
   rebindPhotoActions();
   loadWorkorderPhotos(id,true).then(()=>{const modal=$('#modal');const form=$('#tv1WorkForm');if(!modal?.classList.contains('open')||!form) return;const gallery=modal.querySelector(`[data-photo-gallery="${CSS.escape(id)}"]`);const wrap=gallery?.parentElement;if(wrap){wrap.innerHTML=workorderPhotoGalleryHtml(id,{hint:'Lisa fotod otse töö külge.'});rebindPhotoActions();}}).catch(err=>console.warn('VECO tv1 photo refresh failed',err));
@@ -4414,7 +4432,7 @@ function isCalloutWorkorder(w){
   return wf==='valjakutse' || wf==='väljakutse' || wf==='callout' || String(w?.source||'').toLowerCase().includes('callout');
 }
 
-// VECO_V3_20260627_0008: Activity Engine V1 mapping layer.
+// VECO_V3_20260627_0009: Activity Engine V1 mapping layer.
 // This is intentionally UI-only: it does not migrate database tables yet and does not alter legacy Calendar/Workorders/Callouts behavior.
 const activityTypeDefs={
   event:{label:'Sündmus',icon:'📅',className:'event',hint:'Lihtne Field-kaart / päevaplaani kirje'},
@@ -4489,7 +4507,7 @@ function renderCallouts(){
     const meta=[photoCount?`📷 ${photoCount}`:'',act.icon?`${act.icon} ${act.label}`:''].filter(Boolean).join(' · ');
     return `<button class="card callout-card" data-callout-open="${esc(w.id)}" type="button"><div class="card-top"><h3>📞 ${esc(w.title||'Väljakutse')}</h3><span class="status ${statusClass(w.status)}">${esc(w.status||'Planeeritud')}</span></div><div class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(obj)}</div><div class="muted">Tehnik: ${esc(createdBy)}</div>${desc?`<p class="callout-problem"><strong>Probleem:</strong> ${esc(desc)}</p>`:''}${performed?`<p class="callout-performed"><strong>Teostatud:</strong> ${esc(performed)}</p>`:''}${meta?`<div class="callout-meta">${esc(meta)}</div>`:''}</button>`;
   };
-  const body=`<div class="detail-body"><div class="grid cards-3"><div class="card"><strong>Uued/töös</strong><span class="big-number">${openRows.length}</span></div><div class="card"><strong>Lahendatud</strong><span class="big-number">${doneRows.length}</span></div><div class="card"><strong>Kokku</strong><span class="big-number">${rows.length}</span></div></div><div class="section-title">Aktiivsed väljakutsed</div><div class="cards">${openRows.map(card).join('')||'<div class="card muted">Aktiivseid väljakutseid ei ole.</div>'}</div><div class="section-title">Lahendatud</div><div class="cards">${doneRows.slice(0,20).map(card).join('')||'<div class="card muted">Lahendatud väljakutseid ei ole.</div>'}</div></div>`;
+  const body=`<div class="detail-body"><div class="grid cards-3"><div class="card"><strong>Uued/töös</strong><span class="big-number">${openRows.length}</span></div><div class="card"><strong>Lahendatud</strong><span class="big-number">${doneRows.length}</span></div><div class="card"><strong>Kokku</strong><span class="big-number">${rows.length}</span></div></div><div class="section-title">Aktiivsed väljakutsed</div><div class="callout-grid">${openRows.map(card).join('')||'<div class="card muted">Aktiivseid väljakutseid ei ole.</div>'}</div><div class="section-title">Lahendatud</div><div class="callout-grid">${doneRows.slice(0,20).map(card).join('')||'<div class="card muted">Lahendatud väljakutseid ei ole.</div>'}</div></div>`;
   shell(header('Väljakutsed','','','VÄLJAKUTSED')+body,'',{wide:true});
   $$('[data-callout-open]').forEach(btn=>btn.addEventListener('click',()=>openWorkorderModal(btn.dataset.calloutOpen)));
 }

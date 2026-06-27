@@ -11,8 +11,8 @@ function check(name,pass,detail=''){
   console.log(line);
   if(!pass) ok=false;
 }
-check('APP_BUILD 20260627_0007',/APP_BUILD='20260627_0007'/.test(app));
-check('HTML cache-bust 0006',index.includes('v=20260627_0007')&&!/v=20260627_000[0-5]/.test(index));
+check('APP_BUILD 20260627_0009',/APP_BUILD='20260627_0009'/.test(app));
+check('HTML cache-bust 0009',index.includes('v=20260627_0009')&&!/v=20260627_000[0-8]/.test(index));
 check('CR-STATE-002 boot restore script olemas',index.includes('veco_boot_html_'+ 'calendar') || index.includes("veco_boot_html_"));
 check('boot snapshot save funktsioon olemas',app.includes('function saveBootHtmlSnapshot'));
 check('shell hydration guard olemas',app.includes('__VECO_BOOT_RESTORED__')&&app.includes('__VECO_BOOT_HYDRATED__'));
@@ -53,7 +53,7 @@ check('Field completion uses one performed work field', app.includes('Teostatud 
 check('Technician V1 detail label is Teostatud töö', app.includes('<span>Teostatud töö</span>') && app.includes('technicianV1WorkflowButtons(w)'));
 check('Technician V1 detail hides Täida button', app.includes('function technicianV1WorkflowButtons') && app.includes('data-mobile-edit'));
 
-check('Field completion time capture olemas', app.includes('completionStartInput') && app.includes('completionEndInput') && app.includes('completionDurationInput'));
+check('Field completion time capture olemas', app.includes('completionStartInput') && app.includes('completionEndInput') && app.includes('billableMinutesFromActual') && !app.includes('completionDurationInput'));
 check('Act duration uses actual timestamps', app.includes('function actualDurationLabel') && app.includes('duration:actDurationLabel(w)'));
 
 

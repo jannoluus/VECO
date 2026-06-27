@@ -5342,7 +5342,36 @@ body.theme-light .callout-card .callout-problem strong,
 body.theme-light .callout-card .callout-performed strong{color:#52657a;}
 
 
-/* VECO_V3_20260627_0008 Activity Engine V1 */
+/* VECO_V3_20260627_0009 Activity Engine V1 */
 .activity-engine-note{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin:0 0 14px;padding:14px 16px;border:1px solid var(--border);border-radius:16px;background:var(--surface-2);color:var(--text-primary)}
 .activity-engine-note span{color:var(--text-secondary);line-height:1.45}
 .activity-summary{margin-bottom:14px}.activity-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}.activity-card{border:1px solid var(--border);border-radius:18px;background:var(--surface);padding:15px;display:grid;gap:11px;cursor:pointer;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}.activity-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}.activity-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent)}.activity-event:before{background:#60a5fa}.activity-maintenance:before{background:#f59e0b}.activity-callout:before{background:#ef4444}.activity-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.activity-type{display:inline-flex;align-items:center;gap:7px;font-weight:800;color:var(--text-primary);font-size:13px}.activity-type-icon{font-size:16px}.activity-card h3{margin:0;color:var(--text-primary);font-size:17px;line-height:1.25;font-weight:850}.activity-meta{display:grid;gap:4px;color:var(--text-secondary);font-size:13px}.activity-block{border:1px solid var(--border);background:var(--surface-2);border-radius:13px;padding:10px 11px;color:var(--text-primary)}.activity-block strong{display:block;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:5px}.activity-block div{white-space:pre-wrap;overflow-wrap:anywhere;font-weight:650}.activity-capabilities{display:flex;gap:6px;flex-wrap:wrap}.activity-capabilities span{border:1px solid var(--border);background:var(--surface-2);color:var(--text-secondary);border-radius:999px;padding:5px 8px;font-size:12px;font-weight:700}.theme-light .activity-card,.theme-light .activity-block,.theme-light .activity-engine-note,.theme-light .activity-capabilities span{background:var(--surface)}
+
+/* VECO_V3_20260627_0009 — Stabilization: equal callout cards and work-time UI */
+.callout-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:14px;
+  align-items:stretch;
+}
+.callout-grid .callout-card{
+  min-height:260px;
+  height:100%;
+  display:grid;
+  grid-template-rows:auto auto auto minmax(62px,1fr) minmax(62px,1fr) auto;
+}
+.callout-card h3,
+.callout-card .callout-problem,
+.callout-card .callout-performed{
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+}
+.callout-card h3{-webkit-line-clamp:2;}
+.callout-card .callout-problem,
+.callout-card .callout-performed{-webkit-line-clamp:4;}
+.callout-card .callout-meta{align-self:end;}
+@media(max-width:720px){
+  .callout-grid{grid-template-columns:1fr;}
+  .callout-grid .callout-card{min-height:auto;}
+}
