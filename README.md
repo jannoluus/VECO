@@ -1,3 +1,7 @@
-# VECO_V3_20260627_0009
+# VECO_RC1.001
 
-Stabilization release: Field finish workflow, Work Time Engine V1, PDF logo sizing, equal callout cards, accepted status foundation.
+Release Candidate micro-release.
+
+Scope: **Registreeri väljakutse** workflow.
+
+This build intentionally does not change calendar, PDF, Work Time Engine, Activity Engine, Granlund import, or accepting/akteerimine workflow.

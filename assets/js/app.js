@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.27';
-const APP_BUILD='20260627_0009';
+const APP_BUILD='RC1.001';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -1779,6 +1779,30 @@ function actNumber(a){
   if(!a) return '';
   const w=byId(state.workorders,a.workorderId)||{};
   return `${shortActDateCode(a.date||w.date||a.createdAt)}-${shortActTimeCode(w.time||a.createdAt)}`;
+}
+
+function workorderDisplayNumber(w={}){
+  const existing=String(w.displayNumber||w.display_number||'').trim();
+  if(existing) return existing;
+  const dateSource=w.date||w.registeredAt||w.createdAt||w.created_at||new Date().toISOString();
+  const timeSource=w.time||w.registeredAt||w.createdAt||w.created_at||new Date().toISOString();
+  return `${shortActDateCode(dateSource)}-${shortActTimeCode(timeSource)}`;
+}
+function workorderDisplayType(w={}){
+  if(isCalloutWorkorder(w)) return 'Väljakutse';
+  const wf=taskWorkflowValue(w);
+  if(String(wf||'').toLowerCase().includes('hool')) return 'Hooldustöö';
+  return 'Töö';
+}
+function workorderDisplayLabel(w={}){
+  return `${workorderDisplayType(w)} ${workorderDisplayNumber(w)}`.trim();
+}
+function generateDisplayNumber(dateValue='',timeValue=''){
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const dateKey=dateValue||dateKeyFromDate(now);
+  const timeKey=timeValue||`${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  return `${shortActDateCode(dateKey)}-${shortActTimeCode(timeKey)}`;
 }
 
 function timestampActId(){
@@ -4240,6 +4264,118 @@ function resolveMobileObjectChoice(raw){
   state.objects.push(created);
   return created;
 }
+
+function calloutObjectQuickInfoHtml(objectId){
+  const o=byId(state.objects,objectId);
+  if(!o) return '';
+  const client=clientName(o.clientId);
+  const callouts=(state.workorders||[]).filter(w=>isCalloutWorkorder(w)&&w.objectId===objectId&&!isCompletedStatus(w.status));
+  const lastCompleted=(state.workorders||[]).filter(w=>w.objectId===objectId && (isCompletedStatus(w.status)||w.completedAt||w.completed_at)).slice().sort((a,b)=>String(b.completedAt||b.completed_at||b.date||'').localeCompare(String(a.completedAt||a.completed_at||a.date||'')))[0];
+  const bits=[];
+  if(client&&client!=='-') bits.push(`<div><span>Klient</span><strong>${esc(client)}</strong></div>`);
+  if(lastCompleted) bits.push(`<div><span>Viimane töö</span><strong>${esc(fmtActDate(lastCompleted.date)||fmtDateTimeShort(lastCompleted.completedAt||lastCompleted.completed_at)||'-')}</strong></div>`);
+  bits.push(`<div><span>Avatud väljakutseid</span><strong>${callouts.length}</strong></div>`);
+  return `<div class="callout-object-info" id="calloutObjectInfo">${bits.join('')}</div>`;
+}
+function openRegisterCalloutModal(opts={}){
+  const auth=currentAuthUser();
+  const actorId=opts.actorId||auth?.id||'';
+  const today=dateKeyFromDate(new Date());
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const timeNow=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const previewNumber=generateDisplayNumber(today,timeNow);
+  const objectOptions=activeObjects().map(o=>`<option value="${esc(o.name)}" data-id="${esc(o.id)}" label="${esc(clientName(o.clientId))} · ${esc(o.address||'')}"></option>`).join('');
+  const techOptions=activeTechnicians().map(p=>`<option value="${esc(p.id)}" ${p.id===actorId?'selected':''}>${esc(p.name)}</option>`).join('');
+  const isTechSource=opts.source==='technicianV1';
+  openModal(`<form id="registerCalloutForm"><div class="dialog-head"><div><div class="muted">Väljakutse ${esc(previewNumber)} <span class="muted">· luuakse salvestamisel</span></div><h2>Registreeri väljakutse</h2></div><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="form-grid register-callout-grid"><label class="full">Objekt *<input class="field" name="objectName" list="registerCalloutObjects" required autocomplete="off" placeholder="Vali objekt..."><datalist id="registerCalloutObjects">${objectOptions}</datalist></label><div class="full" id="calloutObjectInfoWrap"></div><label class="full">Prioriteet *<div class="priority-choice" role="radiogroup" aria-label="Prioriteet"><label><input type="radio" name="priority" value="Kiire"><span class="priority-pill priority-urgent">🔴 Kiire</span></label><label><input type="radio" name="priority" value="Kõrge"><span class="priority-pill priority-high">🟠 Kõrge</span></label><label><input type="radio" name="priority" value="Tavaline" checked><span class="priority-pill priority-normal">🟡 Tavaline</span></label><label><input type="radio" name="priority" value="Planeeritav"><span class="priority-pill priority-low">🟢 Planeeritav</span></label></div></label><label class="full">Lühikirjeldus *<input class="field" name="title" required placeholder="Mis juhtus? nt Ruumides palav"></label><label class="full">Lisainfo<textarea name="description" placeholder="Kes helistas, kontaktisik, telefon, täpsem kirjeldus..."></textarea></label><label class="full">Vastutaja<select class="select" name="responsibleTechnicianId"><option value="">Määramata</option>${techOptions}</select><span class="muted">Kui vastutaja jääb määramata, saab tehniku hiljem lisada.</span></label></div></div><div class="dialog-actions callout-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit" data-mode="register">✓ Registreeri väljakutse</button><button class="btn primary hidden" id="registerAndStartBtn" type="button">▶ Registreeri ja alusta</button></div></form>`);
+  bindClose();
+  const form=$('#registerCalloutForm');
+  const objectInput=form.elements.objectName;
+  const respSelect=form.elements.responsibleTechnicianId;
+  const startBtn=$('#registerAndStartBtn');
+  const resolveObject=()=>{
+    const raw=String(objectInput.value||'').trim();
+    if(!raw) return null;
+    const lower=raw.toLowerCase();
+    return activeObjects().find(o=>String(o.name||'').toLowerCase()===lower)||activeObjects().find(o=>String(o.name||'').toLowerCase().includes(lower))||null;
+  };
+  const refreshInfo=()=>{
+    const obj=resolveObject();
+    const wrap=$('#calloutObjectInfoWrap');
+    if(wrap) wrap.innerHTML=obj?calloutObjectQuickInfoHtml(obj.id):'';
+  };
+  const syncStartButton=()=>{
+    const canStart=!!actorId && respSelect.value===actorId;
+    startBtn?.classList.toggle('hidden',!canStart);
+  };
+  objectInput.addEventListener('input',refreshInfo);
+  objectInput.addEventListener('change',refreshInfo);
+  respSelect.addEventListener('change',syncStartButton);
+  syncStartButton();
+  const createCallout=(startNow=false)=>{
+    const obj=resolveObject();
+    if(!obj){ objectInput.focus(); return null; }
+    const title=String(form.elements.title.value||'').trim();
+    if(!title){ form.elements.title.focus(); return null; }
+    const priority=form.elements.priority.value||'Tavaline';
+    const responsibleId=String(respSelect.value||'').trim();
+    const startedAt=startNow?new Date().toISOString():'';
+    const displayNumber=generateDisplayNumber(today,timeNow);
+    const w={
+      id:uid('WO'),
+      displayNumber,
+      display_number:displayNumber,
+      projectId:state.projects.find(p=>p.objectId===obj.id)?.id||'',
+      objectId:obj.id,
+      title,
+      date:today,
+      time:timeNow,
+      technicianId:responsibleId,
+      responsibleTechnicianId:responsibleId,
+      participantTechnicianIds:[],
+      status:startNow?'Töös':'Planeeritud',
+      priority,
+      description:String(form.elements.description.value||'').trim(),
+      problemDescription:String(form.elements.description.value||title||'').trim(),
+      actRequired:true,
+      requiresAct:true,
+      isBillable:true,
+      trackTime:true,
+      workflow:'valjakutse',
+      workflowType:'valjakutse',
+      source:'registered_callout',
+      createdBy:actorId||auth?.id||'',
+      createdByName:actorId?techName(actorId):(auth?.name||auth?.email||'VECO'),
+      createdAt:new Date().toISOString(),
+      registeredAt:new Date().toISOString(),
+      registered_at:new Date().toISOString(),
+      startedAt,
+      started_at:startedAt,
+      timeline:[{type:'registered',at:new Date().toISOString(),by:actorId||auth?.id||'',label:'Väljakutse registreeritud'}].concat(startNow?[{type:'started',at:startedAt,by:actorId||auth?.id||'',label:'Töö alustatud'}]:[])
+    };
+    state.workorders.push(w);
+    selectedWorkorderId=w.id;
+    save();
+    return w;
+  };
+  form.addEventListener('submit',e=>{
+    e.preventDefault();
+    const w=createCallout(false);
+    if(!w) return;
+    closeModal();
+    if(isTechSource) renderTechnicianV1(); else renderCallouts();
+  });
+  startBtn?.addEventListener('click',e=>{
+    e.preventDefault();
+    const w=createCallout(true);
+    if(!w) return;
+    closeModal();
+    if(isTechSource){ renderTechnicianV1(); openTechnicianV1WorkModal(w.id); }
+    else { renderCallouts(); openWorkorderModal(w.id); }
+  });
+}
+
 function openMobileAddWorkModal(personId){
   const isTechnicianV1=page==='technicianV1';
   const today=dateKeyFromDate(new Date());
@@ -4418,9 +4554,9 @@ function renderTechnicianV1(){
   const tabs=order.map(k=>`<button class="tv1-tab ${k===active?'active':''}" data-tv1-tab="${k}" type="button"><span>${esc(groups[k].label)}</span><strong>${groups[k].count}</strong></button>`).join('');
   const list=g.jobs.map(w=>technicianV1WorkCard(w,current)).join('')||`<div class="tv1-empty"><strong>${esc(g.label)} töid ei ole</strong><span>Vali teine filter või lisa uus väljakutse.</span></div>`;
   const adminSwitch=technicianV1AdminSwitchHtml(current);
-  const header=`<div class="tv1-header"><div><div class="tv1-kicker">${esc(technicianV1DateLabel())}</div><h1>${esc(current.name)}</h1>${adminSwitch?`<div class="tv1-admin-switch-wrap">${adminSwitch}</div>`:''}</div><div class="tv1-header-actions">${mobileThemeButton()}<button class="tv1-dispatch-btn" id="tv1AddWorkBtn" type="button">📞 Uus väljakutse</button></div></div>`;
+  const header=`<div class="tv1-header"><div><div class="tv1-kicker">${esc(technicianV1DateLabel())}</div><h1>${esc(current.name)}</h1>${adminSwitch?`<div class="tv1-admin-switch-wrap">${adminSwitch}</div>`:''}</div><div class="tv1-header-actions">${mobileThemeButton()}<button class="tv1-dispatch-btn" id="tv1AddWorkBtn" type="button">📞 Registreeri väljakutse</button></div></div>`;
   shell(`<div class="tv1-shell">${header}${technicianV1OncallCard(current,today)}<div class="tv1-tabs">${tabs}</div><div class="tv1-section-title"><strong>${esc(g.label)}</strong><span>${g.count} tööd</span></div><div class="tv1-work-list">${list}</div></div>`,'',{wide:true});
-  $('#tv1AddWorkBtn')?.addEventListener('click',()=>openMobileAddWorkModal(current.id));
+  $('#tv1AddWorkBtn')?.addEventListener('click',()=>openRegisterCalloutModal({source:'technicianV1',actorId:current.id}));
   $('#tv1AdminUserSelect')?.addEventListener('change',e=>{const v=e.currentTarget.value||''; if(v) localStorage.setItem('veco_mobile_user_id',v); else localStorage.removeItem('veco_mobile_user_id'); renderTechnicianV1();});
   $$('[data-tv1-tab]').forEach(btn=>btn.addEventListener('click',()=>{localStorage.setItem('veco_technician_v1_tab',btn.dataset.tv1Tab);renderTechnicianV1();}));
   $$('[data-tv1-work]').forEach(btn=>btn.addEventListener('click',()=>openTechnicianV1WorkModal(btn.dataset.tv1Work)));
@@ -4432,7 +4568,7 @@ function isCalloutWorkorder(w){
   return wf==='valjakutse' || wf==='väljakutse' || wf==='callout' || String(w?.source||'').toLowerCase().includes('callout');
 }
 
-// VECO_V3_20260627_0009: Activity Engine V1 mapping layer.
+// VECO_V3_RC1.001: Activity Engine V1 mapping layer.
 // This is intentionally UI-only: it does not migrate database tables yet and does not alter legacy Calendar/Workorders/Callouts behavior.
 const activityTypeDefs={
   event:{label:'Sündmus',icon:'📅',className:'event',hint:'Lihtne Field-kaart / päevaplaani kirje'},
@@ -4505,10 +4641,12 @@ function renderCallouts(){
     const act=calendarActState(w);
     const photoCount=workorderPhotos(w.id).length;
     const meta=[photoCount?`📷 ${photoCount}`:'',act.icon?`${act.icon} ${act.label}`:''].filter(Boolean).join(' · ');
-    return `<button class="card callout-card" data-callout-open="${esc(w.id)}" type="button"><div class="card-top"><h3>📞 ${esc(w.title||'Väljakutse')}</h3><span class="status ${statusClass(w.status)}">${esc(w.status||'Planeeritud')}</span></div><div class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(obj)}</div><div class="muted">Tehnik: ${esc(createdBy)}</div>${desc?`<p class="callout-problem"><strong>Probleem:</strong> ${esc(desc)}</p>`:''}${performed?`<p class="callout-performed"><strong>Teostatud:</strong> ${esc(performed)}</p>`:''}${meta?`<div class="callout-meta">${esc(meta)}</div>`:''}</button>`;
+    return `<button class="card callout-card" data-callout-open="${esc(w.id)}" type="button"><div class="card-top"><h3>📞 ${esc(w.title||workorderDisplayLabel(w))}</h3><span class="status ${statusClass(w.status)}">${esc(w.status||'Planeeritud')}</span></div><div class="muted"><strong>${esc(workorderDisplayLabel(w))}</strong> · ${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(obj)}</div><div class="muted">Tehnik: ${esc(createdBy)}</div>${desc?`<p class="callout-problem"><strong>Probleem:</strong> ${esc(desc)}</p>`:''}${performed?`<p class="callout-performed"><strong>Teostatud:</strong> ${esc(performed)}</p>`:''}${meta?`<div class="callout-meta">${esc(meta)}</div>`:''}</button>`;
   };
   const body=`<div class="detail-body"><div class="grid cards-3"><div class="card"><strong>Uued/töös</strong><span class="big-number">${openRows.length}</span></div><div class="card"><strong>Lahendatud</strong><span class="big-number">${doneRows.length}</span></div><div class="card"><strong>Kokku</strong><span class="big-number">${rows.length}</span></div></div><div class="section-title">Aktiivsed väljakutsed</div><div class="callout-grid">${openRows.map(card).join('')||'<div class="card muted">Aktiivseid väljakutseid ei ole.</div>'}</div><div class="section-title">Lahendatud</div><div class="callout-grid">${doneRows.slice(0,20).map(card).join('')||'<div class="card muted">Lahendatud väljakutseid ei ole.</div>'}</div></div>`;
-  shell(header('Väljakutsed','','','VÄLJAKUTSED')+body,'',{wide:true});
+  const actions=`<button class="btn primary" id="registerCalloutBtn" type="button">＋ Registreeri väljakutse</button>`;
+  shell(header('Väljakutsed','',actions,'VÄLJAKUTSED')+body,'',{wide:true});
+  $('#registerCalloutBtn')?.addEventListener('click',()=>openRegisterCalloutModal({source:'callouts'}));
   $$('[data-callout-open]').forEach(btn=>btn.addEventListener('click',()=>openWorkorderModal(btn.dataset.calloutOpen)));
 }
 function renderMobilePreview(){

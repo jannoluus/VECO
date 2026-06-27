@@ -11,8 +11,8 @@ function check(name,pass,detail=''){
   console.log(line);
   if(!pass) ok=false;
 }
-check('APP_BUILD 20260627_0009',/APP_BUILD='20260627_0009'/.test(app));
-check('HTML cache-bust 0009',index.includes('v=20260627_0009')&&!/v=20260627_000[0-8]/.test(index));
+check('APP_BUILD RC1.001',/APP_BUILD='RC1.001'/.test(app));
+check('HTML cache-bust 0009',index.includes('v=RC1.001')&&!/v=20260627_000[0-8]/.test(index));
 check('CR-STATE-002 boot restore script olemas',index.includes('veco_boot_html_'+ 'calendar') || index.includes("veco_boot_html_"));
 check('boot snapshot save funktsioon olemas',app.includes('function saveBootHtmlSnapshot'));
 check('shell hydration guard olemas',app.includes('__VECO_BOOT_RESTORED__')&&app.includes('__VECO_BOOT_HYDRATED__'));
