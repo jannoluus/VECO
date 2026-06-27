@@ -5142,32 +5142,37 @@ body.theme-light .veco-loading-card{
   color:#172033;
 }
 .veco-loading-logo{
-  display:flex;
+  display:inline-flex;
   align-items:center;
-  gap:2px;
-  font-weight:900;
+  justify-content:center;
+  gap:0;
+  font-weight:950;
   font-size:42px;
-  line-height:1;
-  letter-spacing:-.08em;
+  line-height:.88;
+  letter-spacing:-.075em;
   color:var(--accent,#2f82f4);
   filter:drop-shadow(0 8px 18px rgba(47,130,244,.18));
 }
+.veco-loading-logo span:first-child{display:inline-block;line-height:.88;}
 .veco-loading-o{
-  width:.78em;
-  height:.78em;
+  width:.74em;
+  height:.74em;
   display:inline-block;
+  flex:0 0 auto;
   border-radius:50%;
-  border:.14em solid color-mix(in srgb, var(--accent,#2f82f4) 22%, transparent);
+  border:.125em solid color-mix(in srgb, var(--accent,#2f82f4) 24%, transparent);
   border-top-color:var(--accent,#2f82f4);
   border-right-color:var(--accent,#2f82f4);
-  margin-left:.03em;
+  margin-left:.085em;
+  transform:translateY(.012em);
+  transform-origin:50% 50%;
   animation:vecoLoadingSpin .78s linear infinite;
 }
 .veco-loading-text{font-size:13px;font-weight:750;color:var(--muted,#9aa8bb);}
 @keyframes vecoLoadingSpin{to{transform:rotate(1turn)}}
 @media (prefers-reduced-motion:reduce){.veco-loading-o{animation:none}}
 
-/* VECO_V3_20260627_0002 — Callouts dark-mode contrast fix */
+/* VECO_V3_20260627_0003 — Callouts dark-mode contrast fix */
 .callout-card p,
 .callout-card .callout-description,
 .callout-card .callout-problem{
@@ -5186,3 +5191,38 @@ body.theme-light .callout-card .callout-problem{
 .callout-card p{
   opacity:.96;
 }
+
+
+/* VECO_V3_20260627_0003 — admin completed-work visibility and callout readability */
+.admin-completed-work-card{
+  display:grid;
+  gap:8px;
+  padding:14px;
+  border:1px solid rgba(80,143,214,.28);
+  border-radius:14px;
+  background:rgba(47,130,244,.06);
+}
+.admin-completed-work-text{
+  color:var(--text);
+  font-weight:800;
+  line-height:1.45;
+  white-space:pre-line;
+}
+.callout-card .callout-performed,
+.callout-card .callout-problem{
+  margin-top:12px;
+  line-height:1.45;
+  color:var(--text);
+}
+.callout-card .callout-performed strong,
+.callout-card .callout-problem strong{color:var(--muted);font-weight:850;}
+.callout-card .callout-meta{
+  margin-top:10px;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:800;
+}
+body.theme-dark .callout-card .callout-performed,
+body.theme-dark .callout-card .callout-problem{color:#eaf2ff;}
+body.theme-light .callout-card .callout-performed,
+body.theme-light .callout-card .callout-problem{color:#172033;}
