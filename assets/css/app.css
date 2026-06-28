@@ -5433,3 +5433,11 @@ body.theme-light .callout-card .callout-performed strong{color:#52657a;}
   .completion-v2-actions{grid-template-columns:1fr!important;}
   .completion-v2-textarea textarea{min-height:150px!important;}
 }
+
+/* RC1.004 – workflow polish */
+.tv1-detail-head{align-items:flex-start;gap:12px;}
+.tv1-head-status{margin-left:auto;display:flex;align-items:flex-start;padding-top:2px;}
+.tv1-autosave-status{display:block;margin-top:6px;}
+.callout-card-title{font-size:16px;font-weight:750;color:var(--text-primary,#0f172a);margin:8px 0 6px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+[data-theme="dark"] .callout-card-title{color:var(--text-primary,#f8fafc);}
+.callout-card .card-top h3{line-height:1.2;}

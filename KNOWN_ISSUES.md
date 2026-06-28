@@ -1,4 +1,4 @@
-# Known Issues – VECO_RC1.003.1
+# Known Issues – VECO_RC1.004
 
-- PDF kestuse arvestatav 1 h loogika vajab jätkuvalt eraldi RC1.004 / akti kontrolli.
-- Akteerimise workflow ei kuulu sellesse bugfix buildi.
+- Akteerimise täielik töövoog on järgmise RC mikro-release'i teema.
+- Navigatsioon lisatakse hiljem tagasi objekti aadressi/kaardi funktsioonina, mitte töövoo nupuna.

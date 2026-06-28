@@ -1,8 +1,8 @@
 {
-  "build": "RC1.003.1",
-  "name": "VECO_RC1.003.1",
-  "status": "Bugfix",
+  "build": "RC1.004",
+  "name": "VECO_RC1.004",
+  "status": "UX Polish",
   "date": "2026-06-28",
-  "scope": "Field finish state fix",
-  "notes": "Parandab Töö valmis / Lõpeta töö salvestusjärjekorra: teostatud töö salvestatakse completionComment/performedWork väljadele enne lõpetamist, töö lõpetamine ei sulge modaali enne staatuse Teostatud kinnitamist ning tehniku detailpäisest eemaldati probleemi dubleeriv tekst."
+  "scope": "Field/Admin workflow consistency",
+  "notes": "Eemaldab tehniku vaates navigeerimise ja Salvesta nupu, lisab teostatud töö automaatsalvestuse, korrastab Field detaili päise ning muudab admini väljakutsekaardil esimese rea objektiks."
 }

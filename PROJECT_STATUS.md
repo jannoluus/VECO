@@ -1,13 +1,14 @@
 # VECO Project Status
 
-Current Build: VECO_RC1.003.1
-Current Phase: RC1 Field Workflow Stabilization
+Current build: VECO_RC1.004
 
-## Done in this build
-- Töö valmis / Lõpeta töö state-sync bugfix.
-- Teostatud töö topeltsisestust ei taastatud; detailvaade jääb ainsaks sisestuskohaks.
-- Detailpäise dubleeriv probleemitekst eemaldatud.
+## RC1 mikro-release
+UX Polish & Workflow Consistency.
 
-## Next
-- Kontrollida brauseris: väljakutse → töös → teostatud ühe töövooga.
-- Järgmine mikro-release: akt/PDF kestus ja inimloetavad viitenumbrid.
+## Fookus
+- Admini väljakutsekaartide loetavus.
+- Tehniku detailvaate lihtsustamine.
+- Põhivoo nupud ilma kõrvalfunktsioonideta.
+
+## Järgmine
+- Akteerimise töövoog.
