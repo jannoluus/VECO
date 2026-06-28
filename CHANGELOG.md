@@ -1,9 +1,13 @@
-# CHANGELOG
+# CHANGELOG — VECO_RC1.004.3
 
-## VECO_RC1.004.2
+## Parandatud
+- Väljakutsekaartide tumeda teksti probleem default dark mode'is.
+- Lisatud typography audit CSS reeglid `body:not(.theme-light)` alusel.
+- Kaetud aktiivsed ja lahendatud väljakutsekaardid: pealkiri, probleem, metaandmed, teostatud töö.
+- Build number ja cache-bust uuendatud `RC1.004.3`.
 
-Parandatud:
-- Lahendatud väljakutse kaardil kuvatakse probleemina alati `Lühikirjeldus` / `title`.
-- `Lisainfo` / `notes` ei asenda enam probleemi teksti.
-- Dark mode kontrast parandatud ka lahendatud väljakutsekaartidel.
-- Cache-bust ja APP_BUILD uuendatud.
+## Ei muudetud
+- Andmeloogika.
+- Töövoog.
+- PDF / akt.
+- Kalender.

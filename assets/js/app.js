@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.28';
-const APP_BUILD='RC1.004.2';
+const APP_BUILD='RC1.004.3';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -1074,7 +1074,7 @@ const workorderStatusOptions=['Planeeritud','Töös','Peatatud','Teostatud','Akt
 const completedByLabel=(w)=>techName(workorderResponsibleId(w))||'VECO';
 const completionCommentText=(w)=>String(w?.completionComment||w?.completion_comment||w?.done||w?.workDone||'').trim();
 const problemDescriptionText=(w={})=>{
-  // RC1.004.2: väljakutse probleemi allikas on alati lühikirjeldus/title.
+  // RC1.004.3: väljakutse probleemi allikas on alati lühikirjeldus/title.
   // Lisainfo/notes jääb märkuseks ega tohi asendada probleemi ka lahendatud kaardil.
   if(isCalloutWorkorder(w) && String(w?.title||'').trim()) return String(w.title).trim();
   return String(w?.problemDescription||w?.description||w?.issueDescription||w?.problem||w?.customerRequest||'').trim();

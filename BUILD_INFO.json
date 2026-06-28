@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.004.2",
-  "name": "VECO_RC1.004.2",
+  "build": "VECO_RC1.004.3",
+  "name": "VECO_RC1.004.3",
   "status": "Bugfix",
   "date": "2026-06-28",
-  "scope": "Callout problem mapping and final dark-mode readability",
-  "notes": "Lühikirjeldus/title on kõikides väljakutse kaartides probleemi allikas. Lisainfo/notes jääb märkuseks. Parandatud lahendatud kaardi dark-mode kontrast."
+  "scope": "Typography audit and default dark-mode callout readability",
+  "notes": "Parandatud default dark mode tekstikontrast aktiivsetel ja lahendatud väljakutsekaartidel. Põhjus oli see, et default dark theme ei kasuta body.theme-dark klassi."
 }

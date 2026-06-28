@@ -5468,7 +5468,7 @@ body.theme-light .callout-card .muted strong{
 .tv1-detail-actions .btn.is-loading{opacity:.65;pointer-events:none;}
 
 
-/* VECO_RC1.004.2 — callout card final contrast + problem mapping polish */
+/* VECO_RC1.004.3 — callout card final contrast + problem mapping polish */
 .theme-dark .callout-card,
 [data-theme="dark"] .callout-card,
 body.theme-dark .callout-card{
@@ -5494,4 +5494,39 @@ body.theme-dark .callout-card .muted strong{
 [data-theme="dark"] .callout-card .callout-performed,
 body.theme-dark .callout-card .callout-performed{
   color:#eaf2ff !important;
+}
+
+
+/* VECO_RC1.004.3 — typography audit: default dark mode callout readability
+   VECO default theme has no body.theme-dark class; use body:not(.theme-light). */
+body:not(.theme-light) .callout-card,
+body:not(.theme-light) .callout-card *{
+  color:inherit;
+}
+body:not(.theme-light) .callout-card .callout-card-title,
+body:not(.theme-light) .callout-card h3,
+body:not(.theme-light) .callout-card .card-top h3{
+  color:#f8fafc !important;
+}
+body:not(.theme-light) .callout-card .muted,
+body:not(.theme-light) .callout-card .callout-meta{
+  color:#cfe1f8 !important;
+}
+body:not(.theme-light) .callout-card .muted strong{
+  color:#f3f7ff !important;
+}
+body:not(.theme-light) .callout-card .callout-performed{
+  color:#eaf2ff !important;
+}
+body.theme-light .callout-card .callout-card-title,
+body.theme-light .callout-card h3,
+body.theme-light .callout-card .card-top h3{
+  color:#172033 !important;
+}
+body.theme-light .callout-card .muted,
+body.theme-light .callout-card .callout-meta{
+  color:#475569 !important;
+}
+body.theme-light .callout-card .muted strong{
+  color:#132235 !important;
 }

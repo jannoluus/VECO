@@ -1,12 +1,16 @@
-# PROJECT STATUS
+# PROJECT STATUS — VECO_RC1.004.3
 
-Current build: VECO_RC1.004.2
-Phase: RC1 stabilization
+## Staatus
+RC1 stabiliseerimine.
 
-Fookus:
-- väljakutse põhivoog
-- korrektne probleem/märkus mapping
-- loetav dark/light UI
+## Viimane muudatus
+Typography audit ja default dark mode väljakutsekaartide kontrasti parandus.
 
-Järgmine samm:
-- päris kasutuse põhjal koguda väiksemad UX märkused enne RC1_STABLE otsust.
+## RC1 põhivoog
+- Registreeri väljakutse
+- Alusta töö
+- Paus / Jätka
+- Teostatud töö autosave
+- Töö valmis
+- Akt
+- Admin kontroll
