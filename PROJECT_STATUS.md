@@ -4,24 +4,20 @@
 VECO_RC1
 
 ## Current Build
-VECO_RC1.001
+VECO_RC1.002
 
 ## Current Objective
 Viia väljakutse töövoog mikro-release'ide kaupa Release Candidate tasemele.
 
-## RC1.001 Scope
-**Registreeri väljakutse** workflow.
+## RC1.002 Scope
+Töö lõpetamine v2.
 
-### Done
-- [x] Uus registreerimise modal
-- [x] Telefonikõne loogikaga väljade järjekord
-- [x] Visuaalsed prioriteedid
-- [x] Vastutaja valikuline
-- [x] Inimloetav viitenumber
-- [x] Registreeri väljakutse
-- [x] Registreeri ja alusta
+## Done
+- Lihtsustatud töö lõpetamise modaal.
+- Teostatud töö on lõpetamisel esimene ja kõige olulisem väli.
+- Tööaeg on automaatne ja kokkuvolditav.
+- Töö lõpetamine toimub ühe lõpliku nupuga.
+- 0–59 min arvestatav kestus = 1 h.
 
-### Next
-- [ ] RC1.002 – Töö tegemine / Work Time Engine
-- [ ] RC1.003 – Akt / PDF
-- [ ] RC1.004 – Akteerimine
+## Next
+RC1.003 — Akt / PDF / arvestatav kestus lõplik kontroll.

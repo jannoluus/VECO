@@ -1,24 +1,17 @@
-# CHANGELOG – VECO_RC1.001
+# CHANGELOG — VECO_RC1.002
 
 ## Muudetud
-- Uus väljakutse töövoog nimetatud ümber: **Registreeri väljakutse**.
-- Lisatud telefonikõne loogikat järgiv väljade järjekord:
-  1. Objekt
-  2. Prioriteet
-  3. Lühikirjeldus
-  4. Lisainfo
-  5. Vastutaja
-- Lisatud visuaalsed prioriteedid: Kiire, Kõrge, Tavaline, Planeeritav.
-- Lisatud objektiga seotud kiirinfo: klient, viimane töö, avatud väljakutsed.
-- Lisatud inimloetav viitenumber: **Väljakutse DDMMYY-HHMM**.
-- Lisatud nupp **Registreeri väljakutse**.
-- Lisatud nupp **Registreeri ja alusta**, nähtav kui vastutaja on praegune tehnik/kasutaja.
-- Tehniku V1 vaates avab “Registreeri väljakutse” sama uue töövoo.
+- Field töö lõpetamise modaal ümber tehtud: fookus on teostatud töö kirjeldusel.
+- Fotode info kuvatakse lõpetamise vaates kokkuvõttena.
+- Tööaeg on kokkuvolditav ja süsteem arvutab selle automaatselt.
+- Eemaldatud teine kinnitusküsimus pärast lõpetamise modaali.
+- Nupp muutus: `Märgi teostatuks` → `✓ Lõpeta töö`.
+- 0–59 min tegelik kestus arvestatakse akti/arvelduse mõttes 1 tunnina.
+- Akti kestus kasutab arvestatavat kestust, kui see on olemas.
 
 ## Ei muudetud
 - Kalender
-- PDF / akt
-- Work Time Engine
+- Väljakutse registreerimise vorm
+- PDF kujundus
 - Akteerimine
-- Activity Engine
-- Granlund import
+- Activity/Tegevused vaade

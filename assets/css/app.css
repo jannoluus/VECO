@@ -5392,3 +5392,44 @@ body.theme-light .callout-card .callout-performed strong{color:#52657a;}
 .callout-object-info strong{font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .callout-dialog-actions{gap:8px!important;}
 @media(max-width:760px){.priority-choice{grid-template-columns:1fr 1fr}.callout-object-info{grid-template-columns:1fr}.callout-dialog-actions{display:grid!important;grid-template-columns:1fr!important}.callout-dialog-actions .btn{width:100%;min-height:44px;}}
+
+/* VECO_RC1.002 — Töö lõpetamine v2 */
+#completionCommentForm.completion-v2.confirm-dialog{
+  width:min(680px,100%)!important;
+}
+.completion-v2-body{display:grid!important;gap:14px!important;}
+.completion-v2-context{
+  display:grid;gap:4px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.035);
+}
+.theme-light .completion-v2-context{background:#f8fafc;}
+.completion-v2-context strong{font-size:15px;color:var(--text);}
+.completion-v2-context span{font-size:13px;color:var(--muted);}
+.completion-v2-section{
+  border:1px solid var(--line);border-radius:14px;padding:14px;background:rgba(255,255,255,.025);
+}
+.theme-light .completion-v2-section{background:#fff;}
+.completion-v2-primary{border-color:rgba(34,197,94,.38);background:rgba(34,197,94,.045);}
+.theme-light .completion-v2-primary{background:#f0fdf4;}
+.completion-v2-step{display:flex;align-items:center;gap:10px;margin-bottom:10px;color:var(--text);font-weight:850;}
+.completion-v2-step b{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:999px;background:#16a34a;color:#fff;font-size:13px;}
+.completion-v2-textarea textarea{min-height:145px!important;font-size:15px!important;line-height:1.45!important;}
+.completion-v2-hint{margin-top:8px;color:var(--muted);font-size:12px;}
+.completion-v2-photos{display:grid;gap:8px;}
+.completion-photo-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.completion-photo-thumb{display:inline-flex;align-items:center;justify-content:center;width:68px;height:58px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:rgba(255,255,255,.04);color:var(--muted);}
+.completion-photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.completion-time-details summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;list-style:none;}
+.completion-time-details summary::-webkit-details-marker{display:none;}
+.completion-time-details summary:after{content:'⌄';color:var(--muted);font-weight:800;}
+.completion-time-details[open] summary:after{content:'⌃';}
+.completion-time-grid{margin-top:12px;}
+.completion-duration-card{margin-top:10px;border:1px solid rgba(34,197,94,.35);border-radius:10px;padding:10px 12px;background:rgba(34,197,94,.055);color:var(--text);}
+.completion-duration-card strong{color:#6ee7b7;text-transform:uppercase;letter-spacing:.04em;}
+.theme-light .completion-duration-card strong{color:#047857;}
+.completion-v2-actions{grid-template-columns:minmax(120px,180px) 1fr!important;}
+.completion-v2-actions .btn.success{background:#16a34a!important;border-color:#22c55e!important;color:#fff!important;font-size:16px!important;font-weight:850!important;}
+@media(max-width:760px){
+  #completionCommentForm.completion-v2.confirm-dialog{width:100%!important;}
+  .completion-v2-actions{grid-template-columns:1fr!important;}
+  .completion-v2-textarea textarea{min-height:150px!important;}
+}

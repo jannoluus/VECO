@@ -1688,21 +1688,40 @@ function openCompletionCommentModal(w,initial=''){
     const nowIso=new Date().toISOString();
     const startIso=defaultWorkStartIso(w,nowIso);
     const endIso=(w?.completedAt||w?.completed_at)||nowIso;
-    const registered=workorderRegisteredAt(w);
     const problem=problemDescriptionText(w)||'-';
-    el.innerHTML=`<form class="confirm-dialog" id="completionCommentForm" role="dialog" aria-modal="true" aria-labelledby="completionCommentTitle" novalidate>
-      <div class="dialog-head"><h2 id="completionCommentTitle">Töö teostatuks märkimine</h2></div>
-      <div class="detail-body">
-        <div class="confirm-message">Lisa teostatud töö ja kontrolli tegelik tööaeg. Registreerimise aeg säilib eraldi jäljena.</div>
-        <div class="confirm-details"><strong>${esc(w?.id||'')}</strong><br>${esc(objectName(w?.objectId))}<br>${esc(w?.title||'')}${registered?`<br><span class="muted">Registreeritud: ${esc(fmtDateTimeShort(registered))}</span>`:''}</div>
-        <div class="tv1-detail-card"><strong>Probleem</strong><p>${esc(problem)}</p></div>
-        <div class="tv1-detail-card"><strong>Töö aeg</strong><div class="form-grid" style="margin-top:8px"><label>Algus<input class="field" id="completionStartInput" type="datetime-local" value="${esc(isoToLocalDatetimeInput(startIso))}"></label><label>Lõpp<input class="field" id="completionEndInput" type="datetime-local" value="${esc(isoToLocalDatetimeInput(endIso))}"></label></div><div class="muted" id="completionDurationPreview" style="margin-top:8px"></div></div>
-        <label class="full" style="display:grid;gap:6px;color:var(--muted);font-size:12px;font-weight:650;">Teostatud töö *<textarea id="completionCommentInput" required minlength="5" placeholder="Kirjelda, mida objektil tehti.">${esc(initial||'')}</textarea></label>
-        <div class="form-error hidden" id="completionCommentError">Teostatud töö ja korrektne tööaeg on kohustuslikud.</div>
+    const photos=workorderPhotos(w?.id||'');
+    const photoCount=photos.length;
+    const photoThumbs=photos.slice(0,4).map(p=>{
+      const src=photoPreviewSrc(p);
+      return `<span class="completion-photo-thumb">${src?`<img src="${esc(src)}" alt="${esc(p.comment||'Foto')}">`:'📷'}</span>`;
+    }).join('');
+    el.innerHTML=`<form class="confirm-dialog completion-v2" id="completionCommentForm" role="dialog" aria-modal="true" aria-labelledby="completionCommentTitle" novalidate>
+      <div class="dialog-head"><h2 id="completionCommentTitle">Lõpeta töö</h2></div>
+      <div class="detail-body completion-v2-body">
+        <div class="completion-v2-context">
+          <strong>${esc(workorderDisplayLabel(w))}</strong>
+          <span>${esc(objectName(w?.objectId))}</span>
+          <span>${esc(w?.title||'')}</span>
+        </div>
+        <div class="completion-v2-section completion-v2-primary">
+          <div class="completion-v2-step"><b>1</b><span>Teostatud töö</span></div>
+          <label class="completion-v2-textarea"><textarea id="completionCommentInput" required minlength="3" placeholder="Kirjuta, mida objektil tehti...">${esc(initial||'')}</textarea></label>
+          <div class="completion-v2-hint">Näiteks: puhastatud filtrid, kontrollitud seadmed, süsteem töötab.</div>
+        </div>
+        <div class="completion-v2-section">
+          <div class="completion-v2-step"><b>2</b><span>Fotod</span></div>
+          <div class="completion-v2-photos"><strong>Fotod (${photoCount})</strong><div class="completion-photo-row">${photoThumbs||'<span class="muted">Pilte pole lisatud.</span>'}</div></div>
+        </div>
+        <details class="completion-v2-section completion-time-details">
+          <summary><span class="completion-v2-step"><b>3</b><span>Tööaeg</span></span><span class="muted">Süsteem arvutab.</span></summary>
+          <div class="form-grid completion-time-grid"><label>Algus<input class="field" id="completionStartInput" type="datetime-local" value="${esc(isoToLocalDatetimeInput(startIso))}"></label><label>Lõpp<input class="field" id="completionEndInput" type="datetime-local" value="${esc(isoToLocalDatetimeInput(endIso))}"></label></div>
+          <div class="completion-duration-card" id="completionDurationPreview"></div>
+        </details>
+        <div class="form-error hidden" id="completionCommentError">Kirjelda teostatud töö ja kontrolli, et lõpp ei oleks enne algust.</div>
       </div>
-      <div class="dialog-actions">
-        <button type="button" class="btn ghost" id="completionCommentCancel">Loobu</button>
-        <button type="submit" class="btn primary" id="completionCommentOk">Märgi teostatuks</button>
+      <div class="dialog-actions completion-v2-actions">
+        <button type="button" class="btn ghost" id="completionCommentCancel">← Tagasi</button>
+        <button type="submit" class="btn primary success" id="completionCommentOk">✓ Lõpeta töö</button>
       </div>
     </form>`;
     let resolved=false;
@@ -1710,6 +1729,7 @@ function openCompletionCommentModal(w,initial=''){
       if(resolved) return;
       resolved=true;
       document.removeEventListener('keydown',onKey);
+      document.body.classList.remove('confirm-open');
       el.remove();
       resolve(value);
     };
@@ -1724,13 +1744,14 @@ function openCompletionCommentModal(w,initial=''){
       const eIso=localDatetimeInputToIso(endInput()?.value||'');
       const mins=minutesBetweenIso(sIso,eIso);
       const billable=billableMinutesFromActual(mins,60);
-      if(preview()) preview().innerHTML=mins?workTimeSummaryHtml(mins,billable,60):'Sisesta algus ja lõpp.';
+      if(preview()) preview().innerHTML=(sIso&&eIso)?workTimeSummaryHtml(mins,billable,60):'Sisesta algus ja lõpp.';
       return {startedAt:sIso,completedAt:eIso,durationMinutes:mins,billableDurationMinutes:billable,minimumBillableMinutes:60};
     };
     const submitCompletion=()=>{
       const value=String(input()?.value||'').trim();
       const times=updatePreview();
-      if(value.length<3 || !times.startedAt || !times.completedAt || !times.durationMinutes || new Date(times.completedAt)<new Date(times.startedAt)){
+      const invalidTime=!times.startedAt || !times.completedAt || new Date(times.completedAt)<new Date(times.startedAt);
+      if(value.length<3 || invalidTime){
         error()?.classList.remove('hidden');
         if(value.length<3) input()?.focus(); else startInput()?.focus();
         return;
@@ -1738,6 +1759,7 @@ function openCompletionCommentModal(w,initial=''){
       cleanup({comment:value,performedWork:value,workResult:'',recommendations:'',materials:'',actType:w?.actType||'Väljakutse akt',...times});
     };
     document.body.appendChild(el);
+    document.body.classList.add('confirm-open');
     document.addEventListener('keydown',onKey);
     el.addEventListener('click',e=>{ if(e.target===el) cleanup(null); });
     el.querySelector('#completionCommentCancel')?.addEventListener('click',()=>cleanup(null));
@@ -1841,6 +1863,10 @@ function actEndDateTimeLabel(w={},a={}){
   return fmtActDateTime(endDate,endTime);
 }
 function actDurationLabel(w={}){
+  const billable=Number(w.billableDurationMinutes||w.billable_duration_minutes||0)||0;
+  if(billable) return durationLabelFromMinutes(billable);
+  const actual=Number(w.actualDurationMinutes||w.actual_duration_minutes||0)||minutesBetweenIso(w.startedAt||w.started_at,w.completedAt||w.completed_at);
+  if(actual || (w.startedAt||w.started_at) && (w.completedAt||w.completed_at)) return durationLabelFromMinutes(billableMinutesFromActual(actual,Number(w.minimumBillableMinutes||w.minimum_billable_minutes||60)||60));
   return actualDurationLabel(w);
 }
 function renderObjects(){
@@ -3940,8 +3966,10 @@ function durationLabelFromMinutes(total){
 function billableMinutesFromActual(actualMinutes, minimumMinutes=60){
   const actual=Math.max(0,Number(actualMinutes)||0);
   const minimum=Math.max(0,Number(minimumMinutes)||0);
-  if(!actual) return 0;
-  return Math.max(actual,minimum);
+  // VECO RC1.002: 0–59 min arvestatakse alati minimaalse tööajana.
+  // Tegelik kestus jääb analüütikasse, akt/arveldus kasutab billable väärtust.
+  if(actual<minimum) return minimum;
+  return actual;
 }
 function updateWorkorderDurationFields(w,startedAt,completedAt,minimumMinutes=60){
   const actual=minutesBetweenIso(startedAt,completedAt);
@@ -4036,10 +4064,7 @@ async function applyMobileWorkorderAction(action,workorderId){
     let result=normalizeCompletionResult(await openCompletionCommentModal(w,performedWorkText(w)||completionCommentText(w)));
     if(!result || !String(result.comment||'').trim()) return;
     const comment=String(result.performedWork||result.comment||'').trim();
-    const billableMinutes=result.billableDurationMinutes||billableMinutesFromActual(result.durationMinutes,60);
-    const timeSummary=`<strong>Algus:</strong> ${esc(fmtDateTimeShort(result.startedAt))}<br><strong>Lõpp:</strong> ${esc(fmtDateTimeShort(result.completedAt))}<br>${workTimeSummaryHtml(result.durationMinutes,billableMinutes,result.minimumBillableMinutes||60)}`;
-    const ok=await openVecoConfirm({title:'Lõpeta töö',message:'Kas oled kindel, et töö on valmis?',details:`${workDetails}<br><br>${timeSummary}<br><br><strong>Teostatud töö:</strong><br>${esc(comment).replace(/\n/g,'<br>')}<br><br><strong>Töö märgitakse teostatuks.</strong> Kalendris jääb kaart alles, Field vaates liigub see lõpetatud tööde alla.`,confirmText:'Lõpeta töö',cancelText:'Tagasi'});
-    if(!ok) return;
+    // RC1.002: lõpetamise modaal on lõplik otsus. Teist kinnitust enam ei näidata.
     w.startedAt=result.startedAt||now;
     if(actorUuid && !w.startedByUuid) w.startedByUuid=actorUuid;
     if(actorName && !w.startedBy) w.startedBy=actorName;
@@ -4060,6 +4085,7 @@ async function applyMobileWorkorderAction(action,workorderId){
       save();
       ensureActForWorkorder(w.id);
     }
+    showSyncNotice('Töö lõpetatud. Akt on valmis.');
   }else if(action==='reopen'){
     const act=actForWorkorder(w.id);
     const ok=await openVecoConfirm({title:'Ava töö uuesti',message:'Kas soovid lõpetatud töö uuesti avada?',details:`${workDetails}${act?'<br><br><strong>Seotud akt säilitatakse.</strong> Vajadusel uuenda akti eraldi akti vaates.':''}`,confirmText:'Ava uuesti',cancelText:'Loobu'});

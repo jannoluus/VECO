@@ -1,8 +1,8 @@
 {
-  "build": "RC1.001",
-  "name": "VECO_RC1.001",
+  "build": "RC1.002",
+  "name": "VECO_RC1.002",
   "status": "Release Candidate micro-release",
-  "created_at": "2026-06-27",
-  "scope": "Registreeri väljakutse workflow",
-  "notes": "RC1.001: callout registration modal, phone-call field order, visual priorities, optional responsible technician, human-readable display number, register/register-and-start flow."
+  "created_at": "2026-06-28",
+  "scope": "Töö lõpetamine v2",
+  "notes": "RC1.002: simplified Field finish workflow, teostatud töö first, photos summary, collapsible automatic work time, one final button, no second confirmation, 0–59 min billable duration = 1 h, acts use billable duration."
 }

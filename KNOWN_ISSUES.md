@@ -1,5 +1,5 @@
-# KNOWN_ISSUES – VECO_RC1.001
+# KNOWN ISSUES — VECO_RC1.002
 
-- PDF kasutab järgmises mikro-release'is veel üle kontrollitavat arvestatava kestuse loogikat.
-- Akteerimise nupp ja objekti ajalugu kuuluvad hilisemasse RC1 mikro-release'i.
-- Activity Engine jääb VECO Stable töövoost eraldi.
+- Akteerimise töövoog ei ole selles mikro-release'is veel rakendatud.
+- PDF kujunduse lõplik viimistlus tuleb eraldi mikro-release'is.
+- Objekti/kliendi ajalugu tuleb pärast akteerimise workflow'd.
