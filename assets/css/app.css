@@ -5441,3 +5441,28 @@ body.theme-light .callout-card .callout-performed strong{color:#52657a;}
 .callout-card-title{font-size:16px;font-weight:750;color:var(--text-primary,#0f172a);margin:8px 0 6px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 [data-theme="dark"] .callout-card-title{color:var(--text-primary,#f8fafc);}
 .callout-card .card-top h3{line-height:1.2;}
+
+
+/* VECO_RC1.004.1 — bugfix: callout readability and duplicate detail header */
+body.theme-dark .callout-card-title,
+body.theme-dark .callout-card .muted,
+body.theme-dark .callout-card .callout-meta{
+  color:#dbeafe !important;
+}
+body.theme-dark .callout-card .muted strong{
+  color:#f3f7ff !important;
+}
+body.theme-dark .callout-card h3,
+body.theme-dark .callout-card .card-top h3{
+  color:#f8fafc !important;
+}
+body.theme-light .callout-card-title,
+body.theme-light .callout-card .muted,
+body.theme-light .callout-card .callout-meta{
+  color:#24384f !important;
+}
+body.theme-light .callout-card .muted strong{
+  color:#132235 !important;
+}
+.tv1-detail-head p{display:none!important;}
+.tv1-detail-actions .btn.is-loading{opacity:.65;pointer-events:none;}

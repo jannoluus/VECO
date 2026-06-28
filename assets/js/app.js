@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.28';
-const APP_BUILD='RC1.004';
+const APP_BUILD='RC1.004.1';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -4038,7 +4038,7 @@ function mobileWorkflowButtons(w){
 function technicianV1WorkflowButtons(w){
   return mobileWorkflowButtons(w).replace(/<button class="btn" data-mobile-edit="[^>]*>Täida<\/button>/g,'');
 }
-async function applyMobileWorkorderAction(action,workorderId){
+async function applyMobileWorkorderAction(action,workorderId,opts={}){
   const w=byId(state.workorders,workorderId);
   if(!w) return;
   const actor=currentMobileActionUser();
@@ -4109,6 +4109,7 @@ async function applyMobileWorkorderAction(action,workorderId){
   }
   save();
   state=window.VECO_STORAGE.load();
+  if(opts.keepModalOpen) return;
   if(page==='technicianV1') renderTechnicianV1();
   else renderMobile();
 }
@@ -4378,7 +4379,9 @@ function openRegisterCalloutModal(opts={}){
       status:startNow?'Töös':'Planeeritud',
       priority,
       description:String(form.elements.description.value||'').trim(),
-      problemDescription:String(form.elements.description.value||title||'').trim(),
+      note:String(form.elements.description.value||'').trim(),
+      notes:String(form.elements.description.value||'').trim(),
+      problemDescription:title,
       actRequired:true,
       requiresAct:true,
       isBillable:true,
@@ -4553,7 +4556,7 @@ function openTechnicianV1WorkModal(id){
   const desc=problemDescriptionText(w)||'';
   const status=w.status||'Planeeritud';
   const timeLines=[workorderRegisteredAt(w)?`<em>Registreeritud: ${esc(fmtDateTimeShort(workorderRegisteredAt(w)))}</em>`:'',w.startedAt?`<em>Algus: ${esc(fmtDateTimeShort(w.startedAt))}</em>`:'',w.completedAt?`<em>Lõpp: ${esc(fmtDateTimeShort(w.completedAt))}</em>`:''].filter(Boolean).join('');
-  openModal(`<form id="tv1WorkForm"><div class="dialog-head tv1-detail-head"><div><div class="tv1-kicker">${esc(workorderDisplayLabel(w))} · ${esc(technicianV1WorkTime(w))}</div><h2>📍 ${esc(workorderObjectLabel(w))}</h2>${desc?`<p>${esc(desc)}</p>`:''}</div><div class="tv1-head-status"><span class="status ${statusClass(status)}">${esc(status)}</span></div><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body tv1-detail-body">${desc?`<div class="tv1-detail-card"><strong>Probleem</strong><p>${esc(desc)}</p></div>`:''}<div class="tv1-detail-card"><strong>Objekt</strong><span>${esc(workorderObjectLabel(w))}</span>${address?`<em>${esc(address)}</em>`:''}</div><div class="tv1-detail-card"><strong>Staatus</strong><span><span class="status ${statusClass(status)}">${esc(status)}</span></span>${timeLines}</div><label class="full tv1-detail-note"><span>Teostatud töö</span><textarea name="done" placeholder="Kirjelda lühidalt, mida objektil tehti...">${esc(performedWorkText(w))}</textarea><small class="muted tv1-autosave-status" id="tv1AutosaveStatus">Salvestub automaatselt</small></label><div class="tv1-detail-actions">${technicianV1WorkflowButtons(w)}</div><div class="tv1-detail-card"><strong>Fotod</strong><div>${workorderPhotoGalleryHtml(w.id,{hint:'Lisa fotod otse töö külge.'})}</div></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Sulge</button></div></form>`);
+  openModal(`<form id="tv1WorkForm"><div class="dialog-head tv1-detail-head"><div><div class="tv1-kicker">${esc(workorderDisplayLabel(w))} · ${esc(technicianV1WorkTime(w))}</div><h2>📍 ${esc(workorderObjectLabel(w))}</h2></div><div class="tv1-head-status"><span class="status ${statusClass(status)}">${esc(status)}</span></div><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body tv1-detail-body">${desc?`<div class="tv1-detail-card"><strong>Probleem</strong><p>${esc(desc)}</p></div>`:''}<div class="tv1-detail-card"><strong>Objekt</strong><span>${esc(workorderObjectLabel(w))}</span>${address?`<em>${esc(address)}</em>`:''}</div><div class="tv1-detail-card"><strong>Staatus</strong><span><span class="status ${statusClass(status)}">${esc(status)}</span></span>${timeLines}</div><label class="full tv1-detail-note"><span>Teostatud töö</span><textarea name="done" placeholder="Kirjelda lühidalt, mida objektil tehti...">${esc(performedWorkText(w))}</textarea><small class="muted tv1-autosave-status" id="tv1AutosaveStatus">Salvestub automaatselt</small></label><div class="tv1-detail-actions">${technicianV1WorkflowButtons(w)}</div><div class="tv1-detail-card"><strong>Fotod</strong><div>${workorderPhotoGalleryHtml(w.id,{hint:'Lisa fotod otse töö külge.'})}</div></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Sulge</button></div></form>`);
   bindClose();
   const form=$('#tv1WorkForm');
   const autosaveStatus=$('#tv1AutosaveStatus');
@@ -4579,7 +4582,23 @@ function openTechnicianV1WorkModal(id){
     autosaveTimer=setTimeout(saveTv1Draft,700);
   });
   form?.elements.done?.addEventListener('blur',saveTv1Draft);
-  $$('#tv1WorkForm [data-mobile-action]').forEach(btn=>btn.addEventListener('click',async e=>{e.preventDefault();const action=btn.dataset.mobileAction;const wid=btn.dataset.workorderId;saveTv1Draft();if(action!=='finish') closeModal();await applyMobileWorkorderAction(action,wid);state=window.VECO_STORAGE.load();if(action==='finish'){const updated=byId(state.workorders,wid);if(updated && isCompletedStatus(updated.status)){closeModal();renderTechnicianV1();}else if(page==='technicianV1'&&updated){openTechnicianV1WorkModal(wid);}}else{setTimeout(()=>{if(page==='technicianV1'&&byId(state.workorders,wid)) openTechnicianV1WorkModal(wid);},80);}}));
+  $$('#tv1WorkForm [data-mobile-action]').forEach(btn=>btn.addEventListener('click',async e=>{
+    e.preventDefault();
+    const action=btn.dataset.mobileAction;
+    const wid=btn.dataset.workorderId;
+    saveTv1Draft();
+    btn.disabled=true;
+    btn.classList.add('is-loading');
+    await applyMobileWorkorderAction(action,wid,{keepModalOpen:true});
+    state=window.VECO_STORAGE.load();
+    const updated=byId(state.workorders,wid);
+    if(action==='finish'){
+      if(updated && isCompletedStatus(updated.status)){ closeModal(); renderTechnicianV1(); }
+      else if(page==='technicianV1'&&updated){ openTechnicianV1WorkModal(wid); }
+      return;
+    }
+    if(page==='technicianV1'&&updated){ openTechnicianV1WorkModal(wid); }
+  }));
   const rebindPhotoActions=()=>bindWorkorderPhotos(()=>{closeModal();openTechnicianV1WorkModal(id);});
   rebindPhotoActions();
   loadWorkorderPhotos(id,true).then(()=>{const modal=$('#modal');const form=$('#tv1WorkForm');if(!modal?.classList.contains('open')||!form) return;const gallery=modal.querySelector(`[data-photo-gallery="${CSS.escape(id)}"]`);const wrap=gallery?.parentElement;if(wrap){wrap.innerHTML=workorderPhotoGalleryHtml(id,{hint:'Lisa fotod otse töö külge.'});rebindPhotoActions();}}).catch(err=>console.warn('VECO tv1 photo refresh failed',err));

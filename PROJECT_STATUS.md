@@ -1,14 +1,13 @@
-# VECO Project Status
+# VECO PROJECT STATUS
 
-Current build: VECO_RC1.004
+Current build: VECO_RC1.004.1
+Phase: RC1 stabilization
 
-## RC1 mikro-release
-UX Polish & Workflow Consistency.
+## Scope
+- Admini kaardi kontrast
+- Probleem/märkus mapping
+- Detailvaate topeltinfo eemaldus
+- Paus/Jätka esimese vajutusega
 
-## Fookus
-- Admini väljakutsekaartide loetavus.
-- Tehniku detailvaate lihtsustamine.
-- Põhivoo nupud ilma kõrvalfunktsioonideta.
-
-## Järgmine
-- Akteerimise töövoog.
+## Next
+- Nullist lõpuni RC acceptance test

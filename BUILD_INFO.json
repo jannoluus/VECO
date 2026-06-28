@@ -1,8 +1,8 @@
 {
-  "build": "RC1.004",
+  "build": "VECO_RC1.004.1",
   "name": "VECO_RC1.004",
-  "status": "UX Polish",
+  "status": "Bugfix",
   "date": "2026-06-28",
-  "scope": "Field/Admin workflow consistency",
+  "scope": "Admin card contrast, problem mapping, pause/resume, duplicate detail header",
   "notes": "Eemaldab tehniku vaates navigeerimise ja Salvesta nupu, lisab teostatud töö automaatsalvestuse, korrastab Field detaili päise ning muudab admini väljakutsekaardil esimese rea objektiks."
 }

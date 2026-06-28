@@ -1,14 +1,10 @@
-# VECO_RC1.004
+# CHANGELOG
 
-## Muudetud
-- Admini väljakutsekaart algab nüüd objektiga.
-- Tehniku detailvaatest eemaldatud Navigeeri nupp.
-- Tehniku detailvaatest eemaldatud Salvesta nupp.
-- Teostatud töö salvestub automaatselt kirjutamise järel / väljast lahkumisel.
-- Field detaili päis korrastatud: objekt, kirjeldus, viitenumber ja staatus.
+## VECO_RC1.004.1
 
-## Ei muudetud
-- PDF / akti arvutusloogika.
-- Kalender.
-- Objektid ja kliendid.
-- Activity / ACTIVO vaated.
+Parandatud:
+- Admini väljakutsekaardi tekstide kontrast dark/light režiimis.
+- Väljakutse registreerimisel `Lühikirjeldus` jääb probleemiks ja `Lisainfo` jääb märkuseks.
+- Detailvaate päisest eemaldatud dubleeriv probleemitekst.
+- Paus/Jätka ei sulge enam modaali enne, kui olekumuutus on lõpuni tehtud.
+- Tehniku detailvaade renderdatakse pärast Paus/Jätka korrektselt uuesti.
