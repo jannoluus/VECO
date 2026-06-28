@@ -1,7 +1,5 @@
 # KNOWN ISSUES
 
-## VECO_RC1.004.1
+## VECO_RC1.004.2
 
-Teadaolevaid P0 vigu selles buildis ei ole.
-
-Järgmine kontroll: üks väljakutse nullist lõpuni läbi testida.
+Teadaolevaid P0 töövoo probleeme hetkel ei ole.

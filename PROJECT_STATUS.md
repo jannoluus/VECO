@@ -1,13 +1,12 @@
-# VECO PROJECT STATUS
+# PROJECT STATUS
 
-Current build: VECO_RC1.004.1
+Current build: VECO_RC1.004.2
 Phase: RC1 stabilization
 
-## Scope
-- Admini kaardi kontrast
-- Probleem/märkus mapping
-- Detailvaate topeltinfo eemaldus
-- Paus/Jätka esimese vajutusega
+Fookus:
+- väljakutse põhivoog
+- korrektne probleem/märkus mapping
+- loetav dark/light UI
 
-## Next
-- Nullist lõpuni RC acceptance test
+Järgmine samm:
+- päris kasutuse põhjal koguda väiksemad UX märkused enne RC1_STABLE otsust.

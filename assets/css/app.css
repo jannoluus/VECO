@@ -5466,3 +5466,32 @@ body.theme-light .callout-card .muted strong{
 }
 .tv1-detail-head p{display:none!important;}
 .tv1-detail-actions .btn.is-loading{opacity:.65;pointer-events:none;}
+
+
+/* VECO_RC1.004.2 — callout card final contrast + problem mapping polish */
+.theme-dark .callout-card,
+[data-theme="dark"] .callout-card,
+body.theme-dark .callout-card{
+  color:#f8fafc;
+}
+.theme-dark .callout-card-title,
+[data-theme="dark"] .callout-card-title,
+body.theme-dark .callout-card-title{
+  color:#f8fafc !important;
+  font-weight:850;
+}
+.theme-dark .callout-card .muted,
+[data-theme="dark"] .callout-card .muted,
+body.theme-dark .callout-card .muted{
+  color:#cfe1f8 !important;
+}
+.theme-dark .callout-card .muted strong,
+[data-theme="dark"] .callout-card .muted strong,
+body.theme-dark .callout-card .muted strong{
+  color:#f3f7ff !important;
+}
+.theme-dark .callout-card .callout-performed,
+[data-theme="dark"] .callout-card .callout-performed,
+body.theme-dark .callout-card .callout-performed{
+  color:#eaf2ff !important;
+}

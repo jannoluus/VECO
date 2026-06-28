@@ -1,10 +1,9 @@
 # CHANGELOG
 
-## VECO_RC1.004.1
+## VECO_RC1.004.2
 
 Parandatud:
-- Admini väljakutsekaardi tekstide kontrast dark/light režiimis.
-- Väljakutse registreerimisel `Lühikirjeldus` jääb probleemiks ja `Lisainfo` jääb märkuseks.
-- Detailvaate päisest eemaldatud dubleeriv probleemitekst.
-- Paus/Jätka ei sulge enam modaali enne, kui olekumuutus on lõpuni tehtud.
-- Tehniku detailvaade renderdatakse pärast Paus/Jätka korrektselt uuesti.
+- Lahendatud väljakutse kaardil kuvatakse probleemina alati `Lühikirjeldus` / `title`.
+- `Lisainfo` / `notes` ei asenda enam probleemi teksti.
+- Dark mode kontrast parandatud ka lahendatud väljakutsekaartidel.
+- Cache-bust ja APP_BUILD uuendatud.

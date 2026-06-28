@@ -11,17 +11,17 @@ function check(name,pass,detail=''){
   console.log(line);
   if(!pass) ok=false;
 }
-check('APP_BUILD RC1.004.1',/APP_BUILD='RC1.004.1'/.test(app));
-check('HTML cache-bust RC1.004.1',index.includes('v=RC1.004.1')&&!/v=RC1.001/.test(index));
+check('APP_BUILD RC1.004.2',/APP_BUILD='RC1.004.2'/.test(app));
+check('HTML cache-bust RC1.004.2',index.includes('v=RC1.004.2')&&!/v=RC1.001/.test(index));
 check('CR-STATE-002 boot restore script olemas',index.includes('veco_boot_html_'+ 'calendar') || index.includes("veco_boot_html_"));
 check('boot snapshot save funktsioon olemas',app.includes('function saveBootHtmlSnapshot'));
 check('shell hydration guard olemas',app.includes('__VECO_BOOT_RESTORED__')&&app.includes('__VECO_BOOT_HYDRATED__'));
 check('boot scroll default/restore olemas',app.includes('calendarDefaultScrollState')&&app.includes('forceWorkdayStart')&&app.includes('veco_boot_scroll_top_calendar'));
 check('boot hydration ignoreerib snapshot scrollTop=0',app.includes('isBootHydrating?calendarDefaultScrollState():captureCalendarScrollState()'));
 
-const problemLine=(app.match(/const problemDescriptionText=\(w=\{\}\)=>[^;]+;/)||[''])[0];
-check('description enne fallbacke',problemLine.includes('w?.description'));
-check('title ei ole description fallbackis',!problemLine.includes('w?.title'));
+const problemBlock=(app.match(/const problemDescriptionText=\(w=\{\}\)=>\{[\s\S]*?\n\};/)||[''])[0];
+check('callout problem uses title first',problemBlock.includes('isCalloutWorkorder(w)') && problemBlock.includes('w?.title'));
+check('notes/description jääb fallbackiks',problemBlock.includes('w?.description') && problemBlock.includes('w?.problemDescription'));
 check('Supabase load salvestab merged state cache’i',api.includes('window.VECO_STORAGE.save(merged)'));
 check('own realtime echo suppress olemas',api.includes('isLikelyOwnRemoteEcho'));
 check('sidebar handler guard olemas',app.includes('__VECO_SIDEBAR_GLOBAL_BOUND__') || app.includes('document-level sidebar handlers only once'));

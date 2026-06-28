@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.004.1",
-  "name": "VECO_RC1.004",
+  "build": "VECO_RC1.004.2",
+  "name": "VECO_RC1.004.2",
   "status": "Bugfix",
   "date": "2026-06-28",
-  "scope": "Admin card contrast, problem mapping, pause/resume, duplicate detail header",
-  "notes": "Eemaldab tehniku vaates navigeerimise ja Salvesta nupu, lisab teostatud töö automaatsalvestuse, korrastab Field detaili päise ning muudab admini väljakutsekaardil esimese rea objektiks."
+  "scope": "Callout problem mapping and final dark-mode readability",
+  "notes": "Lühikirjeldus/title on kõikides väljakutse kaartides probleemi allikas. Lisainfo/notes jääb märkuseks. Parandatud lahendatud kaardi dark-mode kontrast."
 }
