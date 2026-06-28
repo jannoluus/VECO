@@ -1,23 +1,17 @@
-# VECO PROJECT STATUS
+# PROJECT STATUS — VECO_RC1.003
 
-## Current Release
-VECO_RC1
+## Current phase
+RC1 — Field workflow stabilization
 
-## Current Build
-VECO_RC1.002
-
-## Current Objective
-Viia väljakutse töövoog mikro-release'ide kaupa Release Candidate tasemele.
-
-## RC1.002 Scope
-Töö lõpetamine v2.
+## Current micro-release
+RC1.003 — Teostatud töö topeltsisestuse eemaldamine
 
 ## Done
-- Lihtsustatud töö lõpetamise modaal.
-- Teostatud töö on lõpetamisel esimene ja kõige olulisem väli.
-- Tööaeg on automaatne ja kokkuvolditav.
-- Töö lõpetamine toimub ühe lõpliku nupuga.
-- 0–59 min arvestatav kestus = 1 h.
+- Registreeri väljakutse töövoog alustatud.
+- Töö lõpetamise modaal lihtsustatud.
+- Teostatud töö topeltsisestus eemaldatud.
+- Töö valmis tegevuse järel Field vaade värskendub.
 
 ## Next
-RC1.003 — Akt / PDF / arvestatav kestus lõplik kontroll.
+- RC1.004: Akti kestus ja PDF kontroll.
+- RC1.005: Akteerimine.

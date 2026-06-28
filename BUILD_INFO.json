@@ -1,8 +1,8 @@
 {
-  "build": "RC1.002",
-  "name": "VECO_RC1.002",
+  "build": "RC1.003",
+  "name": "VECO_RC1.003",
   "status": "Release Candidate micro-release",
   "created_at": "2026-06-28",
-  "scope": "Töö lõpetamine v2",
-  "notes": "RC1.002: simplified Field finish workflow, teostatud töö first, photos summary, collapsible automatic work time, one final button, no second confirmation, 0–59 min billable duration = 1 h, acts use billable duration."
+  "scope": "Teostatud töö topeltsisestuse eemaldamine ja Töö valmis nupp",
+  "notes": "RC1.003: Teostatud töö sisestatakse ainult töö detailvaates. Lõpeta töö modaal on nüüd kokkuvõtte/kinnituse vaade. Kui teostatud töö puudub, lõpetamine blokeeritakse ja töö detail avatakse tagasi. Finish action renderdab Field vaate uuesti."
 }

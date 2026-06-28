@@ -1,5 +1,4 @@
-# KNOWN ISSUES — VECO_RC1.002
+# KNOWN ISSUES — VECO_RC1.003
 
-- Akteerimise töövoog ei ole selles mikro-release'is veel rakendatud.
-- PDF kujunduse lõplik viimistlus tuleb eraldi mikro-release'is.
-- Objekti/kliendi ajalugu tuleb pärast akteerimise workflow'd.
+- Akt peab järgmises mikro-release'is lõplikult kasutama arvestatavat kestust kõikides vaadetes.
+- Akteerimise töövoog tuleb eraldi RC1.004 mikro-release'is.
