@@ -1,17 +1,13 @@
-# PROJECT STATUS — VECO_RC1.003
+# VECO Project Status
 
-## Current phase
-RC1 — Field workflow stabilization
+Current Build: VECO_RC1.003.1
+Current Phase: RC1 Field Workflow Stabilization
 
-## Current micro-release
-RC1.003 — Teostatud töö topeltsisestuse eemaldamine
-
-## Done
-- Registreeri väljakutse töövoog alustatud.
-- Töö lõpetamise modaal lihtsustatud.
-- Teostatud töö topeltsisestus eemaldatud.
-- Töö valmis tegevuse järel Field vaade värskendub.
+## Done in this build
+- Töö valmis / Lõpeta töö state-sync bugfix.
+- Teostatud töö topeltsisestust ei taastatud; detailvaade jääb ainsaks sisestuskohaks.
+- Detailpäise dubleeriv probleemitekst eemaldatud.
 
 ## Next
-- RC1.004: Akti kestus ja PDF kontroll.
-- RC1.005: Akteerimine.
+- Kontrollida brauseris: väljakutse → töös → teostatud ühe töövooga.
+- Järgmine mikro-release: akt/PDF kestus ja inimloetavad viitenumbrid.

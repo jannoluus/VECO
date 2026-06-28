@@ -1,4 +1,4 @@
-# KNOWN ISSUES — VECO_RC1.003
+# Known Issues – VECO_RC1.003.1
 
-- Akt peab järgmises mikro-release'is lõplikult kasutama arvestatavat kestust kõikides vaadetes.
-- Akteerimise töövoog tuleb eraldi RC1.004 mikro-release'is.
+- PDF kestuse arvestatav 1 h loogika vajab jätkuvalt eraldi RC1.004 / akti kontrolli.
+- Akteerimise workflow ei kuulu sellesse bugfix buildi.

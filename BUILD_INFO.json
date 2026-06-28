@@ -1,8 +1,8 @@
 {
-  "build": "RC1.003",
-  "name": "VECO_RC1.003",
-  "status": "Release Candidate micro-release",
-  "created_at": "2026-06-28",
-  "scope": "Teostatud töö topeltsisestuse eemaldamine ja Töö valmis nupp",
-  "notes": "RC1.003: Teostatud töö sisestatakse ainult töö detailvaates. Lõpeta töö modaal on nüüd kokkuvõtte/kinnituse vaade. Kui teostatud töö puudub, lõpetamine blokeeritakse ja töö detail avatakse tagasi. Finish action renderdab Field vaate uuesti."
+  "build": "RC1.003.1",
+  "name": "VECO_RC1.003.1",
+  "status": "Bugfix",
+  "date": "2026-06-28",
+  "scope": "Field finish state fix",
+  "notes": "Parandab Töö valmis / Lõpeta töö salvestusjärjekorra: teostatud töö salvestatakse completionComment/performedWork väljadele enne lõpetamist, töö lõpetamine ei sulge modaali enne staatuse Teostatud kinnitamist ning tehniku detailpäisest eemaldati probleemi dubleeriv tekst."
 }

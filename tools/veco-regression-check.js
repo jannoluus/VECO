@@ -11,8 +11,8 @@ function check(name,pass,detail=''){
   console.log(line);
   if(!pass) ok=false;
 }
-check('APP_BUILD RC1.001',/APP_BUILD='RC1.001'/.test(app));
-check('HTML cache-bust 0009',index.includes('v=RC1.001')&&!/v=20260627_000[0-8]/.test(index));
+check('APP_BUILD RC1.003.1',/APP_BUILD='RC1.003.1'/.test(app));
+check('HTML cache-bust RC1.003.1',index.includes('v=RC1.003.1')&&!/v=RC1.001/.test(index));
 check('CR-STATE-002 boot restore script olemas',index.includes('veco_boot_html_'+ 'calendar') || index.includes("veco_boot_html_"));
 check('boot snapshot save funktsioon olemas',app.includes('function saveBootHtmlSnapshot'));
 check('shell hydration guard olemas',app.includes('__VECO_BOOT_RESTORED__')&&app.includes('__VECO_BOOT_HYDRATED__'));
@@ -49,7 +49,7 @@ check('Field admin preview grant olemas',app.includes('FIELD_ADMIN_PREVIEW_KEY')
 check('Field admin preview vajab grant lippu',app.includes('consumeFieldAdminPreviewGrant')&&app.includes('FIELD_ADMIN_PREVIEW_TTL'));
 check('Calendar boot snapshot build guarded',index.includes('savedBuild===build')&&index.includes('veco_boot_build_'));
 check('Technician V1 start action rerender',app.includes("if(page==='technicianV1') renderTechnicianV1()")&&app.includes('openTechnicianV1WorkModal(wid)'));
-check('Field completion uses one performed work field', app.includes('Teostatud töö *') && !app.includes('completionResultInput') && !app.includes('completionRecommendationsInput'));
+check('Field completion uses one performed work field', app.includes('<span>Teostatud töö</span>') && app.includes('completion-work-summary') && !app.includes('completionResultInput') && !app.includes('completionRecommendationsInput')); 
 check('Technician V1 detail label is Teostatud töö', app.includes('<span>Teostatud töö</span>') && app.includes('technicianV1WorkflowButtons(w)'));
 check('Technician V1 detail hides Täida button', app.includes('function technicianV1WorkflowButtons') && app.includes('data-mobile-edit'));
 
