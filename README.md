@@ -1,3 +1,8 @@
-# VECO_RC1.005.4
+# VECO_RC1.005.5
 
-Parandusbuild: admini pikkade tekstiväljade sisemine kerimine ja tehniku töökaartide ajavahemik.
+Parandusbuild: kalendri vasaku sisemise tühja ala kitsendamine.
+
+## Scope
+- CSS/layout only.
+- Päevade veerud jäävad võrdse laiusega.
+- Töövooge, andmeid ja PIN/autentimist ei muudetud.

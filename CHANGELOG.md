@@ -1,11 +1,20 @@
-# VECO_RC1.005.4
+# VECO_RC1.005.5
 
 ## Muudetud
-- Admini modali pikad tekstiväljad kasutavad nüüd ühtset sisemist kerimist.
-- Kaetud: Probleemi kirjeldus, Teostatud tööd, Töö tulemus / märkused, Soovitused / puudused ja Materjalid.
-- Tehniku vaate töökaartidel kuvatakse võimalusel ajavahemik kujul `algus–lõpp`.
+- Kalendri vasak sisemine tühi ala kitsendatud.
+- Kalendri planneri vasak padding vähendatud ainult kalendri vaates.
+- Ajatelje veerg tehtud kompaktsemaks.
+- Planneri gap vähendatud, et päevade grid saaks rohkem kasutatavat laiust.
 
 ## Ei muudetud
-- PIN / autentimine.
-- Töövoog ja andmeloogika.
-- PDF akti sisu.
+- Supabase / andmeloogika.
+- Töövood.
+- Tehniku vaade.
+- Admini väljakutsed.
+- PDF akt.
+- Drag/drop JS loogika.
+
+## Kontroll
+- JS syntax OK.
+- Päevade grid kasutab endiselt võrdset repeat(..., 1fr) loogikat.
+- Muudatus on CSS-only ja piiratud `.app.page-calendar` vaatega.

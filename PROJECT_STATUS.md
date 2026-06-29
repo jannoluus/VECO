@@ -1,5 +1,12 @@
 # VECO Project Status
 
-Current build: VECO_RC1.005.4
+Current Build: VECO_RC1.005.5
+Status: Release Candidate / Calendar Polish
 
-Focus: RC1 stabilization / UI fixes.
+## Fookus
+Kalendri vasakul serval oleva kasutult laia sisemise ala vähendamine.
+
+## Scope
+- Ainult CSS/layout.
+- Päevade võrdsed laiused säilivad.
+- Ei muuda töökaartide andmeid ega töövooge.

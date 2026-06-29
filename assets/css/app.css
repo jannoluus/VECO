@@ -5548,3 +5548,21 @@ body.theme-light .callout-card .muted strong{
   overscroll-behavior:contain!important;
   white-space:pre-wrap!important;
 }
+
+/* VECO_RC1.005.5: calendar left spacer polish (CSS-only)
+   Purpose: free unused horizontal space on calendar left side while keeping all day columns equal. */
+@media (min-width:1121px){
+  .app.page-calendar .calendar-planner-wrap{
+    padding-left:4px!important;
+  }
+  .app.page-calendar .calendar-planner{
+    grid-template-columns:44px minmax(0,1fr)!important;
+    gap:4px!important;
+  }
+  .app.page-calendar .calendar-hour-label{
+    padding-right:4px!important;
+  }
+  .app.page-calendar .calendar-now-line span{
+    left:-50px!important;
+  }
+}

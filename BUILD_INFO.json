@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.005.4",
-  "name": "VECO_RC1.005.4",
+  "build": "VECO_RC1.005.5",
+  "name": "VECO_RC1.005.5",
   "status": "Release Candidate",
   "date": "2026-06-29",
-  "scope": "Admin large textarea scroll + technician time range",
-  "notes": "Tehniku autosave ja töövoo nupud patchivad ainult muudetud välju nii localStorage'is kui Supabase'is, et admini paralleelsed probleemi kirjelduse muudatused ei kaoks."
+  "scope": "Calendar left spacer polish",
+  "notes": "Kalendri vasak sisemine tühi ala on kitsendatud CSS-only muudatusega. Päevade veerud jäävad võrdse laiusega; andmeloogikat, drag/drop loogikat ja töövooge ei muudetud."
 }
