@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.005.1",
-  "name": "VECO_RC1.005.1",
+  "build": "VECO_RC1.005.2",
+  "name": "VECO_RC1.005.2",
   "status": "Bugfix",
   "date": "2026-06-29",
-  "scope": "Field Mapping Audit + VECO väljakutse akti allkirjaploki eemaldus",
-  "notes": "Töö nimetus ja probleemi kirjeldus hoitakse eraldi; tehniku vaates kuvatakse lühikirjeldus ning vajadusel eraldi probleemi kirjeldus; akti allkirjad eemaldatud."
+  "scope": "Concurrent edit overwrite fix",
+  "notes": "Tehniku autosave ja töövoo nupud salvestavad Supabase'i ainult muudetud väljad, et admini paralleelsed probleemi kirjelduse muudatused ei kaoks."
 }

@@ -724,6 +724,62 @@
     return deactivateAuthUser(userId);
   }
 
+
+  function partialWorkorderDbPatch(fields={}){
+    const row={updated_at:new Date().toISOString()};
+    const set=(k,v)=>{ if(v!==undefined) row[k]=v; };
+    if(Object.prototype.hasOwnProperty.call(fields,'title')) set('title',fields.title||'Töö');
+    if(Object.prototype.hasOwnProperty.call(fields,'description') || Object.prototype.hasOwnProperty.call(fields,'problemDescription')) set('description',fields.description ?? fields.problemDescription ?? null);
+    if(Object.prototype.hasOwnProperty.call(fields,'objectId')) set('object_id',fields.objectId||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'projectId')) set('project_id',fields.projectId||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'technicianId')) set('technician_id',fields.technicianId||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'status')) set('status',fields.status||'Planeeritud');
+    if(Object.prototype.hasOwnProperty.call(fields,'date')) set('date',fields.date||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'time')) set('time',fields.time||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'plannedHours') || Object.prototype.hasOwnProperty.call(fields,'durationHours') || Object.prototype.hasOwnProperty.call(fields,'hours')) set('planned_hours',Number(fields.plannedHours||fields.durationHours||fields.hours||2)||2);
+    if(Object.prototype.hasOwnProperty.call(fields,'completedAt')) set('completed_at',fields.completedAt||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'completedBy')) set('completed_by',fields.completedBy||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'completionComment') || Object.prototype.hasOwnProperty.call(fields,'performedWork') || Object.prototype.hasOwnProperty.call(fields,'workDone') || Object.prototype.hasOwnProperty.call(fields,'done')) set('completion_comment',fields.completionComment||fields.performedWork||fields.workDone||fields.done||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'startedAt')) set('started_at',fields.startedAt||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'pausedAt')) set('paused_at',fields.pausedAt||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'startedByUuid')) set('started_by',fields.startedByUuid||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'endDate')) set('end_date',fields.endDate||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'workflow') || Object.prototype.hasOwnProperty.call(fields,'workflowType')) set('workflow',fields.workflow||fields.workflowType||'kontroll');
+    if(Object.prototype.hasOwnProperty.call(fields,'requiresAct') || Object.prototype.hasOwnProperty.call(fields,'actRequired')) set('requires_act',!!(fields.requiresAct||fields.actRequired));
+    if(Object.prototype.hasOwnProperty.call(fields,'isBillable')) set('is_billable',!!fields.isBillable);
+    if(Object.prototype.hasOwnProperty.call(fields,'trackTime')) set('track_time',!!fields.trackTime);
+    if(Object.prototype.hasOwnProperty.call(fields,'usesMaterials')) set('uses_materials',!!fields.usesMaterials);
+    if(Object.prototype.hasOwnProperty.call(fields,'requiresSignature')) set('requires_signature',!!fields.requiresSignature);
+    if(Object.prototype.hasOwnProperty.call(fields,'participantTechnicianIds')) set('participant_technician_ids',Array.isArray(fields.participantTechnicianIds)?fields.participantTechnicianIds.filter(Boolean):[]);
+    return row;
+  }
+
+  async function patchWorkorderFields(workorderNo,fields={}){
+    const client=getClient();
+    const no=String(workorderNo||'').trim();
+    if(!client||!no) return false;
+    const row=partialWorkorderDbPatch(fields);
+    markLocalWrite();
+    try{
+      const found=await client.from(TABLE).select('id').eq('workorder_no',no).maybeSingle();
+      if(found.error && found.error.code!=='PGRST116') throw found.error;
+      if(found.data?.id){
+        let {error}=await client.from(TABLE).update(row).eq('id',found.data.id);
+        if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date|workflow|requires_act|is_billable|track_time|uses_materials|requires_signature/.test(String(error.message||''))){
+          const fallback=stripUnsupportedColumns({...row},error);
+          ({error}=await client.from(TABLE).update(fallback).eq('id',found.data.id));
+        }
+        if(error) throw error;
+        const local=(window.VECO_STORAGE?.load?.()||{}).workorders?.find?.(w=>String(w.id||w.workorder_no||'')===no);
+        if(local) rememberSyncedWorkorder({...local,...fields,updatedAt:row.updated_at,updated_at:row.updated_at});
+        return true;
+      }
+    }catch(err){
+      console.warn('VECO Supabase partial workorder update failed',err);
+    }
+    return false;
+  }
+
   function signature(data){
     return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.endDate||w.end_date||'',w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,(w.participantTechnicianIds||[]).join(','),w.startedAt||'',w.pausedAt||'',w.completedAt||'',w.startedByUuid||'',w.completedBy||'',w.completionComment||'']));
   }
@@ -846,6 +902,7 @@
       }
       return saved;
     },
+    patchWorkorderFields,
     async deleteWorkorder(workorderNo){
       const client=getClient();
       if(!workorderNo) return false;

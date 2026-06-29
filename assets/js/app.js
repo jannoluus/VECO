@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.28';
-const APP_BUILD='RC1.005.1';
+const APP_BUILD='RC1.005.2';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -1122,6 +1122,19 @@ function save(){
   normalizeWorkorderPeople();
   state=window.VECO_API?.save ? window.VECO_API.save(state) : window.VECO_STORAGE.save(state);
   notifyLocalPeers();
+}
+function saveLocalOnly(){
+  normalizeWorkorderPeople();
+  state=window.VECO_STORAGE.save(state);
+  notifyLocalPeers();
+  return state;
+}
+function patchRemoteWorkorderFields(workorderId,fields){
+  try{
+    if(window.VECO_API?.mode?.()==='supabase' && window.VECO_API?.patchWorkorderFields){
+      window.VECO_API.patchWorkorderFields(workorderId,fields).catch(err=>console.warn('VECO partial workorder patch failed',err));
+    }
+  }catch(err){console.warn('VECO partial workorder patch failed',err);}
 }
 // CR-084B: multi-tab render guard. Peer sync must not repaint calendar unless data signature changed.
 const LOCAL_SYNC_KEY='veco_v3_sync_pulse';
@@ -2777,7 +2790,7 @@ function canvasSectionHeight(ctx,text,maxWidth,minH,lineHeight=28){
   return Math.max(minH, contentH+52);
 }
 
-function ensureActForWorkorder(workorderId){
+function ensureActForWorkorder(workorderId,{localOnly=false}={}){
   const w=byId(state.workorders,workorderId);
   if(!w || !isCompletedStatus(w.status)) return null;
   let a=actForWorkorder(w.id);
@@ -2803,7 +2816,8 @@ function ensureActForWorkorder(workorderId){
     materials:workMaterialsText(w)||''
   };
   state.acts.push(a);
-  save();
+  if(localOnly) saveLocalOnly();
+  else save();
   return a;
 }
 function actPrintHtml(actId,{autoPrint=false,autoPdf=false}={}){
@@ -4042,6 +4056,7 @@ async function applyMobileWorkorderAction(action,workorderId,opts={}){
   const actorName=actor?.name || completedByLabel(w);
   const actorUuid=actor?.dbId || '';
   const workDetails=`<strong>${esc(objectName(w.objectId))}</strong><br>${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(w.title||'')}`;
+  let remotePatch={};
   if(action==='start'){
     const ok=await openVecoConfirm({title:'Alusta tööd',message:'Kas soovid töö alustada?',details:workDetails,confirmText:'Alusta tööd',cancelText:'Loobu'});
     if(!ok) return;
@@ -4049,15 +4064,18 @@ async function applyMobileWorkorderAction(action,workorderId,opts={}){
     if(!w.startedAt) w.startedAt=now;
     if(actorUuid) w.startedByUuid=actorUuid;
     if(actorName) w.startedBy=actorName;
+    remotePatch={status:w.status,startedAt:w.startedAt,startedByUuid:w.startedByUuid||'',updatedAt:now};
   }else if(action==='resume'){
     const ok=await openVecoConfirm({title:'Jätka tööd',message:'Kas soovid peatatud tööga jätkata?',details:workDetails,confirmText:'Jätka',cancelText:'Loobu'});
     if(!ok) return;
     w.status='Töös';
+    remotePatch={status:w.status,updatedAt:now};
   }else if(action==='pause'){
     const ok=await openVecoConfirm({title:'Peata töö',message:'Kas soovid töö ajutiselt peatada?',details:workDetails,confirmText:'Peata töö',cancelText:'Loobu'});
     if(!ok) return;
     w.status='Peatatud';
     w.pausedAt=now;
+    remotePatch={status:w.status,pausedAt:w.pausedAt,updatedAt:now};
   }else if(action==='finish'){
     const existingPerformed=String(performedWorkText(w)||completionCommentText(w)||'').trim();
     if(!existingPerformed){
@@ -4092,9 +4110,20 @@ async function applyMobileWorkorderAction(action,workorderId,opts={}){
     w.workResult=result.workResult||workResultText(w)||'';
     w.recommendations=result.recommendations||workRecommendationsText(w)||'';
     w.materials=result.materials||workMaterialsText(w)||'';
+    remotePatch={
+      status:w.status,
+      startedAt:w.startedAt,
+      startedByUuid:w.startedByUuid||'',
+      completedAt:w.completedAt,
+      completedBy:w.completedBy||'',
+      performedWork:comment,
+      completionComment:comment,
+      done:comment,
+      workDone:comment,
+      updatedAt:w.updatedAt
+    };
     if(workorderActRequired(w) && !actForWorkorder(w.id)){
-      save();
-      ensureActForWorkorder(w.id);
+      ensureActForWorkorder(w.id,{localOnly:true});
     }
     showSyncNotice('Töö lõpetatud. Akt on valmis.');
   }else if(action==='reopen'){
@@ -4102,8 +4131,13 @@ async function applyMobileWorkorderAction(action,workorderId,opts={}){
     const ok=await openVecoConfirm({title:'Ava töö uuesti',message:'Kas soovid lõpetatud töö uuesti avada?',details:`${workDetails}${act?'<br><br><strong>Seotud akt säilitatakse.</strong> Vajadusel uuenda akti eraldi akti vaates.':''}`,confirmText:'Ava uuesti',cancelText:'Loobu'});
     if(!ok) return;
     w.status='Töös';
+    remotePatch={status:w.status,updatedAt:now};
   }
-  save();
+  // RC1.005.2: mobiili/tehniku olekumuutus salvestab lokaalselt kogu state'i,
+  // aga Supabase'i saadetakse ainult muudetud väljad. Nii ei kirjuta avatud
+  // tehniku modal admini värsket probleemi kirjeldust vana koopiaga üle.
+  saveLocalOnly();
+  if(w?.id && remotePatch && Object.keys(remotePatch).length) patchRemoteWorkorderFields(w.id,remotePatch);
   state=window.VECO_STORAGE.load();
   if(opts.keepModalOpen) return;
   if(page==='technicianV1') renderTechnicianV1();
@@ -4453,8 +4487,8 @@ function openMobileWorkModal(id){
   const completionFields=editCompletion?`<label class="full">Teostatud tööd *<textarea name="done" placeholder="Kirjelda, mida objektil tehti. Seda nõutakse töö lõpetamisel.">${esc(performedWorkText(w))}</textarea></label><label class="full">Töö tulemus / märkused<textarea name="workResult" placeholder="Mis seis jäi lahkumisel?">${esc(workResultText(w))}</textarea></label><label class="full">Soovitused / puudused<textarea name="recommendations" placeholder="Lisa remondivajadused või soovitused.">${esc(workRecommendationsText(w))}</textarea></label>`:`<input type="hidden" name="done" value="${esc(performedWorkText(w))}"><input type="hidden" name="workResult" value="${esc(workResultText(w))}"><input type="hidden" name="recommendations" value="${esc(workRecommendationsText(w))}">${actNotice}`;
   openModal(`<form id="mobileWorkForm"><div class="dialog-head"><h2>${esc(w.title)}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="card"><strong>${esc(workorderObjectLabel(w))}</strong><span class="muted">${esc(fmtActDate(w.date))} ${esc(w.time||'')} · ${esc(clientName(objectClientId(w.objectId)))}</span></div><div class="form-grid mobile-form-grid"><div class="kv full"><span>Workflow</span><strong>${esc(taskWorkflowLabel(w))}</strong></div><div class="kv full"><span>Omadused</span><strong>${esc(taskPropertiesSummary(w))}</strong></div><label class="full">Lühikirjeldus<textarea readonly>${esc(shortProblemTitleText(w)||'-')}</textarea></label>${longProblemDescriptionText(w)&&longProblemDescriptionText(w)!==shortProblemTitleText(w)?`<label class="full">Probleemi kirjeldus<textarea readonly>${esc(longProblemDescriptionText(w))}</textarea></label>`:''}${completionFields}<div class="full mobile-status-panel"><div class="kv"><span>Staatus</span><strong><span class="status ${statusClass(w.status)}">${esc(w.status||'Planeeritud')}</span></strong></div><div class="actions mobile-actions mobile-modal-actions">${mobileWorkflowButtons(w)}</div><span class="muted">Minu töödes muutub staatus tegevusnuppudega. Kalendris jääb töö alles.</span></div><label class="check-card"><input type="checkbox" name="actRequired" ${workorderActRequired(w)?'checked':''}> <span>Akt vajalik</span></label><label>Foto / viide<input class="field" name="photoNote" value="${esc(w.photoNote||'')}" placeholder="Vaba märkus foto kohta"></label><div class="full">${workorderPhotoGalleryHtml(w.id,{hint:'Saad lisada mitu pilti korraga. Pildid jäävad töö külge.'})}</div></div></div><div class="dialog-actions mobile-dialog-actions"><button type="button" class="btn ghost" id="cancelModalBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">Tühista</button><button class="btn primary" type="submit">Salvesta</button></div></form>`);
   bindClose();
-  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const note=String(f.done.value||'').trim();w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';w.completionComment=note||w.completionComment||'';w.workResult=String(f.workResult?.value||w.workResult||'').trim();w.recommendations=String(f.recommendations?.value||w.recommendations||'').trim();w.actRequired=!!f.actRequired?.checked;w.photoNote=f.photoNote.value;save();closeModal();state=window.VECO_STORAGE.load();renderMobile();});
-  $$('#mobileWorkForm [data-mobile-action]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();const action=btn.dataset.mobileAction;const wid=btn.dataset.workorderId;const form=$('#mobileWorkForm');if(form){const f=form.elements;const draft=byId(state.workorders,wid);if(draft){const note=String(f.done?.value||'').trim();draft.done=note||draft.done||'';draft.workDone=note||draft.workDone||'';draft.performedWork=note||draft.performedWork||'';draft.completionComment=note||draft.completionComment||'';draft.workResult=String(f.workResult?.value||draft.workResult||'').trim();draft.recommendations=String(f.recommendations?.value||draft.recommendations||'').trim();draft.actRequired=!!f.actRequired?.checked;draft.photoNote=f.photoNote?.value||draft.photoNote||'';save();}}closeModal();applyMobileWorkorderAction(action,wid).then(()=>{state=window.VECO_STORAGE.load();renderMobile();});}));
+  $('#mobileWorkForm').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget.elements;const note=String(f.done.value||'').trim();w.done=note||w.done||'';w.workDone=note||w.workDone||'';w.performedWork=note||w.performedWork||'';w.completionComment=note||w.completionComment||'';w.workResult=String(f.workResult?.value||w.workResult||'').trim();w.recommendations=String(f.recommendations?.value||w.recommendations||'').trim();w.actRequired=!!f.actRequired?.checked;w.photoNote=f.photoNote.value;w.updatedAt=new Date().toISOString();w.updated_at=w.updatedAt;saveLocalOnly();patchRemoteWorkorderFields(w.id,{performedWork:note,done:note,workDone:note,completionComment:note,requiresAct:w.requiresAct,actRequired:w.actRequired,updatedAt:w.updatedAt});closeModal();state=window.VECO_STORAGE.load();renderMobile();});
+  $$('#mobileWorkForm [data-mobile-action]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();const action=btn.dataset.mobileAction;const wid=btn.dataset.workorderId;const form=$('#mobileWorkForm');if(form){const f=form.elements;const draft=byId(state.workorders,wid);if(draft){const note=String(f.done?.value||'').trim();draft.done=note||draft.done||'';draft.workDone=note||draft.workDone||'';draft.performedWork=note||draft.performedWork||'';draft.completionComment=note||draft.completionComment||'';draft.workResult=String(f.workResult?.value||draft.workResult||'').trim();draft.recommendations=String(f.recommendations?.value||draft.recommendations||'').trim();draft.actRequired=!!f.actRequired?.checked;draft.photoNote=f.photoNote?.value||draft.photoNote||'';draft.updatedAt=new Date().toISOString();draft.updated_at=draft.updatedAt;saveLocalOnly();patchRemoteWorkorderFields(draft.id,{performedWork:note,done:note,workDone:note,completionComment:note,requiresAct:draft.requiresAct,actRequired:draft.actRequired,updatedAt:draft.updatedAt});}}closeModal();applyMobileWorkorderAction(action,wid).then(()=>{state=window.VECO_STORAGE.load();renderMobile();});}));
   const rebindPhotoActions=()=>bindWorkorderPhotos(()=>{closeModal();openMobileWorkModal(id);});
   rebindPhotoActions();
 
@@ -4571,7 +4605,16 @@ function openTechnicianV1WorkModal(id){
     draft.updatedAt=new Date().toISOString();
     draft.updated_at=draft.updatedAt;
     const act=actForWorkorder(draft.id); if(act) normalizeActContentFromWorkorder(act,draft);
-    save();
+    // RC1.005.2: tehniku autosave salvestab ainult teostatud töö väljad.
+    // See väldib admini paralleelsete muudatuste üle kirjutamist vana modal state'iga.
+    saveLocalOnly();
+    patchRemoteWorkorderFields(draft.id,{
+      performedWork:note,
+      done:note,
+      workDone:note,
+      completionComment:note,
+      updatedAt:draft.updatedAt
+    });
     if(autosaveStatus) autosaveStatus.textContent='Salvestatud';
   };
   form?.elements.done?.addEventListener('input',()=>{

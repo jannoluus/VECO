@@ -1,10 +1,7 @@
-# VECO Project Status
+# VECO PROJECT STATUS
 
-Current build: VECO_RC1.005.1
+Current build: VECO_RC1.005.2
 
-Focus: RC1 stabiliseerimine.
+Focus: concurrent edit overwrite fix.
 
-Viimased parandused:
-- Field mapping korrastatud.
-- Töö nimetus ja probleemi kirjeldus eraldatud.
-- VECO väljakutse aktist eemaldatud allkirjade plokk.
+RC1 põhivoog on jätkuvalt stabiliseerimisel.
