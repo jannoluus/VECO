@@ -1,16 +1,15 @@
-# PROJECT STATUS — VECO_RC1.004.4
+# PROJECT STATUS
 
-## Staatus
-RC1 stabiliseerimine.
+Current build: VECO_RC1.005
 
-## Viimane muudatus
-Töö lõpetamise valideerimine ja akti tööaja kuvamine korrastatud.
+Status: RC1 PDF polish
 
-## RC1 põhivoog
-- Registreeri väljakutse
-- Alusta töö
-- Paus / Jätka
-- Teostatud töö autosave
-- Töö valmis
-- Akt
-- Admin kontroll
+Scope:
+- VECO väljakutse akti päise ja infokastide viimistlus.
+
+Out of scope:
+- Field workflow
+- Admin workflow
+- Calendar
+- Work Time Engine calculation
+- Activity / ACTIVO features

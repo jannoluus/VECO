@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.28';
-const APP_BUILD='RC1.004.4';
+const APP_BUILD='RC1.005';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -2822,12 +2822,15 @@ function actPrintHtml(actId,{autoPrint=false,autoPdf=false}={}){
   const headerLeft=[['Kuupäev',fmtActDate(a.date||w.date||'')],['Akt nr',actNumber(a)]];
   const headerRight=[['Objekt',obj.name||''],['Klient',client.name||'']];
   const topItems=[
-    ['Algus',startLabel],[workorderPeopleHeading(w,'Tehnik','Tehnikud'),workorderPeopleMultiline(w)],['Arvestatud tööaeg',actDurationLabel(w)],['Tüüp',a.type||'Väljakutse akt']
+    ['Algus',startLabel],
+    [workorderPeopleHeading(w,'Tehnik','Tehnikud'),workorderPeopleMultiline(w)],
+    ['Tüüp',a.type||'Väljakutse akt'],
+    ['Tööaeg',actDurationLabel(w)]
   ];
   const autoScript=autoPrint?`<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>`:'';
   const helper=autoPrint?'Prindivaade avatakse automaatselt.':'Akti eelvaade.';
   return `<!doctype html><html lang="et"><head><meta charset="utf-8"><title>${esc(actNumber(a))} · ${esc(a.title||'Väljakutse akt')}</title><style>
-    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;font-size:12px;line-height:1.42;background:#fff}.actions{margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.act-head{display:grid;grid-template-columns:1fr 240px 1fr;gap:18px;align-items:start;margin-bottom:18px}.head-side{display:grid;gap:10px}.head-card{border:1.6px solid #94a3b8;border-radius:8px;min-height:48px;padding:9px 11px;background:#f3f7fb}.head-card .value{font-size:13px;white-space:pre-line}.top{text-align:center;display:flex;align-items:center;justify-content:center;min-height:130px;padding-top:0}.logo-img{width:132px;height:118px;object-fit:contain;display:block;margin:0 auto}.muted{color:#555;font-size:11px}.meta{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.meta-item{border:1.6px solid #94a3b8;border-radius:8px;min-height:48px;height:auto;padding:9px 11px;overflow:visible;background:#f3f7fb}.label{font-size:9px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}.value{font-size:13px;font-weight:700;color:#0f172a;overflow-wrap:anywhere;white-space:pre-line}.content-start{margin-top:26px;padding-top:16px;border-top:1.5px solid #94a3b8}.section-title{font-size:15px;font-weight:800;margin:24px 0 10px;border-bottom:1px solid #cbd5e1;padding-bottom:6px;letter-spacing:.02em}.content-start .section-title{margin-top:0}.box{border:1px solid #cbd5e1;border-radius:8px;padding:15px 16px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.42}.box.description{min-height:50px}.box.result{min-height:72px}.act-line{margin:0 0 7px}.act-line:last-child{margin-bottom:0}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #cbd5e1;border-radius:8px;min-height:80px;padding:12px 14px}.signature-line{border-top:1px solid #334155;margin-top:26px;padding-top:5px;color:#555}@media(max-width:800px){.act-head{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}}@media print{.actions{display:none} body{margin:10mm}.act-head{grid-template-columns:1fr 210px 1fr;gap:12px;margin-bottom:16px}.top{min-height:122px;padding-top:0}.logo-img{width:120px;height:110px}.head-card,.meta-item{min-height:42px;padding:7px 9px}.meta{gap:8px}.content-start{margin-top:24px;padding-top:14px}.section-title{margin-top:22px;margin-bottom:9px}.content-start .section-title{margin-top:0}.box{padding:13px 14px;line-height:1.42}.box.description{min-height:44px}.box.result{min-height:72px}.signature{min-height:74px}}
+    *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:18px;font-size:12px;line-height:1.42;background:#fff}.actions{margin:0 0 12px;display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #777;background:#f7f7f7;padding:8px 12px;border-radius:6px;cursor:pointer}.act-head{display:grid;grid-template-columns:1fr 240px 1fr;gap:18px;align-items:start;margin-bottom:16px}.head-side{display:grid;gap:8px}.head-card{border:1.6px solid #94a3b8;border-radius:8px;min-height:42px;padding:7px 10px;background:#f3f7fb}.head-card .value{font-size:12.5px;white-space:pre-line}.top{text-align:center;display:flex;align-items:center;justify-content:center;min-height:130px;padding-top:0}.logo-img{width:132px;height:118px;object-fit:contain;display:block;margin:0 auto}.muted{color:#555;font-size:11px}.meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.meta-item{border:1.6px solid #94a3b8;border-radius:8px;min-height:42px;height:auto;padding:7px 10px;overflow:visible;background:#f3f7fb}.label{font-size:8.5px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}.value{font-size:12.5px;font-weight:700;color:#0f172a;overflow-wrap:anywhere;white-space:pre-line}.content-start{margin-top:26px;padding-top:16px;border-top:1.5px solid #94a3b8}.section-title{font-size:15px;font-weight:800;margin:24px 0 10px;border-bottom:1px solid #cbd5e1;padding-bottom:6px;letter-spacing:.02em}.content-start .section-title{margin-top:0}.box{border:1px solid #cbd5e1;border-radius:8px;padding:15px 16px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.42}.box.description{min-height:50px}.box.result{min-height:72px}.act-line{margin:0 0 7px}.act-line:last-child{margin-bottom:0}.signatures{display:grid;grid-template-columns:1fr 1fr;gap:12px}.signature{border:1px solid #cbd5e1;border-radius:8px;min-height:80px;padding:12px 14px}.signature-line{border-top:1px solid #334155;margin-top:26px;padding-top:5px;color:#555}@media(max-width:800px){.act-head{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}}@media print{.actions{display:none} body{margin:10mm}.act-head{grid-template-columns:1fr 210px 1fr;gap:12px;margin-bottom:16px}.top{min-height:122px;padding-top:0}.logo-img{width:120px;height:110px}.head-card,.meta-item{min-height:38px;padding:6px 8px}.meta{gap:8px}.content-start{margin-top:24px;padding-top:14px}.section-title{margin-top:22px;margin-bottom:9px}.content-start .section-title{margin-top:0}.box{padding:13px 14px;line-height:1.42}.box.description{min-height:44px}.box.result{min-height:72px}.signature{min-height:74px}}
   </style>${autoScript}</head><body><div class="actions"><button class="btn" onclick="window.print()">Prindi</button><button class="btn" onclick="window.close()">Sulge</button><span class="muted">${esc(helper)}</span></div><div class="act-head"><div class="head-side">${headerLeft.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="top"><img class="logo-img" src="${logoUrl}" alt="VECO"></div><div class="head-side">${headerRight.map(([k,v])=>`<div class="head-card"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div></div><div class="section-title">Üldandmed</div><div class="meta">${topItems.map(([k,v])=>`<div class="meta-item"><div class="label">${esc(k)}</div><div class="value">${esc(v||'-')}</div></div>`).join('')}</div><div class="content-start"><div class="section-title desc">Probleemi kirjeldus</div><div class="box description">${sectionHtml(actProblemDescriptionText(a,w)||'-')}</div><div class="section-title">Teostatud tööd</div><div class="box result">${sectionHtml(performed)}</div>${result?`<div class="section-title">Töö tulemus / märkused</div><div class="box result">${sectionHtml(result)}</div>`:''}${recommendations?`<div class="section-title">Soovitused / puudused</div><div class="box result">${sectionHtml(recommendations)}</div>`:''}${materials?`<div class="section-title">Materjalid</div><div class="box description">${sectionHtml(materials)}</div>`:''}</div><div class="section-title">Allkirjad</div><div class="signatures"><div class="signature"><strong>${esc(workorderPeopleHeading(w,'Teostaja','Teostajad'))}</strong><div style="white-space:pre-line">${esc(workorderPeopleMultiline(w))}</div><div class="signature-line">Allkiri / kuupäev</div></div><div class="signature"><strong>Tellija</strong><div>&nbsp;</div><div class="signature-line">Allkiri / kuupäev</div></div></div></body></html>`;
 }
 function openActWindow(actId,mode='preview'){
@@ -2911,10 +2914,10 @@ function roundRectPath(ctx,x,y,w,h,r){
 function drawInfoCell(ctx,label,value,x,y,w,h){
   ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.8; ctx.fillStyle='#f3f7fb';
   roundRectPath(ctx,x,y,w,h,10); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#64748b'; ctx.font='700 14px Arial, Helvetica, sans-serif'; ctx.fillText(String(label).toUpperCase(),x+14,y+20);
-  ctx.fillStyle='#0f172a'; ctx.font='700 18px Arial, Helvetica, sans-serif';
+  ctx.fillStyle='#64748b'; ctx.font='700 13px Arial, Helvetica, sans-serif'; ctx.fillText(String(label).toUpperCase(),x+14,y+18);
+  ctx.fillStyle='#0f172a'; ctx.font='700 17px Arial, Helvetica, sans-serif';
   const lines=String(value||'-').replace(/\r/g,'').split('\n').filter(Boolean);
-  let yy=y+46;
+  let yy=y+40;
   lines.forEach((line,idx)=>{ yy=wrapCanvasText(ctx,line,x+14,yy,w-28,22,idx===0?2:1); });
 }
 function jpegBytesFromDataUrl(dataUrl){
@@ -2960,25 +2963,27 @@ async function renderActPdfCanvas(actId){
   canvas.width=1240; canvas.height=1754;
   const ctx=canvas.getContext('2d');
   ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  const left=70, gap=14, colW=(canvas.width-left*2-gap*4)/5;
+  const left=70, gap=14, colW=(canvas.width-left*2-gap*3)/4;
   const logo=await loadActLogo();
   const logoSize=150;
   const headY=46;
-  drawInfoCell(ctx,'Kuupäev',d.date,left,headY,colW*1.55,58);
-  drawInfoCell(ctx,'Akt nr',d.number,left,headY+72,colW*1.55,58);
-  drawInfoCell(ctx,'Objekt',d.objectName,canvas.width-left-colW*1.55,headY,colW*1.55,58);
-  drawInfoCell(ctx,'Klient',d.clientName,canvas.width-left-colW*1.55,headY+72,colW*1.55,58);
+  drawInfoCell(ctx,'Kuupäev',d.date,left,headY,colW*1.35,52);
+  drawInfoCell(ctx,'Akt nr',d.number,left,headY+64,colW*1.35,52);
+  drawInfoCell(ctx,'Objekt',d.objectName,canvas.width-left-colW*1.35,headY,colW*1.35,52);
+  drawInfoCell(ctx,'Klient',d.clientName,canvas.width-left-colW*1.35,headY+64,colW*1.35,52);
   if(logo){ ctx.drawImage(logo, (canvas.width-logoSize)/2, headY-2, logoSize, logoSize); }
   else { ctx.fillStyle='#2483ff'; ctx.beginPath(); ctx.arc(canvas.width/2,headY-2+logoSize/2,logoSize/2,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#fff'; ctx.font='700 34px Arial'; ctx.textAlign='center'; ctx.fillText('VECO',canvas.width/2,headY-2+logoSize/2+10); ctx.textAlign='left'; }
   ctx.textAlign='left';
 
-  let y=205;
+  let y=192;
   const cells=[
-    ['Algus',d.start],[d.technicianHeading||'Tehnik',d.technician],['Arvestatud tööaeg',d.duration],
-    ['Tüüp',d.type]
+    ['Algus',d.start],
+    [d.technicianHeading||'Tehnik',d.technician],
+    ['Tüüp',d.type],
+    ['Tööaeg',d.duration]
   ];
-  cells.forEach((c,i)=>{ const x=left+(i%5)*(colW+gap); const yy=y+Math.floor(i/5)*74; drawInfoCell(ctx,c[0],c[1],x,yy,colW,(String(c[1]||'').includes('\n')?78:58)); });
-  y+=Math.ceil(cells.length/5)*(cells.some(c=>String(c[1]||'').includes('\n'))?92:74);
+  cells.forEach((c,i)=>{ const x=left+i*(colW+gap); drawInfoCell(ctx,c[0],c[1],x,y,colW,(String(c[1]||'').includes('\n')?70:52)); });
+  y+=cells.some(c=>String(c[1]||'').includes('\n'))?84:66;
   y+=14;
   ctx.strokeStyle='#d9dee7'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(canvas.width-left,y); ctx.stroke();
   y+=32;

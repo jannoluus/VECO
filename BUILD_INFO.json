@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.004.4",
-  "name": "VECO_RC1.004.4",
-  "status": "Bugfix",
-  "date": "2026-06-28",
-  "scope": "Completion validation and act work time display",
-  "notes": "Teostatud töö valideerimine ühtlustatud: tühi väli näitab selget teadet, 1+ märk lubab lõpetada. Akt kuvab arvestatud tööaega, mitte tegeliku lõpuaja ja arvestuse vastuolu."
+  "build": "VECO_RC1.005",
+  "name": "VECO_RC1.005",
+  "status": "PDF Polish",
+  "date": "2026-06-29",
+  "scope": "VECO väljakutse akti päise ja infokastide viimistlus",
+  "notes": "Akti päis korrastatud: ühesugused kastid, alumine rida ALGUS | TEHNIK | TÜÜP | TÖÖAEG, lõppaega ei kuvata."
 }

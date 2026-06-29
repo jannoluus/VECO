@@ -1,5 +1,5 @@
-# KNOWN ISSUES — VECO_RC1.004.4
+# KNOWN ISSUES
 
-Hetkel teadaolevaid P0 vigu ei ole.
+## VECO_RC1.005
 
-Järgmine kontroll: üks töövoog algusest lõpuni pärisandmetega.
+- Teadaolevaid uusi blokeerivaid probleeme ei lisandunud.
