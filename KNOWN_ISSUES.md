@@ -1,3 +1,3 @@
-# Known issues – VECO_RC1.005.2
+# KNOWN ISSUES
 
-- Paralleelmuutmise täielik konfliktide UI puudub veel. See build väldib teadaolevat üle kirjutamise viga tehniku autosave puhul.
+- Puudub serveripoolne optimistic locking; RC1.005.3 vähendab overwrite-riski kliendipoolse field-patchiga.

@@ -1,7 +1,5 @@
-# VECO PROJECT STATUS
+# PROJECT STATUS
 
-Current build: VECO_RC1.005.2
+Current build: VECO_RC1.005.3
 
-Focus: concurrent edit overwrite fix.
-
-RC1 põhivoog on jätkuvalt stabiliseerimisel.
+Focus: concurrent edit overwrite stabilization.

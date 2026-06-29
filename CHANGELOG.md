@@ -1,12 +1,12 @@
-# VECO_RC1.005.2
+# VECO_RC1.005.3
 
-## Parandatud
-- Tehniku vaate autosave ei kirjuta enam kogu tööobjekti Supabase'i.
-- Teostatud töö autosave saadab Supabase'i ainult teostatud töö väljad.
-- Alusta/Paus/Jätka/Töö valmis nupud saadavad Supabase'i ainult oleku ja tööaja väljad.
-- Admini paralleelsed muudatused probleemikirjelduses ei tohiks enam tehniku avatud modalist üle kirjutatud saada.
+- Parandatud concurrent edit overwrite: tehniku avatud detailvaade ei kirjuta enam admini probleemi kirjelduse muudatusi üle.
+- Lisatud patchLocalWorkorderFields / patchWorkorderFields.
+- Tehniku autosave, Alusta/Paus/Jätka/Töö valmis kasutavad kitsast field-patchi.
+- Ei muudetud PDF-i, kalendrit ega üldist töövoogu.
 
-## Ei muudetud
-- PDF kujundus.
-- Kalender.
-- Akti tööaja arvutus.
+Ristkontroll:
+- JS syntax OK.
+- Regression check OK.
+- Tehniku autosave ja olekunupud kasutavad patchWorkorderFields().
+- Akti loomine localOnly režiimis kasutab värsket localStorage state'i, mitte vana modali koopiat.

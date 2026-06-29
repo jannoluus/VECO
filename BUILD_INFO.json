@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.005.2",
-  "name": "VECO_RC1.005.2",
+  "build": "VECO_RC1.005.3",
+  "name": "VECO_RC1.005.3",
   "status": "Bugfix",
   "date": "2026-06-29",
-  "scope": "Concurrent edit overwrite fix",
-  "notes": "Tehniku autosave ja töövoo nupud salvestavad Supabase'i ainult muudetud väljad, et admini paralleelsed probleemi kirjelduse muudatused ei kaoks."
+  "scope": "Concurrent edit overwrite fix - local + remote field patch",
+  "notes": "Tehniku autosave ja töövoo nupud patchivad ainult muudetud välju nii localStorage'is kui Supabase'is, et admini paralleelsed probleemi kirjelduse muudatused ei kaoks."
 }
