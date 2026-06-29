@@ -5530,3 +5530,21 @@ body.theme-light .callout-card .callout-meta{
 body.theme-light .callout-card .muted strong{
   color:#132235 !important;
 }
+
+
+/* RC1.005.4: admini modali pikkade tekstiväljade ühtne sisemine kerimine */
+#modal .dialog textarea[name="problemDescription"],
+#modal .dialog textarea[name="performedWork"],
+#modal .dialog textarea[name="completionComment"],
+#modal .dialog textarea[name="workResult"],
+#modal .dialog textarea[name="resultNotes"],
+#modal .dialog textarea[name="recommendations"],
+#modal .dialog textarea[name="materials"]{
+  min-height:180px!important;
+  max-height:300px!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  resize:vertical!important;
+  overscroll-behavior:contain!important;
+  white-space:pre-wrap!important;
+}

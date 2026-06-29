@@ -1,12 +1,11 @@
-# VECO_RC1.005.3
+# VECO_RC1.005.4
 
-- Parandatud concurrent edit overwrite: tehniku avatud detailvaade ei kirjuta enam admini probleemi kirjelduse muudatusi üle.
-- Lisatud patchLocalWorkorderFields / patchWorkorderFields.
-- Tehniku autosave, Alusta/Paus/Jätka/Töö valmis kasutavad kitsast field-patchi.
-- Ei muudetud PDF-i, kalendrit ega üldist töövoogu.
+## Muudetud
+- Admini modali pikad tekstiväljad kasutavad nüüd ühtset sisemist kerimist.
+- Kaetud: Probleemi kirjeldus, Teostatud tööd, Töö tulemus / märkused, Soovitused / puudused ja Materjalid.
+- Tehniku vaate töökaartidel kuvatakse võimalusel ajavahemik kujul `algus–lõpp`.
 
-Ristkontroll:
-- JS syntax OK.
-- Regression check OK.
-- Tehniku autosave ja olekunupud kasutavad patchWorkorderFields().
-- Akti loomine localOnly režiimis kasutab värsket localStorage state'i, mitte vana modali koopiat.
+## Ei muudetud
+- PIN / autentimine.
+- Töövoog ja andmeloogika.
+- PDF akti sisu.

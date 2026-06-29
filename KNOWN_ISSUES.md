@@ -1,3 +1,3 @@
-# KNOWN ISSUES
+# VECO_RC1.005.4 Known Issues
 
-- Puudub serveripoolne optimistic locking; RC1.005.3 vähendab overwrite-riski kliendipoolse field-patchiga.
+- Uusi teadaolevaid kriitilisi vigu ei lisandunud.

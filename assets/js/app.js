@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.28';
-const APP_BUILD='RC1.005.3';
+const APP_BUILD='RC1.005.4';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -2846,7 +2846,7 @@ function ensureActForWorkorder(workorderId,{localOnly=false}={}){
   actsList.push(a);
   baseState.acts=actsList;
   if(localOnly){
-    // RC1.005.3: akti loomine tehniku lõpetamisel tehakse värske localStorage state'i pealt,
+    // RC1.005.4: akti loomine tehniku lõpetamisel tehakse värske localStorage state'i pealt,
     // mitte vana modali koopia pealt. Nii säilib admini paralleelne probleemikirjeldus.
     state=window.VECO_STORAGE.save(baseState);
     notifyLocalPeers();
@@ -4179,7 +4179,7 @@ async function applyMobileWorkorderAction(action,workorderId,opts={}){
     w.status='Töös';
     remotePatch={status:w.status,updatedAt:now};
   }
-  // RC1.005.3: mobiili/tehniku olekumuutus salvestab ainult muudetud väljad.
+  // RC1.005.4: mobiili/tehniku olekumuutus salvestab ainult muudetud väljad.
   // Ka lokaalne state patchitakse värske localStorage pealt, et admini paralleelsed
   // probleemikirjelduse muudatused ei kaoks samas brauseris.
   if(w?.id && remotePatch && Object.keys(remotePatch).length) patchWorkorderFields(w.id,remotePatch);
@@ -4597,9 +4597,15 @@ function technicianV1OncallCard(current,todayKey){
 }
 function technicianV1WorkTime(w){
   const start=String(w.time||'').trim();
-  const end=String(w.endTime||w.timeEnd||'').trim();
-  if(start&&end) return `${start}–${end}`;
-  if(start) return start;
+  const explicitEnd=String(w.endTime||w.timeEnd||'').trim();
+  if(start&&explicitEnd) return `${start}–${explicitEnd}`;
+  if(start){
+    const h=Number(workorderHours(w));
+    if(Number.isFinite(h) && h>0){
+      return `${start}–${workorderEndTime(w,22)}`;
+    }
+    return start;
+  }
   return 'Aeg määramata';
 }
 function technicianV1Location(w){
@@ -4656,7 +4662,7 @@ function openTechnicianV1WorkModal(id){
       completionComment:note,
       updatedAt:draft.updatedAt
     };
-    // RC1.005.3: tehniku detaili autosave teeb lokaalselt ja Supabase'is ainult field-patch'i.
+    // RC1.005.4: tehniku detaili autosave teeb lokaalselt ja Supabase'is ainult field-patch'i.
     // See ei kirjuta admini paralleelselt muudetud probleemi/kirjelduse välju üle.
     patchWorkorderFields(draft.id,patch);
     const latestDraft=byId(state.workorders,draft.id)||draft;

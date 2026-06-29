@@ -1,7 +1,3 @@
-# VECO_RC1.001
+# VECO_RC1.005.4
 
-Release Candidate micro-release.
-
-Scope: **Registreeri väljakutse** workflow.
-
-This build intentionally does not change calendar, PDF, Work Time Engine, Activity Engine, Granlund import, or accepting/akteerimine workflow.
+Parandusbuild: admini pikkade tekstiväljade sisemine kerimine ja tehniku töökaartide ajavahemik.

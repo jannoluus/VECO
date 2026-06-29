@@ -1,5 +1,5 @@
-# PROJECT STATUS
+# VECO Project Status
 
-Current build: VECO_RC1.005.3
+Current build: VECO_RC1.005.4
 
-Focus: concurrent edit overwrite stabilization.
+Focus: RC1 stabilization / UI fixes.
