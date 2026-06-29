@@ -1,15 +1,10 @@
-# PROJECT STATUS
+# VECO Project Status
 
-Current build: VECO_RC1.005
+Current build: VECO_RC1.005.1
 
-Status: RC1 PDF polish
+Focus: RC1 stabiliseerimine.
 
-Scope:
-- VECO väljakutse akti päise ja infokastide viimistlus.
-
-Out of scope:
-- Field workflow
-- Admin workflow
-- Calendar
-- Work Time Engine calculation
-- Activity / ACTIVO features
+Viimased parandused:
+- Field mapping korrastatud.
+- Töö nimetus ja probleemi kirjeldus eraldatud.
+- VECO väljakutse aktist eemaldatud allkirjade plokk.

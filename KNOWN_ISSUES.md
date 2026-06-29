@@ -1,5 +1,3 @@
-# KNOWN ISSUES
-
-## VECO_RC1.005
+# Known issues – VECO_RC1.005.1
 
 - Teadaolevaid uusi blokeerivaid probleeme ei lisandunud.

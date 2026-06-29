@@ -1,12 +1,14 @@
-# CHANGELOG
+# VECO_RC1.005.1
 
-## VECO_RC1.005
+## Muudetud
+- Parandatud admini töö nimetuse ja probleemi kirjelduse vale sünkroniseerimine.
+- `Töö nimetus` / lühikirjeldus jääb kaardi ja tehniku vaate lühikeseks probleemiks.
+- `Probleemi kirjeldus` jääb eraldi pikemaks kirjeldusväljaks.
+- Tehniku detailvaates kuvatakse vajadusel eraldi plokk `Probleemi kirjeldus`.
+- Väljakutse aktist eemaldatud allkirjade plokk.
 
-- Viimistletud VECO väljakutse akti päist.
-- Alumine inforida muudetud järjestusele: ALGUS | TEHNIK | TÜÜP | TÖÖAEG.
-- Kõik alumise inforea kastid on ühesuurused.
-- Ülemisi infokaste tehtud kompaktsemaks.
-- Lõppaega aktis ei kuvata.
-- Tööaeg kuvatakse arvestatud tööajana.
-
-Ei muudetud töövoogu, Field vaadet, admin vaadet, kalendrit ega tööaja arvutust.
+## Ei muudetud
+- Töövoogu.
+- Tööaja arvutust.
+- Kalendrit.
+- Akteerimise loogikat.

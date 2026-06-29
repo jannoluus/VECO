@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.005",
-  "name": "VECO_RC1.005",
-  "status": "PDF Polish",
+  "build": "VECO_RC1.005.1",
+  "name": "VECO_RC1.005.1",
+  "status": "Bugfix",
   "date": "2026-06-29",
-  "scope": "VECO väljakutse akti päise ja infokastide viimistlus",
-  "notes": "Akti päis korrastatud: ühesugused kastid, alumine rida ALGUS | TEHNIK | TÜÜP | TÖÖAEG, lõppaega ei kuvata."
+  "scope": "Field Mapping Audit + VECO väljakutse akti allkirjaploki eemaldus",
+  "notes": "Töö nimetus ja probleemi kirjeldus hoitakse eraldi; tehniku vaates kuvatakse lühikirjeldus ning vajadusel eraldi probleemi kirjeldus; akti allkirjad eemaldatud."
 }

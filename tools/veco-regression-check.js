@@ -11,8 +11,8 @@ function check(name,pass,detail=''){
   console.log(line);
   if(!pass) ok=false;
 }
-check('APP_BUILD RC1.005',/APP_BUILD='RC1.005'/.test(app));
-check('HTML cache-bust RC1.005',index.includes('v=RC1.005')&&!/v=RC1.001/.test(index));
+check('APP_BUILD RC1.005.1',/APP_BUILD='RC1.005.1'/.test(app));
+check('HTML cache-bust RC1.005.1',index.includes('v=RC1.005.1')&&!/v=RC1.001/.test(index));
 check('CR-STATE-002 boot restore script olemas',index.includes('veco_boot_html_'+ 'calendar') || index.includes("veco_boot_html_"));
 check('boot snapshot save funktsioon olemas',app.includes('function saveBootHtmlSnapshot'));
 check('shell hydration guard olemas',app.includes('__VECO_BOOT_RESTORED__')&&app.includes('__VECO_BOOT_HYDRATED__'));
@@ -20,7 +20,8 @@ check('boot scroll default/restore olemas',app.includes('calendarDefaultScrollSt
 check('boot hydration ignoreerib snapshot scrollTop=0',app.includes('isBootHydrating?calendarDefaultScrollState():captureCalendarScrollState()'));
 
 const problemBlock=(app.match(/const problemDescriptionText=\(w=\{\}\)=>\{[\s\S]*?\n\};/)||[''])[0];
-check('callout problem uses title first',problemBlock.includes('isCalloutWorkorder(w)') && problemBlock.includes('w?.title'));
+check('problem description is separate from title',problemBlock.includes('w?.problemDescription') && problemBlock.indexOf('w?.title')>problemBlock.indexOf('w?.customerRequest'));
+check('short title helper exists',/shortProblemTitleText=/.test(app));
 check('notes/description jääb fallbackiks',problemBlock.includes('w?.description') && problemBlock.includes('w?.problemDescription'));
 check('Supabase load salvestab merged state cache’i',api.includes('window.VECO_STORAGE.save(merged)'));
 check('own realtime echo suppress olemas',api.includes('isLikelyOwnRemoteEcho'));
