@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.28';
-const APP_BUILD='RC1.004.3';
+const APP_BUILD='RC1.004.4';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -1686,7 +1686,7 @@ function openVecoConfirm({title='Kinnitus',message='',details='',confirmText='OK
 function openCompletionCommentModal(w,initial=''){
   return new Promise(resolve=>{
     const performed=String(initial||performedWorkText(w)||completionCommentText(w)||'').trim();
-    if(performed.length<3){
+    if(!performed){
       resolve({missingPerformedWork:true});
       return;
     }
@@ -2237,7 +2237,7 @@ function openWorkorderModal(id='',defaults={}){
   const responsibleId=workorderResponsibleId(w);
   const participantIds=workorderParticipantIds(w);
   const participantJson=esc(JSON.stringify(participantIds));
-  const title=isEdit?`Töö ${esc(w.id)}`:(defaults.copiedFromId?`Kopeeri töö`:'Lisa töö');
+  const title=isEdit?esc(workorderDisplayLabel(w)):(defaults.copiedFromId?`Kopeeri töö`:'Lisa töö');
   const workflowValue=taskWorkflowValue(w);
   openModal(`<form id="workorderForm"><div class="dialog-head"><h2>${title}</h2><button type="button" class="btn ghost" id="modalCloseBtn" onclick="window.vecoCloseModal&&window.vecoCloseModal();return false;">× Sulge</button></div><div class="detail-body"><div class="form-grid">
     <label class="full">Töö nimetus<input class="field" name="title" required placeholder="Kirjuta töö nimetus..." value="${esc(w.title)}"></label>
@@ -2822,7 +2822,7 @@ function actPrintHtml(actId,{autoPrint=false,autoPdf=false}={}){
   const headerLeft=[['Kuupäev',fmtActDate(a.date||w.date||'')],['Akt nr',actNumber(a)]];
   const headerRight=[['Objekt',obj.name||''],['Klient',client.name||'']];
   const topItems=[
-    ['Algus',startLabel],['Lõpp',endLabel],[workorderPeopleHeading(w,'Tehnik','Tehnikud'),workorderPeopleMultiline(w)],['Kestus',actDurationLabel(w)],['Tüüp',a.type||'Väljakutse akt']
+    ['Algus',startLabel],[workorderPeopleHeading(w,'Tehnik','Tehnikud'),workorderPeopleMultiline(w)],['Arvestatud tööaeg',actDurationLabel(w)],['Tüüp',a.type||'Väljakutse akt']
   ];
   const autoScript=autoPrint?`<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>`:'';
   const helper=autoPrint?'Prindivaade avatakse automaatselt.':'Akti eelvaade.';
@@ -2974,7 +2974,7 @@ async function renderActPdfCanvas(actId){
 
   let y=205;
   const cells=[
-    ['Algus',d.start],['Lõpp',d.end],[d.technicianHeading||'Tehnik',d.technician],['Kestus',d.duration],
+    ['Algus',d.start],[d.technicianHeading||'Tehnik',d.technician],['Arvestatud tööaeg',d.duration],
     ['Tüüp',d.type]
   ];
   cells.forEach((c,i)=>{ const x=left+(i%5)*(colW+gap); const yy=y+Math.floor(i/5)*74; drawInfoCell(ctx,c[0],c[1],x,yy,colW,(String(c[1]||'').includes('\n')?78:58)); });
@@ -4069,8 +4069,8 @@ async function applyMobileWorkorderAction(action,workorderId,opts={}){
     w.pausedAt=now;
   }else if(action==='finish'){
     const existingPerformed=String(performedWorkText(w)||completionCommentText(w)||'').trim();
-    if(existingPerformed.length<3){
-      showSyncNotice('Lisa teostatud töö kirjeldus enne lõpetamist.');
+    if(!existingPerformed){
+      showSyncNotice('Lisa teostatud töö kirjeldus enne töö lõpetamist.');
       setTimeout(()=>{ if(page==='technicianV1') openTechnicianV1WorkModal(w.id); else if(page==='mobile') openMobileWorkModal(w.id); },80);
       return;
     }
@@ -4591,6 +4591,17 @@ function openTechnicianV1WorkModal(id){
     e.preventDefault();
     const action=btn.dataset.mobileAction;
     const wid=btn.dataset.workorderId;
+    if(action==='finish'){
+      const noteNow=String(form?.elements.done?.value||'').trim();
+      if(!noteNow){
+        if(autosaveStatus) autosaveStatus.textContent='Lisa teostatud töö kirjeldus enne töö lõpetamist.';
+        form?.elements.done?.focus();
+        form?.elements.done?.classList.add('field-error');
+        showSyncNotice('Lisa teostatud töö kirjeldus enne töö lõpetamist.');
+        return;
+      }
+      form?.elements.done?.classList.remove('field-error');
+    }
     saveTv1Draft();
     btn.disabled=true;
     btn.classList.add('is-loading');

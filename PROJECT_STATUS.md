@@ -1,10 +1,10 @@
-# PROJECT STATUS — VECO_RC1.004.3
+# PROJECT STATUS — VECO_RC1.004.4
 
 ## Staatus
 RC1 stabiliseerimine.
 
 ## Viimane muudatus
-Typography audit ja default dark mode väljakutsekaartide kontrasti parandus.
+Töö lõpetamise valideerimine ja akti tööaja kuvamine korrastatud.
 
 ## RC1 põhivoog
 - Registreeri väljakutse

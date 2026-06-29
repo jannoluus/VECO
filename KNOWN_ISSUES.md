@@ -1,5 +1,5 @@
-# KNOWN ISSUES — VECO_RC1.004.3
+# KNOWN ISSUES — VECO_RC1.004.4
 
-Hetkel uusi teadaolevaid RC1.004.3 scope'i kuuluvaid probleeme ei ole.
+Hetkel teadaolevaid P0 vigu ei ole.
 
-Järgmine soovituslik kontroll: üks täistsenaarium `Registreeri → Alusta → Paus → Jätka → Töö valmis → Akt`.
+Järgmine kontroll: üks töövoog algusest lõpuni pärisandmetega.

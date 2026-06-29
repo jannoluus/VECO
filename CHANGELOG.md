@@ -1,13 +1,15 @@
-# CHANGELOG — VECO_RC1.004.3
+# CHANGELOG — VECO_RC1.004.4
 
 ## Parandatud
-- Väljakutsekaartide tumeda teksti probleem default dark mode'is.
-- Lisatud typography audit CSS reeglid `body:not(.theme-light)` alusel.
-- Kaetud aktiivsed ja lahendatud väljakutsekaardid: pealkiri, probleem, metaandmed, teostatud töö.
-- Build number ja cache-bust uuendatud `RC1.004.3`.
+- `Töö valmis` ei jää enam vaikides seisma, kui `Teostatud töö` on tühi.
+- `Teostatud töö` valideerimine on ühtlustatud: piisab mittetühjast tekstist.
+- Tühja välja korral kuvatakse selge teade ja fookus liigub tekstiväljale.
+- Akti/PDF-i üldandmetest eemaldatud lõppaeg.
+- Akt kuvab nüüd `Arvestatud tööaeg` väärtust.
+- Admini töömodaali päises ei kuvata enam UUID-põhist `Töö WO-...` teksti.
 
 ## Ei muudetud
-- Andmeloogika.
-- Töövoog.
-- PDF / akt.
+- Tööaja arvutuse sisemine loogika.
 - Kalender.
+- Fotode loogika.
+- Akteerimise loogika.

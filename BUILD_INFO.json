@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.004.3",
-  "name": "VECO_RC1.004.3",
+  "build": "VECO_RC1.004.4",
+  "name": "VECO_RC1.004.4",
   "status": "Bugfix",
   "date": "2026-06-28",
-  "scope": "Typography audit and default dark-mode callout readability",
-  "notes": "Parandatud default dark mode tekstikontrast aktiivsetel ja lahendatud väljakutsekaartidel. Põhjus oli see, et default dark theme ei kasuta body.theme-dark klassi."
+  "scope": "Completion validation and act work time display",
+  "notes": "Teostatud töö valideerimine ühtlustatud: tühi väli näitab selget teadet, 1+ märk lubab lõpetada. Akt kuvab arvestatud tööaega, mitte tegeliku lõpuaja ja arvestuse vastuolu."
 }
