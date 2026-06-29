@@ -1,20 +1,14 @@
-# VECO_RC1.005.5
+# VECO_RC1.005.6
 
-## Muudetud
-- Kalendri vasak sisemine tühi ala kitsendatud.
-- Kalendri planneri vasak padding vähendatud ainult kalendri vaates.
-- Ajatelje veerg tehtud kompaktsemaks.
-- Planneri gap vähendatud, et päevade grid saaks rohkem kasutatavat laiust.
+## Calendar Layout Audit
+- Tuvastatud kalendri vasaku tühja ala põhjus: see ei olnud eraldi riba teistes vaadetes, vaid `index.html` kalendri ajatelje veerg + vasak padding.
+- Kitsendatud ainult kalendri ajatelje veergu desktop-vaates.
+- Päevade grid jäi muutmata, seega kõik päevad jäävad võrdsed.
+- Uuendatud current-time marker offset vastavalt uuele ajatelje laiusele.
 
 ## Ei muudetud
-- Supabase / andmeloogika.
-- Töövood.
-- Tehniku vaade.
-- Admini väljakutsed.
-- PDF akt.
-- Drag/drop JS loogika.
-
-## Kontroll
-- JS syntax OK.
-- Päevade grid kasutab endiselt võrdset repeat(..., 1fr) loogikat.
-- Muudatus on CSS-only ja piiratud `.app.page-calendar` vaatega.
+- Andmeid.
+- Töövooge.
+- Supabase salvestust.
+- Tehniku vaadet.
+- Väljakutse / akti loogikat.

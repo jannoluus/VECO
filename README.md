@@ -1,4 +1,4 @@
-# VECO_RC1.005.5
+# VECO_RC1.005.6
 
 Parandusbuild: kalendri vasaku sisemise tühja ala kitsendamine.
 
