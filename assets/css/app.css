@@ -5549,7 +5549,7 @@ body.theme-light .callout-card .muted strong{
   white-space:pre-wrap!important;
 }
 
-/* VECO_RC1.005.6: calendar left spacer polish (CSS-only)
+/* VECO_RC1.005.7: calendar left spacer polish (CSS-only)
    Purpose: free unused horizontal space on calendar left side while keeping all day columns equal. */
 @media (min-width:1121px){
   .app.page-calendar .calendar-planner-wrap{
@@ -5567,7 +5567,7 @@ body.theme-light .callout-card .muted strong{
   }
 }
 
-/* VECO_RC1.005.6: Calendar Layout Audit fix
+/* VECO_RC1.005.7: Calendar Layout Audit fix
    Finding: the visible left empty area in index.html is not a foreign spacer; it is the calendar time-axis column plus wrap padding.
    Fix: reduce only the calendar time-axis column and matching current-time marker offset. Day grid remains repeat(N, 1fr/minmax) and equal-width. */
 @media (min-width:1121px){

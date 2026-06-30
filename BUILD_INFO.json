@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.005.6",
-  "name": "VECO_RC1.005.6",
+  "build": "VECO_RC1.005.7",
+  "name": "VECO_RC1.005.7",
   "status": "Release Candidate",
-  "date": "2026-06-29",
-  "scope": "Calendar left spacer polish",
-  "notes": "Kalendri vasak sisemine tühi ala on kitsendatud CSS-only muudatusega. Päevade veerud jäävad võrdse laiusega; andmeloogikat, drag/drop loogikat ja töövooge ei muudetud."
+  "date": "2026-06-30",
+  "scope": "PDF akti tööaja parandus",
+  "notes": "PDF akt kasutab töökaardi/plaani algusaega ning tööaja kestuse väljad sünkroonitakse Supabasega: actual_duration_minutes, billable_duration_minutes, minimum_billable_minutes."
 }

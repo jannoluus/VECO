@@ -1,8 +1,3 @@
-# VECO_RC1.005.6
+# VECO_RC1.005.7
 
-Parandusbuild: kalendri vasaku sisemise tühja ala kitsendamine.
-
-## Scope
-- CSS/layout only.
-- Päevade veerud jäävad võrdse laiusega.
-- Töövooge, andmeid ja PIN/autentimist ei muudetud.
+PDF akti algusaja ja tööaja kestuse parandusega release candidate.

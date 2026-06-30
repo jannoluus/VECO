@@ -33,6 +33,7 @@
   let supabaseSupportsParticipantFields=true;
   let supabaseSupportsEndDate=true;
   let supabaseSupportsTaskFields=true;
+  let supabaseSupportsDurationFields=true;
   let lastMasterDataSyncSignature='';
   let lastOncallSyncSignature='';
   let lastAvailabilitySyncSignature='';
@@ -103,6 +104,11 @@
     if(supabaseSupportsEndDate){
       row.end_date=w.endDate||w.end_date||null;
     }
+    if(supabaseSupportsDurationFields){
+      row.actual_duration_minutes=Number(w.actualDurationMinutes ?? w.actual_duration_minutes ?? 0)||0;
+      row.billable_duration_minutes=Number(w.billableDurationMinutes ?? w.billable_duration_minutes ?? 0)||0;
+      row.minimum_billable_minutes=Number(w.minimumBillableMinutes ?? w.minimum_billable_minutes ?? 60)||60;
+    }
     if(supabaseSupportsTaskFields){
       row.workflow=w.workflow||w.workflowType||w.taskWorkflow||'kontroll';
       row.requires_act=!!(w.requiresAct||w.actRequired);
@@ -136,6 +142,12 @@
       durationHours:Number(row.planned_hours||2)||2,
       hours:Number(row.planned_hours||2)||2,
       completedAt:row.completed_at||'',
+      actualDurationMinutes:Number(row.actual_duration_minutes||0)||0,
+      actual_duration_minutes:Number(row.actual_duration_minutes||0)||0,
+      billableDurationMinutes:Number(row.billable_duration_minutes||0)||0,
+      billable_duration_minutes:Number(row.billable_duration_minutes||0)||0,
+      minimumBillableMinutes:Number(row.minimum_billable_minutes||60)||60,
+      minimum_billable_minutes:Number(row.minimum_billable_minutes||60)||60,
       completedBy:row.completed_by||'',
       completionComment:row.completion_comment||'',
       startedAt:row.started_at||'',
@@ -509,6 +521,12 @@
       supabaseSupportsEndDate=false;
       delete fallback.end_date;
     }
+    if(msg.includes('actual_duration_minutes')||msg.includes('billable_duration_minutes')||msg.includes('minimum_billable_minutes')){
+      supabaseSupportsDurationFields=false;
+      delete fallback.actual_duration_minutes;
+      delete fallback.billable_duration_minutes;
+      delete fallback.minimum_billable_minutes;
+    }
     if(msg.includes('workflow')||msg.includes('requires_act')||msg.includes('is_billable')||msg.includes('track_time')||msg.includes('uses_materials')||msg.includes('requires_signature')){
       supabaseSupportsTaskFields=false;
       delete fallback.workflow;
@@ -548,7 +566,7 @@
         if(found.error && found.error.code!=='PGRST116') throw found.error;
         if(found.data?.id){
           let {error}=await client.from(TABLE).update(row).eq('id',found.data.id);
-          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date|workflow|requires_act|is_billable|track_time|uses_materials|requires_signature/.test(String(error.message||''))){
+          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date|actual_duration_minutes|billable_duration_minutes|minimum_billable_minutes|workflow|requires_act|is_billable|track_time|uses_materials|requires_signature/.test(String(error.message||''))){
             const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).update(fallback).eq('id',found.data.id));
           }
@@ -556,7 +574,7 @@
           rememberSyncedWorkorder(w);
         }else{
           let {error}=await client.from(TABLE).insert(row);
-          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date|workflow|requires_act|is_billable|track_time|uses_materials|requires_signature/.test(String(error.message||''))){
+          if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date|actual_duration_minutes|billable_duration_minutes|minimum_billable_minutes|workflow|requires_act|is_billable|track_time|uses_materials|requires_signature/.test(String(error.message||''))){
             const fallback=stripUnsupportedColumns(row,error);
             ({error}=await client.from(TABLE).insert(fallback));
           }
@@ -744,6 +762,9 @@
     if(Object.prototype.hasOwnProperty.call(fields,'pausedAt')) set('paused_at',fields.pausedAt||null);
     if(Object.prototype.hasOwnProperty.call(fields,'startedByUuid')) set('started_by',fields.startedByUuid||null);
     if(Object.prototype.hasOwnProperty.call(fields,'endDate')) set('end_date',fields.endDate||null);
+    if(Object.prototype.hasOwnProperty.call(fields,'actualDurationMinutes') || Object.prototype.hasOwnProperty.call(fields,'actual_duration_minutes')) set('actual_duration_minutes',Number(fields.actualDurationMinutes ?? fields.actual_duration_minutes ?? 0)||0);
+    if(Object.prototype.hasOwnProperty.call(fields,'billableDurationMinutes') || Object.prototype.hasOwnProperty.call(fields,'billable_duration_minutes')) set('billable_duration_minutes',Number(fields.billableDurationMinutes ?? fields.billable_duration_minutes ?? 0)||0);
+    if(Object.prototype.hasOwnProperty.call(fields,'minimumBillableMinutes') || Object.prototype.hasOwnProperty.call(fields,'minimum_billable_minutes')) set('minimum_billable_minutes',Number(fields.minimumBillableMinutes ?? fields.minimum_billable_minutes ?? 60)||60);
     if(Object.prototype.hasOwnProperty.call(fields,'workflow') || Object.prototype.hasOwnProperty.call(fields,'workflowType')) set('workflow',fields.workflow||fields.workflowType||'kontroll');
     if(Object.prototype.hasOwnProperty.call(fields,'requiresAct') || Object.prototype.hasOwnProperty.call(fields,'actRequired')) set('requires_act',!!(fields.requiresAct||fields.actRequired));
     if(Object.prototype.hasOwnProperty.call(fields,'isBillable')) set('is_billable',!!fields.isBillable);
@@ -765,7 +786,7 @@
       if(found.error && found.error.code!=='PGRST116') throw found.error;
       if(found.data?.id){
         let {error}=await client.from(TABLE).update(row).eq('id',found.data.id);
-        if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date|workflow|requires_act|is_billable|track_time|uses_materials|requires_signature/.test(String(error.message||''))){
+        if(error && /planned_hours|completed_at|completed_by|completion_comment|started_at|paused_at|started_by|participant_technician_ids|end_date|actual_duration_minutes|billable_duration_minutes|minimum_billable_minutes|workflow|requires_act|is_billable|track_time|uses_materials|requires_signature/.test(String(error.message||''))){
           const fallback=stripUnsupportedColumns({...row},error);
           ({error}=await client.from(TABLE).update(fallback).eq('id',found.data.id));
         }
@@ -781,7 +802,7 @@
   }
 
   function signature(data){
-    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.endDate||w.end_date||'',w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,(w.participantTechnicianIds||[]).join(','),w.startedAt||'',w.pausedAt||'',w.completedAt||'',w.startedByUuid||'',w.completedBy||'',w.completionComment||'']));
+    return JSON.stringify((data?.workorders||[]).map(w=>[w.id,w.status,w.date,w.endDate||w.end_date||'',w.time,w.title,w.technicianId,w.objectId,w.projectId,w.description,w.plannedHours||w.durationHours||w.hours,(w.participantTechnicianIds||[]).join(','),w.startedAt||'',w.pausedAt||'',w.completedAt||'',w.actualDurationMinutes||w.actual_duration_minutes||0,w.billableDurationMinutes||w.billable_duration_minutes||0,w.minimumBillableMinutes||w.minimum_billable_minutes||60,w.startedByUuid||'',w.completedBy||'',w.completionComment||'']));
   }
   async function pullAndNotify(onChange){
     try{

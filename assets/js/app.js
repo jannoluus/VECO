@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.28';
-const APP_BUILD='RC1.005.6';
+const APP_BUILD='RC1.005.7';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -1899,8 +1899,11 @@ function fmtActDateTime(dateKey,time){
   return `${d}${time?' '+time:''}`.trim();
 }
 function actStartDateTimeLabel(w={},a={}){
+  // RC1.005.7: akt peab kuvama sama kinnitatud/plaanilist algusaega, mida kasutaja näeb töökaardil.
+  // Tehniline start timestamp (startedAt/started_at) on fallback, mitte esmane allikas.
+  if(w.date||a.date||w.time) return fmtActDateTime(w.date||a.date||'',w.time||'');
   if(w.startedAt||w.started_at) return fmtDateTimeShort(w.startedAt||w.started_at);
-  return fmtActDateTime(w.date||a.date||'',w.time||'');
+  return '';
 }
 function actEndDateTimeLabel(w={},a={}){
   if(w.completedAt||w.completed_at) return fmtDateTimeShort(w.completedAt||w.completed_at);
@@ -4045,13 +4048,15 @@ function workorderRegisteredAt(w={}){
   return w.createdAt||w.created_at||w.created||'';
 }
 function defaultWorkStartIso(w={},fallbackIso=''){
-  if(w.startedAt||w.started_at) return w.startedAt||w.started_at;
-  if(workorderRegisteredAt(w)) return workorderRegisteredAt(w);
+  // RC1.005.7: lõpetamise modaali vaikimisi algus tuleb töökaardi/plaani ajast.
+  // Kui tehnik soovib tegelikku start timestampi kasutada, saab ta seda väljas muuta.
   if(w.date){
     const t=String(w.time||'').slice(0,5)||'08:00';
     const d=new Date(`${w.date}T${t}:00`);
     if(!Number.isNaN(d.getTime())) return d.toISOString();
   }
+  if(w.startedAt||w.started_at) return w.startedAt||w.started_at;
+  if(workorderRegisteredAt(w)) return workorderRegisteredAt(w);
   return fallbackIso||new Date().toISOString();
 }
 function currentMobileActionUser(){
