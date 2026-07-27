@@ -1,3 +1,10 @@
+# VECO_RC1.006.3 — 2026-07-27
+
+- Muudetud ainult avalikku `oncall-public.html` valvevaadet.
+- Aktiivse valve rea taust kasutab nüüd töökindlat `rgba()` värvi.
+- Lisatud vasak roheline aktsentriba ja õrn sisemine ääris.
+- Teisi vaateid ega sisselogimislehte ei muudetud.
+
 # VECO_RC1.006.2 — 2026-07-27
 
 - Avaliku valvevaate aktiivne tehnik on nüüd rõhutatud õrna taustavärvi ja vasaku VECO-rohelise aktsentribaga.

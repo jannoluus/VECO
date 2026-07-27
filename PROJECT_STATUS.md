@@ -1,6 +1,6 @@
 # VECO Project Status
 
-Current build: VECO_RC1.006.2
+Current build: VECO_RC1.006.3
 Focus: Calendar Layout Audit fix
 
 Scope:

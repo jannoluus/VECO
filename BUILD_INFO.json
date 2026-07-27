@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.006.2",
-  "name": "VECO_RC1.006.2",
+  "build": "VECO_RC1.006.3",
+  "name": "VECO_RC1.006.3",
   "status": "Release Candidate",
   "date": "2026-07-27",
-  "scope": "Valveinfo aktiivse rea rõhutus ja sisselogimisvaate otsetee",
-  "notes": "Avalikus valvevaates on aktiivne tehnik rõhutatud õrna taustavärvi ja vasaku aktsentribaga, kuid kõigi tehnikute tekst jääb sama suuruse ja kirjakaaluga. Sisselogimisvaates lisati Logi sisse nupu alla Valveinfo nupp, mis avab PIN-ita avaliku valvelehe eraldi brauseriaknas või vahelehel."
+  "scope": "Ainult avaliku valveinfo aktiivse rea taustarõhutus",
+  "notes": "Muudetud ainult oncall-public.html vaadet ja selle stiili. Aktiivse valve tehniku rida kasutab nüüd brauserites töökindlat rgba-tausta, vasakut VECO-rohelist aktsentriba ja õrna sisemist äärist. Sisselogimisvaadet ega muid rakenduse vaateid ei muudetud."
 }

@@ -145,25 +145,42 @@ body{
   .public-oncall__footer{gap:9px 12px}
 }
 
-/* RC1.006.2: active on-call technician is highlighted by the row area, not typography. */
+/* RC1.006.3: active technician is highlighted by a reliable row background. */
 .oncall-row.is-active{
   position:relative;
+  z-index:0;
   margin-inline:-14px;
-  padding-inline:16px;
-  border-radius:12px;
+  padding-inline:18px;
   border-bottom-color:transparent;
-  background:color-mix(in srgb,var(--green) 10%,transparent);
-  box-shadow:inset 3px 0 0 var(--green);
+  border-radius:12px;
+  background:rgba(37,176,155,.14);
+  box-shadow:
+    inset 4px 0 0 var(--green),
+    inset 0 0 0 1px rgba(37,176,155,.16);
   color:var(--text);
   font-weight:450;
 }
-@supports not (background:color-mix(in srgb,black,white)){
-  .oncall-row.is-active{background:rgba(37,176,155,.10)}
+.oncall-row.is-active::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  border-radius:inherit;
+  background:linear-gradient(90deg,rgba(37,176,155,.10),rgba(37,176,155,.035));
+  pointer-events:none;
+}
+@media (prefers-color-scheme:light){
+  .oncall-row.is-active{
+    background:rgba(37,176,155,.11);
+    box-shadow:
+      inset 4px 0 0 var(--green),
+      inset 0 0 0 1px rgba(17,110,96,.12);
+  }
 }
 @media (max-width:700px){
   .oncall-row.is-active{
     margin-inline:-8px;
-    padding-inline:12px;
+    padding-inline:14px;
     border-radius:10px;
   }
 }
