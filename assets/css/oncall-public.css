@@ -145,36 +145,28 @@ body{
   .public-oncall__footer{gap:9px 12px}
 }
 
-/* RC1.006.3: active technician is highlighted by a reliable row background. */
+/* RC1.006.4: active technician is highlighted by date-range based class and visible background. */
 .oncall-row.is-active{
   position:relative;
-  z-index:0;
   margin-inline:-14px;
-  padding-inline:18px;
+  padding-inline:20px;
   border-bottom-color:transparent;
   border-radius:12px;
-  background:rgba(37,176,155,.14);
+  background-color:rgba(37,176,155,.22);
+  background-image:linear-gradient(90deg,rgba(37,176,155,.16),rgba(37,176,155,.07));
   box-shadow:
-    inset 4px 0 0 var(--green),
-    inset 0 0 0 1px rgba(37,176,155,.16);
+    inset 5px 0 0 var(--green),
+    inset 0 0 0 1px rgba(37,176,155,.28);
   color:var(--text);
   font-weight:450;
 }
-.oncall-row.is-active::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  z-index:-1;
-  border-radius:inherit;
-  background:linear-gradient(90deg,rgba(37,176,155,.10),rgba(37,176,155,.035));
-  pointer-events:none;
-}
 @media (prefers-color-scheme:light){
   .oncall-row.is-active{
-    background:rgba(37,176,155,.11);
+    background-color:rgba(37,176,155,.16);
+    background-image:linear-gradient(90deg,rgba(37,176,155,.12),rgba(37,176,155,.045));
     box-shadow:
-      inset 4px 0 0 var(--green),
-      inset 0 0 0 1px rgba(17,110,96,.12);
+      inset 5px 0 0 var(--green),
+      inset 0 0 0 1px rgba(17,110,96,.18);
   }
 }
 @media (max-width:700px){

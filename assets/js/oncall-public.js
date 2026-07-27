@@ -80,7 +80,7 @@
       return match;
     });
   }
-  function renderRows(cycle,active){
+  function renderRows(cycle,today){
     els.rows.innerHTML='';
     if(!cycle.length){
       const row=document.createElement('div');
@@ -89,7 +89,7 @@
     }
     cycle.forEach(item=>{
       const row=document.createElement('div');
-      const isActive=active&&samePerson(item,active)&&item.start_date===active.start_date;
+      const isActive=Boolean(today&&item.start_date<=today&&item.end_date>=today);
       row.className=`oncall-row${isActive?' is-active':''}`;
       row.setAttribute('role','listitem');
 
@@ -128,7 +128,7 @@
       const anchor=activeRows[0]||next;
       const rotation=deriveRotation(shifts,people);
       const cycle=buildCycle(rotation,shifts,anchor);
-      renderRows(cycle,activeRows.length===1?activeRows[0]:null);
+      renderRows(cycle,today);
       if(activeRows.length>1) els.note.textContent='Valvegraafikus on kattuvus. Kontrolli admini vaadet.';
       else if(!activeRows.length&&next) els.note.textContent='Praegu pole aktiivset valvet; kuvatud on järgmine rotatsioon.';
       else els.note.textContent='';

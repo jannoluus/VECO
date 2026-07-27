@@ -5599,7 +5599,7 @@ body.theme-light .callout-card .muted strong{
   }
 }
 
-/* RC1.006.2: public valve information shortcut on the login card. */
+/* RC1.006.4: public valve information shortcut on the login card. */
 .auth-oncall-link{
   width:100%;
   justify-content:center;

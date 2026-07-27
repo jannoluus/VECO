@@ -60,3 +60,9 @@
 - Aktiivne valve eristub ainult bold kirjaga.
 - Igal real kuvatakse kuupäevavahemik ja ISO nädalanumber.
 - Mobiilivaates kuvatakse periood nime all; horisontaalset kerimist ei teki.
+
+## VECO_RC1.006.4 — 2026-07-27
+- Parandatud avaliku valveinfo aktiivse rea tuvastus: aktiivsus arvutatakse kuupäevavahemiku põhjal.
+- Aktiivse tehniku reale lisatud selgelt nähtav rohekas taust ja vasak aktsentriba.
+- Ühtlustatud APP_BUILD ja kõigi HTML-varade cache-versioon RC1.006.4 peale.
+- Muid töövooge ega andmemudelit ei muudetud.

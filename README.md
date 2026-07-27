@@ -1,3 +1,3 @@
-# VECO_RC1.006.3
+# VECO_RC1.006.4
 
-Avaliku valveinfo responsive paigutuse parandusega release candidate.
+Public on-call active-row reliability fix and consistent build/cache versioning.

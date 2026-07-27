@@ -1,10 +1,10 @@
 # VECO Project Status
 
-Current build: VECO_RC1.006.3
-Focus: Calendar Layout Audit fix
+Current build: VECO_RC1.006.4
+Focus: Public on-call active-row reliability
 
 Scope:
-- Calendar left spacer/time-axis polish.
-- Equal day widths preserved.
-
-No workflow or data changes.
+- Active on-call row is selected directly from its date range.
+- Active row receives a visible teal background and left accent.
+- Build and cache versions are consistent across the package.
+- No workflow or data model changes.

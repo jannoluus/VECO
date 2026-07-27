@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.006.3",
-  "name": "VECO_RC1.006.3",
+  "build": "VECO_RC1.006.4",
+  "name": "VECO_RC1.006.4",
   "status": "Release Candidate",
   "date": "2026-07-27",
-  "scope": "Ainult avaliku valveinfo aktiivse rea taustarõhutus",
-  "notes": "Muudetud ainult oncall-public.html vaadet ja selle stiili. Aktiivse valve tehniku rida kasutab nüüd brauserites töökindlat rgba-tausta, vasakut VECO-rohelist aktsentriba ja õrna sisemist äärist. Sisselogimisvaadet ega muid rakenduse vaateid ei muudetud."
+  "scope": "Avaliku valveinfo aktiivse rea parandamine ja buildi versioonide ühtlustamine",
+  "notes": "Aktiivne valve tuvastatakse nüüd otse kuupäevavahemiku järgi, mitte objekti/ID sobituse kaudu. Aktiivsel real on nähtavam rohekas taust ja vasak aktsentriba. Kõigi HTML/JS cache-versioonid ning APP_BUILD on ühtlustatud RC1.006.4 peale. Muud funktsionaalsust ei muudetud."
 }
