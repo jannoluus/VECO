@@ -7,6 +7,7 @@
     status:$('oncallStatus'),
     name:$('oncallName'),
     period:$('oncallPeriod'),
+    periodDetail:$('oncallPeriodDetail'),
     rotation:$('rotationLine'),
     note:$('rotationNote'),
     updated:$('oncallUpdated')
@@ -37,6 +38,10 @@
     if(!row) return '';
     return `${formatDate(row.start_date)} – ${formatDate(row.end_date)}`;
   }
+  function formatPeriodDetail(row){
+    if(!row) return '';
+    return `Alates ${formatDate(row.start_date)} kell 08:00 kuni ${formatDate(row.end_date)} kell 08:00`;
+  }
   function normalizeName(name){
     return String(name||'').trim();
   }
@@ -45,6 +50,7 @@
     els.status.textContent=title;
     els.name.textContent=name||'—';
     els.period.textContent=period||'';
+    els.periodDetail.textContent='';
   }
   function uniqueByName(rows){
     const seen=new Set();
@@ -112,14 +118,17 @@
 
       if(active.length===1){
         setState('is-active','Praegu valves',normalizeName(active[0].user_name),formatPeriod(active[0]));
+        els.periodDetail.textContent=formatPeriodDetail(active[0]);
         renderRotation(rotation,active[0]);
       }else if(active.length>1){
         setState('is-error','Valvegraafikus on kattuvus',active.map(r=>normalizeName(r.user_name)).join(' / '),active.map(formatPeriod).join(' · '));
         renderRotation(rotation,active[0]);
+        els.periodDetail.textContent='';
         els.note.textContent='Kontrolli kattuvaid valveperioode admini vaates.';
       }else{
         const next=shifts.find(r=>r.start_date>today);
         setState('', 'Praegu pole valvet määratud', next?`Järgmine: ${normalizeName(next.user_name)}`:'—', next?formatPeriod(next):'');
+        els.periodDetail.textContent=next?formatPeriodDetail(next):'';
         renderRotation(rotation,null);
       }
       els.updated.textContent=`Uuendatud ${new Intl.DateTimeFormat('et-EE',{hour:'2-digit',minute:'2-digit'}).format(new Date())}`;

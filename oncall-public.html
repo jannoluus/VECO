@@ -5,19 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <title>VECO Valve</title>
-  <link rel="stylesheet" href="assets/css/oncall-public.css?v=RC1.005.8">
+  <link rel="stylesheet" href="assets/css/oncall-public.css?v=RC1.005.9">
 </head>
 <body>
   <main class="public-oncall" aria-live="polite">
-    <header class="public-oncall__brand" aria-label="VECO">
-      <span>VEC</span><span class="public-oncall__brand-o" aria-hidden="true"></span>
+    <header class="public-oncall__header">
+      <div class="public-oncall__brand" aria-label="VECO">VECO</div>
+      <div class="public-oncall__page-title">VALVE</div>
     </header>
 
     <section class="public-oncall__hero">
-      <p class="public-oncall__eyebrow">VALVE</p>
       <div id="oncallStatus" class="public-oncall__status">Laen valveinfot…</div>
       <h1 id="oncallName" class="public-oncall__name">—</h1>
       <p id="oncallPeriod" class="public-oncall__period"></p>
+      <p id="oncallPeriodDetail" class="public-oncall__period-detail"></p>
     </section>
 
     <section class="public-oncall__rotation" aria-labelledby="rotationTitle">
@@ -26,11 +27,16 @@
       <p id="rotationNote" class="public-oncall__note"></p>
     </section>
 
-    <p id="oncallUpdated" class="public-oncall__updated"></p>
+    <footer class="public-oncall__footer">
+      <span class="public-oncall__refresh-icon" aria-hidden="true">↻</span>
+      <span id="oncallUpdated" class="public-oncall__updated"></span>
+      <span class="public-oncall__footer-separator" aria-hidden="true"></span>
+      <span>Automaatne uuendus iga 5 min</span>
+    </footer>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="assets/js/supabase-config.js?v=RC1.005.8"></script>
-  <script src="assets/js/oncall-public.js?v=RC1.005.8"></script>
+  <script src="assets/js/supabase-config.js?v=RC1.005.9"></script>
+  <script src="assets/js/oncall-public.js?v=RC1.005.9"></script>
 </body>
 </html>

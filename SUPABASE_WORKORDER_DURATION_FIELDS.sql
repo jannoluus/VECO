@@ -1,4 +1,4 @@
--- VECO RC1.005.8
+-- VECO RC1.005.9
 -- Lisa tööaja arvutuse väljad workorders tabelisse, et PDF/akt, admin, tehniku vaade ja statistika kasutaksid sama väärtust.
 
 alter table workorders

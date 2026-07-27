@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.005.8",
-  "name": "VECO_RC1.005.8",
+  "build": "VECO_RC1.005.9",
+  "name": "VECO_RC1.005.9",
   "status": "Release Candidate",
   "date": "2026-07-27",
-  "scope": "PIN-ita avalik valveinfo V1",
-  "notes": "Lisatud oncall-public.html: kuvab hetkel valves oleva tehniku, valveperioodi ja kogu rotatsiooni. Aktiivne tehnik on rohelise markeriga; leht uueneb automaatselt ning on avatav Technician V1 sisselogimiselt ilma PIN-ita."
+  "scope": "Avaliku valvevaate visuaalne uuendus",
+  "notes": "Valvevaade kasutab nüüd kogu ekraani: eemaldatud kaart ja graafiline logo, alles on tekst VECO. Lisatud lai vasakjoondatud paigutus, selgem valveperiood, suurem rotatsioon, peidetud kerimisriba ning uuenduse info."
 }
