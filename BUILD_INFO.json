@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.005.9",
-  "name": "VECO_RC1.005.9",
+  "build": "VECO_RC1.006.0",
+  "name": "VECO_RC1.006.0",
   "status": "Release Candidate",
   "date": "2026-07-27",
-  "scope": "Avaliku valvevaate visuaalne uuendus",
-  "notes": "Valvevaade kasutab nüüd kogu ekraani: eemaldatud kaart ja graafiline logo, alles on tekst VECO. Lisatud lai vasakjoondatud paigutus, selgem valveperiood, suurem rotatsioon, peidetud kerimisriba ning uuenduse info."
+  "scope": "Avaliku valvevaate responsive rotatsioon",
+  "notes": "Vähendatud aktiivse tehniku nime suurust. Rotatsioon murdub kitsal ekraanil automaatselt ridadele ega tekita horisontaalset kerimist. Nimi ja sellele järgnev nool püsivad ühe sammuna koos."
 }

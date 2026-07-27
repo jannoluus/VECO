@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.28';
-const APP_BUILD='RC1.005.9';
+const APP_BUILD='RC1.006.0';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -1899,7 +1899,7 @@ function fmtActDateTime(dateKey,time){
   return `${d}${time?' '+time:''}`.trim();
 }
 function actStartDateTimeLabel(w={},a={}){
-  // RC1.005.9: akt peab kuvama sama kinnitatud/plaanilist algusaega, mida kasutaja näeb töökaardil.
+  // RC1.006.0: akt peab kuvama sama kinnitatud/plaanilist algusaega, mida kasutaja näeb töökaardil.
   // Tehniline start timestamp (startedAt/started_at) on fallback, mitte esmane allikas.
   if(w.date||a.date||w.time) return fmtActDateTime(w.date||a.date||'',w.time||'');
   if(w.startedAt||w.started_at) return fmtDateTimeShort(w.startedAt||w.started_at);
@@ -4048,7 +4048,7 @@ function workorderRegisteredAt(w={}){
   return w.createdAt||w.created_at||w.created||'';
 }
 function defaultWorkStartIso(w={},fallbackIso=''){
-  // RC1.005.9: lõpetamise modaali vaikimisi algus tuleb töökaardi/plaani ajast.
+  // RC1.006.0: lõpetamise modaali vaikimisi algus tuleb töökaardi/plaani ajast.
   // Kui tehnik soovib tegelikku start timestampi kasutada, saab ta seda väljas muuta.
   if(w.date){
     const t=String(w.time||'').slice(0,5)||'08:00';

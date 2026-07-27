@@ -1,3 +1,3 @@
-# VECO_RC1.005.9
+# VECO_RC1.006.0
 
-PDF akti algusaja ja tööaja kestuse parandusega release candidate.
+Avaliku valveinfo responsive paigutuse parandusega release candidate.

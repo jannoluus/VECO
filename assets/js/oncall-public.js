@@ -80,22 +80,25 @@
     rotation.forEach((person,index)=>{
       const name=normalizeName(person.user_name);
       const isActive=(activeId&&String(person.user_id||'')===activeId)||(!activeId&&name.toLocaleLowerCase('et')===activeName);
+      const step=document.createElement('span');
+      step.className='rotation-step';
+      step.setAttribute('role','listitem');
+
       const item=document.createElement('span');
       item.className=`rotation-person${isActive?' is-active':''}`;
-      item.setAttribute('role','listitem');
       item.textContent=name;
-      els.rotation.appendChild(item);
+      step.appendChild(item);
+
       if(index<rotation.length-1){
         const arrow=document.createElement('span');
         arrow.className='rotation-arrow';
         arrow.setAttribute('aria-hidden','true');
         arrow.textContent='→';
-        els.rotation.appendChild(arrow);
+        step.appendChild(arrow);
       }
+      els.rotation.appendChild(step);
     });
     els.note.textContent='';
-    const activeEl=els.rotation.querySelector('.is-active');
-    if(activeEl) activeEl.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
   }
   async function load(){
     const supabaseClient=client();
