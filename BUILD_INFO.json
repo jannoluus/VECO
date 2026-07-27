@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.005.7",
-  "name": "VECO_RC1.005.7",
+  "build": "VECO_RC1.005.8",
+  "name": "VECO_RC1.005.8",
   "status": "Release Candidate",
-  "date": "2026-06-30",
-  "scope": "PDF akti tööaja parandus",
-  "notes": "PDF akt kasutab töökaardi/plaani algusaega ning tööaja kestuse väljad sünkroonitakse Supabasega: actual_duration_minutes, billable_duration_minutes, minimum_billable_minutes."
+  "date": "2026-07-27",
+  "scope": "PIN-ita avalik valveinfo V1",
+  "notes": "Lisatud oncall-public.html: kuvab hetkel valves oleva tehniku, valveperioodi ja kogu rotatsiooni. Aktiivne tehnik on rohelise markeriga; leht uueneb automaatselt ning on avatav Technician V1 sisselogimiselt ilma PIN-ita."
 }

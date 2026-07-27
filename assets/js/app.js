@@ -3,7 +3,7 @@ const $$=(s)=>Array.from(document.querySelectorAll(s));
 const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const page=window.VECO_PAGE||'objects';
 const APP_VERSION='v3.19.28';
-const APP_BUILD='RC1.005.7';
+const APP_BUILD='RC1.005.8';
 
 // VECO Admin LoadingManager: admin-only delayed loader.
 // Field V1 and legacy mobile stay intentionally simple and unaffected.
@@ -412,7 +412,7 @@ function authRenderScreen(message=''){
   const userControl=remembered
     ? `<input type="hidden" name="userId" value="${esc(remembered.id)}"><div class="auth-remembered-user"><span>Kasutaja</span><strong>${esc(remembered.name)}</strong><button class="btn small ghost" type="button" id="fieldChangeUserBtn">Vaheta kasutajat</button></div>`
     : `<label>Kasutaja<select class="select" name="userId" required>${options}</select></label>`;
-  document.body.innerHTML=`<div class="auth-page"><form class="auth-card" id="authLoginForm"><div class="auth-brand">VECO</div><h1>${fieldLoginMode()?'VECO Field':'Sisselogimine'}</h1><p class="muted" id="authHelpText">${fieldLoginMode()?'Sisesta tehniku PIN.':'Vali kasutaja ja sisesta PIN.'}</p>${message?`<div class="auth-message">${esc(message)}</div>`:''}${userControl}<label id="authPinLabel">PIN<input class="field" name="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN" required></label><label id="authPinRepeatLabel" class="hidden">Korda uut PIN-i<input class="field" name="pin2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Korda PIN-i"></label><button class="btn primary" type="submit" id="authSubmitBtn">Logi sisse</button><div class="auth-build">VECO_V3_${APP_BUILD}</div></form></div>`;
+  document.body.innerHTML=`<div class="auth-page"><form class="auth-card" id="authLoginForm"><div class="auth-brand">VECO</div><h1>${fieldLoginMode()?'VECO Field':'Sisselogimine'}</h1><p class="muted" id="authHelpText">${fieldLoginMode()?'Sisesta tehniku PIN.':'Vali kasutaja ja sisesta PIN.'}</p>${message?`<div class="auth-message">${esc(message)}</div>`:''}${userControl}<label id="authPinLabel">PIN<input class="field" name="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN" required></label><label id="authPinRepeatLabel" class="hidden">Korda uut PIN-i<input class="field" name="pin2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Korda PIN-i"></label><button class="btn primary" type="submit" id="authSubmitBtn">Logi sisse</button>${fieldLoginMode()?'<a class="btn ghost" href="oncall-public.html">Vaata valveinfot</a>':''}<div class="auth-build">VECO_V3_${APP_BUILD}</div></form></div>`;
   const form=document.getElementById('authLoginForm');
   document.getElementById('fieldChangeUserBtn')?.addEventListener('click',()=>{localStorage.setItem(FIELD_PICKER_KEY,'1');localStorage.removeItem(FIELD_LAST_USER_KEY);authRenderScreen();});
   const syncPinMode=()=>{const authNow=normalizeAuthUsers(); const u=authNow.users?.[form.elements.userId.value]; const reset=u?.pinResetRequired===true; const role=u?.role||'technician'; const fieldResetBlocked=fieldLoginMode()&&reset; const pin2=form.elements.pin2; const pin=form.elements.pin; document.getElementById('authPinRepeatLabel')?.classList.toggle('hidden',!reset||fieldResetBlocked); if(pin2) pin2.required=reset&&!fieldResetBlocked; const pinLabel=document.getElementById('authPinLabel'); if(pinLabel){ pinLabel.classList.toggle('hidden',fieldResetBlocked); pinLabel.childNodes[0].nodeValue=reset?'Uus PIN':'PIN'; } if(pin) pin.disabled=fieldResetBlocked; const help=document.getElementById('authHelpText'); if(help) help.textContent=fieldResetBlocked?'PIN-i uuendamine on admini kinnitust ootamas. Palu hooldusjuhil määrata ajutine PIN või luba seade admini vaates.':(reset?`Admin lubas PIN-i uuesti seadistada. Sisesta uus ${AUTH_RULES[role].label} kaks korda.`:(fieldLoginMode()?'Sisesta tehniku PIN.':'Vali kasutaja ja sisesta PIN.')); const btn=document.getElementById('authSubmitBtn'); if(btn){ btn.textContent=fieldResetBlocked?'PIN vajab admini kinnitust':(reset?'Salvesta PIN ja logi sisse':'Logi sisse'); btn.disabled=fieldResetBlocked; }};
@@ -1899,7 +1899,7 @@ function fmtActDateTime(dateKey,time){
   return `${d}${time?' '+time:''}`.trim();
 }
 function actStartDateTimeLabel(w={},a={}){
-  // RC1.005.7: akt peab kuvama sama kinnitatud/plaanilist algusaega, mida kasutaja näeb töökaardil.
+  // RC1.005.8: akt peab kuvama sama kinnitatud/plaanilist algusaega, mida kasutaja näeb töökaardil.
   // Tehniline start timestamp (startedAt/started_at) on fallback, mitte esmane allikas.
   if(w.date||a.date||w.time) return fmtActDateTime(w.date||a.date||'',w.time||'');
   if(w.startedAt||w.started_at) return fmtDateTimeShort(w.startedAt||w.started_at);
@@ -4048,7 +4048,7 @@ function workorderRegisteredAt(w={}){
   return w.createdAt||w.created_at||w.created||'';
 }
 function defaultWorkStartIso(w={},fallbackIso=''){
-  // RC1.005.7: lõpetamise modaali vaikimisi algus tuleb töökaardi/plaani ajast.
+  // RC1.005.8: lõpetamise modaali vaikimisi algus tuleb töökaardi/plaani ajast.
   // Kui tehnik soovib tegelikku start timestampi kasutada, saab ta seda väljas muuta.
   if(w.date){
     const t=String(w.time||'').slice(0,5)||'08:00';

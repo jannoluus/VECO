@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="et">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>VECO Valve</title>
+  <link rel="stylesheet" href="assets/css/oncall-public.css?v=RC1.005.8">
+</head>
+<body>
+  <main class="public-oncall" aria-live="polite">
+    <header class="public-oncall__brand" aria-label="VECO">
+      <span>VEC</span><span class="public-oncall__brand-o" aria-hidden="true"></span>
+    </header>
+
+    <section class="public-oncall__hero">
+      <p class="public-oncall__eyebrow">VALVE</p>
+      <div id="oncallStatus" class="public-oncall__status">Laen valveinfot…</div>
+      <h1 id="oncallName" class="public-oncall__name">—</h1>
+      <p id="oncallPeriod" class="public-oncall__period"></p>
+    </section>
+
+    <section class="public-oncall__rotation" aria-labelledby="rotationTitle">
+      <h2 id="rotationTitle">Rotatsioon</h2>
+      <div id="rotationLine" class="rotation-line" role="list"></div>
+      <p id="rotationNote" class="public-oncall__note"></p>
+    </section>
+
+    <p id="oncallUpdated" class="public-oncall__updated"></p>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/supabase-config.js?v=RC1.005.8"></script>
+  <script src="assets/js/oncall-public.js?v=RC1.005.8"></script>
+</body>
+</html>
