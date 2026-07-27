@@ -1,3 +1,3 @@
 # Known Issues
 
-- None added in VECO_RC1.006.0.
+- None added in VECO_RC1.006.1.

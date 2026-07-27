@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <title>VECO Valve</title>
-  <link rel="stylesheet" href="assets/css/oncall-public.css?v=RC1.006.0">
+  <link rel="stylesheet" href="assets/css/oncall-public.css?v=RC1.006.1">
 </head>
 <body>
   <main class="public-oncall" aria-live="polite">
@@ -14,17 +14,13 @@
       <div class="public-oncall__page-title">VALVE</div>
     </header>
 
-    <section class="public-oncall__hero">
-      <div id="oncallStatus" class="public-oncall__status">Laen valveinfot…</div>
-      <h1 id="oncallName" class="public-oncall__name">—</h1>
-      <p id="oncallPeriod" class="public-oncall__period"></p>
-      <p id="oncallPeriodDetail" class="public-oncall__period-detail"></p>
-    </section>
-
-    <section class="public-oncall__rotation" aria-labelledby="rotationTitle">
-      <h2 id="rotationTitle">Rotatsioon</h2>
-      <div id="rotationLine" class="rotation-line" role="list"></div>
-      <p id="rotationNote" class="public-oncall__note"></p>
+    <section class="public-oncall__schedule" aria-label="Valvegraafik">
+      <div id="oncallRows" class="oncall-rows" role="list">
+        <div class="oncall-row is-loading" role="listitem">
+          <span>Laen valveinfot…</span>
+        </div>
+      </div>
+      <p id="oncallNote" class="public-oncall__note"></p>
     </section>
 
     <footer class="public-oncall__footer">
@@ -36,7 +32,7 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="assets/js/supabase-config.js?v=RC1.006.0"></script>
-  <script src="assets/js/oncall-public.js?v=RC1.006.0"></script>
+  <script src="assets/js/supabase-config.js?v=RC1.006.1"></script>
+  <script src="assets/js/oncall-public.js?v=RC1.006.1"></script>
 </body>
 </html>
