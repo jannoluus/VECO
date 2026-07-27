@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.006.1",
-  "name": "VECO_RC1.006.1",
+  "build": "VECO_RC1.006.2",
+  "name": "VECO_RC1.006.2",
   "status": "Release Candidate",
   "date": "2026-07-27",
-  "scope": "Avaliku valvevaate lihtsustatud graafik",
-  "notes": "Eemaldatud eraldi suur aktiivse valve plokk ja dekoratiivsed nooled. Valve rotatsioon kuvatakse ühtse nimekirjana: tehnik, kuupäevavahemik ja ISO nädalanumber. Aktiivne valve on ainult boldis. Mobiilis liigub periood nime alla ning horisontaalset kerimist ei teki."
+  "scope": "Valveinfo aktiivse rea rõhutus ja sisselogimisvaate otsetee",
+  "notes": "Avalikus valvevaates on aktiivne tehnik rõhutatud õrna taustavärvi ja vasaku aktsentribaga, kuid kõigi tehnikute tekst jääb sama suuruse ja kirjakaaluga. Sisselogimisvaates lisati Logi sisse nupu alla Valveinfo nupp, mis avab PIN-ita avaliku valvelehe eraldi brauseriaknas või vahelehel."
 }

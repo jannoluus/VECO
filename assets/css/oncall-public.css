@@ -144,3 +144,26 @@ body{
   .public-oncall__footer-separator{display:none}
   .public-oncall__footer{gap:9px 12px}
 }
+
+/* RC1.006.2: active on-call technician is highlighted by the row area, not typography. */
+.oncall-row.is-active{
+  position:relative;
+  margin-inline:-14px;
+  padding-inline:16px;
+  border-radius:12px;
+  border-bottom-color:transparent;
+  background:color-mix(in srgb,var(--green) 10%,transparent);
+  box-shadow:inset 3px 0 0 var(--green);
+  color:var(--text);
+  font-weight:450;
+}
+@supports not (background:color-mix(in srgb,black,white)){
+  .oncall-row.is-active{background:rgba(37,176,155,.10)}
+}
+@media (max-width:700px){
+  .oncall-row.is-active{
+    margin-inline:-8px;
+    padding-inline:12px;
+    border-radius:10px;
+  }
+}

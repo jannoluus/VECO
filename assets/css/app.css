@@ -5598,3 +5598,10 @@ body.theme-light .callout-card .muted strong{
     padding-right:4px!important;
   }
 }
+
+/* RC1.006.2: public valve information shortcut on the login card. */
+.auth-oncall-link{
+  width:100%;
+  justify-content:center;
+  text-decoration:none;
+}

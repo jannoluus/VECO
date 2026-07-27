@@ -1,4 +1,12 @@
-# VECO_RC1.006.1
+# VECO_RC1.006.2 — 2026-07-27
+
+- Avaliku valvevaate aktiivne tehnik on nüüd rõhutatud õrna taustavärvi ja vasaku VECO-rohelise aktsentribaga.
+- Aktiivse ning järgmiste tehnikute tekstisuurus ja kirjakaal on ühesugused.
+- Sisselogimisvaates on Logi sisse nupu all nupp **Valveinfo**.
+- Valveinfo avaneb eraldi vahelehel ja ei nõua PIN-i.
+- Cache/build viited uuendatud versioonile RC1.006.2.
+
+# VECO_RC1.006.2
 
 ## Avalik valveinfo
 - Vähendatud hetkel valves oleva tehniku nime suurust.
@@ -8,7 +16,7 @@
 - Mobiilivaates kuvatakse rotatsioon ühe tehniku kaupa vertikaalselt.
 - Eemaldatud aktiivse nime automaatne `scrollIntoView`, mis võis lehte külgsuunas nihutada.
 
-# VECO_RC1.006.1
+# VECO_RC1.006.2
 
 ## Calendar Layout Audit
 - Tuvastatud kalendri vasaku tühja ala põhjus: see ei olnud eraldi riba teistes vaadetes, vaid `index.html` kalendri ajatelje veerg + vasak padding.
@@ -24,12 +32,12 @@
 - Väljakutse / akti loogikat.
 
 
-## RC1.006.1
+## RC1.006.2
 - Parandatud PDF akti algusaja allikas: akt kasutab töökaardi/plaani algusaega, mitte tehnilist start timestampi.
 - Lisatud tööaja kestuse väljade Supabase sünkroon: actual_duration_minutes, billable_duration_minutes, minimum_billable_minutes.
 - Lisatud fallback, et rakendus ei katki, kui Supabase migratsioon pole veel käivitatud.
 
-## VECO_RC1.006.1 — 2026-07-27
+## VECO_RC1.006.2 — 2026-07-27
 
 - Lisatud PIN-ita avalik valveinfo leht `oncall-public.html`.
 - Kuvatakse hetkel valves olev tehnik ja valveperiood.
@@ -39,7 +47,7 @@
 - Lisatud veateated puuduva valve, kattuvate valveperioodide ja ühendusvea korral.
 - Technician V1 PIN-vaatesse lisatud link „Vaata valveinfot“.
 
-## VECO_RC1.006.1 – 2026-07-27
+## VECO_RC1.006.2 – 2026-07-27
 - Avalik valvevaade muudetud lihtsaks graafikuks.
 - Kõik valve read kasutavad ühtset põhifondisuurust.
 - Aktiivne valve eristub ainult bold kirjaga.
