@@ -1,6 +1,6 @@
 # VECO Project Status
 
-Current build: VECO_RC1.006.4
+Current build: VECO_RC1.006.5
 Focus: Public on-call active-row reliability
 
 Scope:

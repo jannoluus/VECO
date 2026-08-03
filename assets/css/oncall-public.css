@@ -145,7 +145,7 @@ body{
   .public-oncall__footer{gap:9px 12px}
 }
 
-/* RC1.006.4: active technician is highlighted by date-range based class and visible background. */
+/* RC1.006.5: active technician is highlighted by date-range based class and visible background. */
 .oncall-row.is-active{
   position:relative;
   margin-inline:-14px;

@@ -1,8 +1,8 @@
 {
-  "build": "VECO_RC1.006.4",
-  "name": "VECO_RC1.006.4",
+  "build": "VECO_RC1.006.5",
+  "name": "VECO_RC1.006.5",
   "status": "Release Candidate",
-  "date": "2026-07-27",
-  "scope": "Avaliku valveinfo aktiivse rea parandamine ja buildi versioonide ühtlustamine",
-  "notes": "Aktiivne valve tuvastatakse nüüd otse kuupäevavahemiku järgi, mitte objekti/ID sobituse kaudu. Aktiivsel real on nähtavam rohekas taust ja vasak aktsentriba. Kõigi HTML/JS cache-versioonid ning APP_BUILD on ühtlustatud RC1.006.4 peale. Muud funktsionaalsust ei muudetud."
+  "date": "2026-08-03",
+  "scope": "Avaliku valveinfo aktiivse tehniku vahetumise parandus",
+  "notes": "Parandatud isiku sobitamine olukorras, kus oncall_assignments.user_id ja auth_users.id ei ühti, kuid nimi on sama. Aktiivne või järgmine päris valvekirje seatakse nüüd alati rotatsiooni esimeseks; ID sobivuse puudumisel kasutatakse turvalist nimepõhist varuvarianti. See kõrvaldab vea, kus kuupäevavahemik uuenes, kuid tehniku nimi jäi eelmise rotatsiooni esimese liikme nimeks. Cache-versioonid uuendatud RC1.006.5 peale."
 }

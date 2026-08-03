@@ -55,12 +55,23 @@
     return configured.length?configured:uniqueByName(shifts.slice().sort((a,b)=>String(a.start_date).localeCompare(String(b.start_date))));
   }
   function samePerson(a,b){
-    if(a?.user_id&&b?.user_id) return String(a.user_id)===String(b.user_id);
-    return normalizeName(a?.user_name).toLocaleLowerCase('et')===normalizeName(b?.user_name).toLocaleLowerCase('et');
+    if(!a||!b) return false;
+    const idA=String(a.user_id||'').trim();
+    const idB=String(b.user_id||'').trim();
+    if(idA&&idB&&idA===idB) return true;
+    const nameA=normalizeName(a.user_name).toLocaleLowerCase('et');
+    const nameB=normalizeName(b.user_name).toLocaleLowerCase('et');
+    return Boolean(nameA&&nameB&&nameA===nameB);
   }
   function rotateFrom(rotation,person){
     const index=rotation.findIndex(item=>samePerson(item,person));
-    return index>0?rotation.slice(index).concat(rotation.slice(0,index)):rotation.slice();
+    if(index>=0) return rotation.slice(index).concat(rotation.slice(0,index));
+    if(!person||!normalizeName(person.user_name)) return rotation.slice();
+    // Granlundi/Alldevice laadsetes andmevoogudes võivad sama inimese ID-d
+    // pärineda eri tabelitest. Kui ankur ei sobitu rotatsiooniga, peab
+    // aktiivne või järgmine päris valvekirje siiski olema alati esimene.
+    const anchor={user_id:person.user_id,user_name:normalizeName(person.user_name)};
+    return [anchor].concat(rotation.filter(item=>!samePerson(item,anchor)));
   }
   function buildCycle(rotation,shifts,anchor){
     const ordered=rotateFrom(rotation,anchor);

@@ -1,3 +1,10 @@
+# VECO_RC1.006.5
+
+- Parandatud avaliku valveinfo aktiivse tehniku vahetumine.
+- Isiku sobitamisel kasutatakse nüüd esmalt ID-d ja vajadusel sama nime.
+- Kui aktiivset/järgmist valvekirjet rotatsioonist ei leita, lisatakse päris valvekirje rotatsiooni algusesse.
+- Välditud olukord, kus kuupäev muutus, kuid nimi jäi eelmise tehniku omaks.
+
 # VECO_RC1.006.3 — 2026-07-27
 
 - Muudetud ainult avalikku `oncall-public.html` valvevaadet.
@@ -61,8 +68,8 @@
 - Igal real kuvatakse kuupäevavahemik ja ISO nädalanumber.
 - Mobiilivaates kuvatakse periood nime all; horisontaalset kerimist ei teki.
 
-## VECO_RC1.006.4 — 2026-07-27
+## VECO_RC1.006.5 — 2026-07-27
 - Parandatud avaliku valveinfo aktiivse rea tuvastus: aktiivsus arvutatakse kuupäevavahemiku põhjal.
 - Aktiivse tehniku reale lisatud selgelt nähtav rohekas taust ja vasak aktsentriba.
-- Ühtlustatud APP_BUILD ja kõigi HTML-varade cache-versioon RC1.006.4 peale.
+- Ühtlustatud APP_BUILD ja kõigi HTML-varade cache-versioon RC1.006.5 peale.
 - Muid töövooge ega andmemudelit ei muudetud.
